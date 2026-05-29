@@ -36,15 +36,29 @@ def draw_rect_afterimages(surface, afterimages, size, lifetime, color):
         surface.blit(trail_surface, afterimage["rect"].topleft)
 
 
-def draw_attack_rectangle(surface, hitbox, color):
+def draw_attack_rectangle(surface, hitbox, color, combo_step):
     """Draw the active sword hitbox as a transparent rectangle."""
     if hitbox is None:
         return
 
+    alpha = 80 + combo_step * 20
     attack_surface = pygame.Surface((hitbox.width, hitbox.height), pygame.SRCALPHA)
-    attack_surface.fill((*color, 95))
+    attack_surface.fill((*color, alpha))
     surface.blit(attack_surface, hitbox.topleft)
-    pygame.draw.rect(surface, color, hitbox, 3)
+    pygame.draw.rect(surface, color, hitbox, 2 + combo_step)
+
+    # A diagonal line makes each combo step feel more like a slash than a box.
+    if combo_step == 1:
+        start_pos = hitbox.midleft
+        end_pos = hitbox.midright
+    elif combo_step == 2:
+        start_pos = hitbox.bottomleft
+        end_pos = hitbox.topright
+    else:
+        start_pos = hitbox.topleft
+        end_pos = hitbox.bottomright
+
+    pygame.draw.line(surface, color, start_pos, end_pos, 3 + combo_step)
 
 
 def choose_flash_color(base_color, flash_color, flash_timer):

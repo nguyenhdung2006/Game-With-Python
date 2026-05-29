@@ -22,7 +22,7 @@ def main():
     pygame.init()
 
     screen = pygame.display.set_mode((WIDTH, HEIGHT))
-    pygame.display.set_caption("Anime Stickman Combat - Phase 4")
+    pygame.display.set_caption("Anime Stickman Combat - Phase 5")
     clock = pygame.time.Clock()
 
     player = Player(180, GROUND_Y - PLAYER_HEIGHT)

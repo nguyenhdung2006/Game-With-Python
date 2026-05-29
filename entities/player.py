@@ -7,10 +7,7 @@ and drawing. Main.py only asks the player to update and draw.
 import pygame
 
 from settings import (
-    ATTACK_COLOR,
-    ATTACK_COOLDOWN,
-    ATTACK_DAMAGE,
-    ATTACK_DURATION,
+    COMBO_RESET_TIME,
     DASH_COOLDOWN,
     DASH_DURATION,
     DASH_SPEED,
@@ -18,6 +15,7 @@ from settings import (
     GRAVITY,
     GROUND_Y,
     JUMP_STRENGTH,
+    LIGHT_ATTACK_COMBO,
     PLAYER_COLOR,
     PLAYER_HEIGHT,
     PLAYER_MAX_HEALTH,
@@ -26,7 +24,7 @@ from settings import (
     WHITE,
     WIDTH,
 )
-from systems.combat import can_use_action, create_attack_hitbox, update_cooldown
+from systems.combat import can_use_action, create_attack_hitbox, get_combo_attack_data, update_cooldown
 from systems.effects import (
     create_afterimage,
     draw_attack_rectangle,
@@ -87,21 +85,36 @@ class Player:
         self.dash_trail = []
         self.trail_lifetime = DASH_TRAIL_LIFETIME
 
-        self.attack_damage = ATTACK_DAMAGE
+        first_attack = LIGHT_ATTACK_COMBO[0]
+        self.attack_damage = first_attack["damage"]
+        self.attack_range = first_attack["range"]
+        self.attack_height = first_attack["height"]
+        self.attack_knockback = first_attack["knockback"]
+        self.attack_color = first_attack["color"]
 
         # attack_duration is how long one light attack stays active.
         # attack_timer counts down while the swing is happening.
-        self.attack_duration = ATTACK_DURATION
+        self.attack_duration = first_attack["duration"]
         self.attack_timer = 0
 
         # attack_cooldown_timer prevents instant repeated attacks.
         # Holding J will not keep starting attacks because this must reach 0 first.
-        self.attack_cooldown = ATTACK_COOLDOWN
+        self.attack_cooldown = first_attack["cooldown"]
         self.attack_cooldown_timer = 0
         self.is_attacking = False
 
         # has_hit_this_attack makes sure one swing damages an enemy only once.
         self.has_hit_this_attack = False
+
+        # combo_step tracks which part of the 3-hit combo is active or ready.
+        # combo_timer is the short window where pressing J continues the chain.
+        self.combo_step = 0
+        self.combo_timer = 0
+        self.combo_reset_time = COMBO_RESET_TIME
+
+        # queued_next_attack stores one J press made during a current swing.
+        # It lets quick taps chain smoothly without allowing held input to spam.
+        self.queued_next_attack = False
 
     def update(self, keys, dt):
         """Run all per-frame player behavior."""
@@ -150,15 +163,50 @@ class Player:
             self.dash_cooldown_timer = max(0, self.dash_cooldown_timer - dt)
 
     def start_light_attack(self):
-        """Start a light attack if the player is ready."""
-        if not self.is_attacking and can_use_action(self.attack_cooldown_timer):
-            self.is_attacking = True
-            self.attack_timer = self.attack_duration
-            self.attack_cooldown_timer = self.attack_cooldown
-            self.has_hit_this_attack = False
+        """Start or queue the next hit in the 3-hit light combo."""
+        if self.is_attacking:
+            if self.combo_step < len(LIGHT_ATTACK_COMBO) and self.combo_timer > 0:
+                self.queued_next_attack = True
+            return
+
+        if not can_use_action(self.attack_cooldown_timer):
+            return
+
+        if self.combo_timer <= 0 or self.combo_step >= len(LIGHT_ATTACK_COMBO):
+            next_combo_step = 1
+        else:
+            next_combo_step = self.combo_step + 1
+
+        self.begin_combo_attack(next_combo_step)
+
+    def begin_combo_attack(self, combo_step):
+        """Apply the timing, damage, and hitbox data for one combo hit."""
+        attack_data = get_combo_attack_data(combo_step)
+
+        self.combo_step = combo_step
+        self.combo_timer = self.combo_reset_time
+
+        self.attack_damage = attack_data["damage"]
+        self.attack_range = attack_data["range"]
+        self.attack_height = attack_data["height"]
+        self.attack_knockback = attack_data["knockback"]
+        self.attack_color = attack_data["color"]
+        self.attack_duration = attack_data["duration"]
+        self.attack_cooldown = attack_data["cooldown"]
+
+        self.is_attacking = True
+        self.attack_timer = self.attack_duration
+        self.attack_cooldown_timer = self.attack_cooldown
+        self.has_hit_this_attack = False
 
     def update_attack_timers(self, dt):
-        """Update attack duration and cooldown using delta time."""
+        """Update attack duration, cooldown, and combo reset using delta time."""
+        if self.combo_timer > 0:
+            self.combo_timer = max(0, self.combo_timer - dt)
+
+            if self.combo_timer == 0 and not self.is_attacking:
+                self.reset_combo()
+
         if self.is_attacking:
             self.attack_timer -= dt
 
@@ -166,7 +214,25 @@ class Player:
                 self.is_attacking = False
                 self.attack_timer = 0
 
+        if self.combo_timer == 0 and not self.is_attacking:
+            self.reset_combo()
+
         self.attack_cooldown_timer = update_cooldown(self.attack_cooldown_timer, dt)
+
+        if (
+            self.queued_next_attack
+            and not self.is_attacking
+            and self.combo_timer > 0
+            and can_use_action(self.attack_cooldown_timer)
+        ):
+            self.queued_next_attack = False
+            self.start_light_attack()
+
+    def reset_combo(self):
+        """Return the combo chain to hit 1 after the timing window expires."""
+        self.combo_step = 0
+        self.combo_timer = 0
+        self.queued_next_attack = False
 
     def get_attack_hitbox(self):
         """Return the active sword hitbox, or None when not attacking."""
@@ -203,6 +269,6 @@ class Player:
             self.trail_lifetime,
             PLAYER_COLOR,
         )
-        draw_attack_rectangle(surface, self.get_attack_hitbox(), ATTACK_COLOR)
+        draw_attack_rectangle(surface, self.get_attack_hitbox(), self.attack_color, self.combo_step)
         pygame.draw.rect(surface, PLAYER_COLOR, self.rect)
         pygame.draw.rect(surface, WHITE, self.rect, 3)

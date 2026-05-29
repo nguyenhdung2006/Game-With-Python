@@ -35,14 +35,37 @@ ENEMY_MAX_HEALTH = 100
 ENEMY_HURT_FLASH_DURATION = 0.12
 ENEMY_KNOCKBACK_FRICTION = 1600
 
-# Light attack settings
-ATTACK_DAMAGE = 10
-ATTACK_RANGE = 75
-ATTACK_HEIGHT = 55
-ATTACK_DURATION = 0.16
-ATTACK_COOLDOWN = 0.35
-ATTACK_KNOCKBACK_SPEED = 430
-ATTACK_COLOR = (130, 220, 255)
+# Light attack combo settings
+COMBO_RESET_TIME = 0.75
+LIGHT_ATTACK_COMBO = (
+    {
+        "damage": 8,
+        "range": 68,
+        "height": 50,
+        "duration": 0.14,
+        "cooldown": 0.20,
+        "knockback": 330,
+        "color": (130, 220, 255),
+    },
+    {
+        "damage": 10,
+        "range": 78,
+        "height": 58,
+        "duration": 0.16,
+        "cooldown": 0.22,
+        "knockback": 430,
+        "color": (125, 255, 210),
+    },
+    {
+        "damage": 16,
+        "range": 94,
+        "height": 66,
+        "duration": 0.22,
+        "cooldown": 0.36,
+        "knockback": 650,
+        "color": (255, 210, 120),
+    },
+)
 
 # Basic colors used by the arena and characters.
 SKY_TOP = (12, 14, 26)

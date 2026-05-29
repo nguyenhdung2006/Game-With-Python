@@ -6,7 +6,7 @@ main.py does not fill up with combat details as the game grows.
 
 import pygame
 
-from settings import ATTACK_COOLDOWN, ATTACK_HEIGHT, ATTACK_KNOCKBACK_SPEED, ATTACK_RANGE
+from settings import LIGHT_ATTACK_COMBO
 
 
 def create_attack_hitbox(player):
@@ -18,10 +18,15 @@ def create_attack_hitbox(player):
     if player.facing == 1:
         x = player.rect.right
     else:
-        x = player.rect.left - ATTACK_RANGE
+        x = player.rect.left - player.attack_range
 
-    y = player.rect.centery - ATTACK_HEIGHT // 2
-    return pygame.Rect(x, y, ATTACK_RANGE, ATTACK_HEIGHT)
+    y = player.rect.centery - player.attack_height // 2
+    return pygame.Rect(x, y, player.attack_range, player.attack_height)
+
+
+def get_combo_attack_data(combo_step):
+    """Return damage, size, duration, and knockback values for one combo hit."""
+    return LIGHT_ATTACK_COMBO[combo_step - 1]
 
 
 def apply_damage(target, amount):
@@ -30,10 +35,10 @@ def apply_damage(target, amount):
         target.take_damage(amount)
 
 
-def apply_knockback(target, direction):
+def apply_knockback(target, direction, strength):
     """Push a target away from the attacker."""
     if hasattr(target, "knockback_velocity_x"):
-        target.knockback_velocity_x = direction * ATTACK_KNOCKBACK_SPEED
+        target.knockback_velocity_x = direction * strength
 
 
 def process_player_attack(player, enemy):
@@ -48,7 +53,7 @@ def process_player_attack(player, enemy):
 
     if attack_hitbox.colliderect(enemy.rect):
         apply_damage(enemy, player.attack_damage)
-        apply_knockback(enemy, player.facing)
+        apply_knockback(enemy, player.facing, player.attack_knockback)
         player.has_hit_this_attack = True
 
 
@@ -59,7 +64,7 @@ def can_use_action(cooldown_timer):
 
 def start_cooldown():
     """Return the default attack cooldown duration."""
-    return ATTACK_COOLDOWN
+    return LIGHT_ATTACK_COMBO[0]["cooldown"]
 
 
 def update_cooldown(cooldown_timer, dt):
