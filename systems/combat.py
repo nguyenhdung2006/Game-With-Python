@@ -90,6 +90,15 @@ def process_enemy_attack(enemy, player):
     attack_hitbox = create_enemy_attack_hitbox(enemy)
 
     if attack_hitbox.colliderect(player.rect):
+        # Parry is the risky timing-based defense. It only works during the
+        # small window opened by the first K press, but the reward is full
+        # negation plus enemy stagger instead of only reduced damage.
+        if hasattr(player, "can_parry_attack_from") and player.can_parry_attack_from(enemy.facing):
+            enemy.has_hit_this_attack = True
+            enemy.start_stagger()
+            apply_knockback(enemy, player.facing, ENEMY_ATTACK_KNOCKBACK * 0.8)
+            return player.parry_success(enemy.facing)
+
         # Blocking only helps against attacks from the front. It reduces damage,
         # but unlike a future parry system it does not create a counter window.
         if hasattr(player, "can_block_attack_from") and player.can_block_attack_from(enemy.facing):

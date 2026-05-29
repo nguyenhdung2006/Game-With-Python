@@ -23,7 +23,7 @@ def main():
     pygame.init()
 
     screen = pygame.display.set_mode((WIDTH, HEIGHT))
-    pygame.display.set_caption("Anime Stickman Combat - Phase 11")
+    pygame.display.set_caption("Anime Stickman Combat - Phase 12")
     clock = pygame.time.Clock()
     scene_surface = pygame.Surface((WIDTH, HEIGHT))
 
@@ -47,6 +47,8 @@ def main():
                 player.jump()
             if event.type == pygame.KEYDOWN and event.key == pygame.K_LSHIFT:
                 player.start_dash()
+            if event.type == pygame.KEYDOWN and event.key == pygame.K_k:
+                player.start_guard()
             if event.type == pygame.KEYDOWN and event.key == pygame.K_l:
                 dodge_result = player.start_dodge()
                 if dodge_result:

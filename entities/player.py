@@ -47,6 +47,14 @@ from settings import (
     PLAYER_LANDING_RECOVERY_DURATION,
     PLAYER_KNOCKBACK_FRICTION,
     PLAYER_MAX_HEALTH,
+    PLAYER_PARRY_COLOR,
+    PLAYER_PARRY_COOLDOWN,
+    PLAYER_PARRY_FLASH_COLOR,
+    PLAYER_PARRY_HITSTOP,
+    PLAYER_PARRY_SHAKE_DURATION,
+    PLAYER_PARRY_SHAKE_STRENGTH,
+    PLAYER_PARRY_SUCCESS_DURATION,
+    PLAYER_PARRY_WINDOW_DURATION,
     PLAYER_SPEED,
     PLAYER_WIDTH,
     WHITE,
@@ -59,6 +67,7 @@ from systems.effects import (
     draw_block_guard,
     draw_attack_rectangle,
     draw_dodge_overlay,
+    draw_parry_guard,
     draw_rect_afterimages,
     update_timed_effects,
 )
@@ -177,6 +186,16 @@ class Player:
         self.block_move_multiplier = PLAYER_BLOCK_MOVE_MULTIPLIER
         self.block_color = PLAYER_BLOCK_COLOR
         self.block_flash_color = PLAYER_BLOCK_FLASH_COLOR
+        self.parry_color = PLAYER_PARRY_COLOR
+        self.parry_flash_color = PLAYER_PARRY_FLASH_COLOR
+
+        # Parry is a short timing window on the first K press.
+        # If the attack lands during this timer, the player negates the hit.
+        # If the timer ends and K is still held, guard becomes normal block.
+        self.is_parrying = False
+        self.parry_window_timer = 0
+        self.parry_cooldown_timer = 0
+        self.successful_parry_timer = 0
 
         # Dodge is a short defensive burst with temporary i-frames.
         # Unlike dash, it is for avoiding attacks rather than covering distance.
@@ -255,6 +274,17 @@ class Player:
         if self.dodge_invulnerability_timer > 0:
             self.dodge_invulnerability_timer = max(0, self.dodge_invulnerability_timer - dt)
 
+        if self.parry_window_timer > 0:
+            self.parry_window_timer = max(0, self.parry_window_timer - dt)
+            if self.parry_window_timer == 0:
+                self.is_parrying = False
+
+        if self.parry_cooldown_timer > 0:
+            self.parry_cooldown_timer = max(0, self.parry_cooldown_timer - dt)
+
+        if self.successful_parry_timer > 0:
+            self.successful_parry_timer = max(0, self.successful_parry_timer - dt)
+
         if self.block_flash_timer > 0:
             self.block_flash_timer = max(0, self.block_flash_timer - dt)
 
@@ -265,7 +295,7 @@ class Player:
             self.landing_recovery_timer = max(0, self.landing_recovery_timer - dt)
 
     def update_block_state(self, keys):
-        """Hold K to guard without turning this into a full parry system."""
+        """Use one guard key for both parry timing and normal block holding."""
         can_block = (
             not self.defeated
             and not self.is_hurt
@@ -279,12 +309,14 @@ class Player:
         )
 
         if keys[pygame.K_k] and can_block:
-            if not self.is_blocking:
+            if not self.is_blocking and not self.is_parrying:
                 self.block_direction = self.facing
-            self.is_blocking = True
+            self.is_blocking = self.parry_window_timer <= 0
             self.facing = self.block_direction
         else:
             self.is_blocking = False
+            self.is_parrying = False
+            self.parry_window_timer = 0
 
     def update_knockback(self, dt):
         """Move the player while hurt knockback is active."""
@@ -311,7 +343,7 @@ class Player:
 
             if self.dash_timer <= 0:
                 self.is_dashing = False
-        elif self.is_blocking:
+        elif self.is_blocking or self.is_parrying:
             if keys[pygame.K_a]:
                 self.x -= self.get_current_move_speed() * dt
             if keys[pygame.K_d]:
@@ -335,7 +367,7 @@ class Player:
         if self.is_dodging:
             return 0
 
-        if self.is_blocking:
+        if self.is_blocking or self.is_parrying:
             return self.speed * self.block_move_multiplier
 
         if self.is_attacking:
@@ -370,7 +402,13 @@ class Player:
             return
 
         # Dashing during attacks makes combat hard to read, so attacks lock it out.
-        if self.is_attacking or self.is_blocking or self.is_dodging or self.is_in_action_recovery():
+        if (
+            self.is_attacking
+            or self.is_blocking
+            or self.is_parrying
+            or self.is_dodging
+            or self.is_in_action_recovery()
+        ):
             return
 
         if not self.is_dashing and self.dash_cooldown_timer <= 0:
@@ -381,7 +419,7 @@ class Player:
 
     def start_dodge(self):
         """Start a short evade burst with temporary invulnerability."""
-        if self.defeated or self.is_hurt or self.is_attacking or self.is_blocking:
+        if self.defeated or self.is_hurt or self.is_attacking or self.is_blocking or self.is_parrying:
             return None
 
         if self.is_dodging or self.dodge_cooldown_timer > 0 or self.is_in_action_recovery():
@@ -427,7 +465,7 @@ class Player:
 
     def start_light_attack(self):
         """Start or queue the next hit in the 3-hit light combo."""
-        if self.defeated or self.is_hurt or self.is_blocking or self.is_dodging:
+        if self.defeated or self.is_hurt or self.is_blocking or self.is_parrying or self.is_dodging:
             return
 
         if self.is_in_action_recovery():
@@ -545,6 +583,55 @@ class Player:
         """Block only works when the player is guarding toward the attacker."""
         return self.is_blocking and self.block_direction == -attacker_direction
 
+    def can_parry_attack_from(self, attacker_direction):
+        """Parry uses the same front-facing rule as block, but only briefly."""
+        return self.is_parrying and self.block_direction == -attacker_direction
+
+    def start_guard(self):
+        """Open a short parry window on the first K press before normal block.
+
+        Parry adds depth because the player trades safety for reward. The guard
+        button still falls back to block after the short timing window ends.
+        """
+        can_guard = (
+            not self.defeated
+            and not self.is_hurt
+            and not self.is_dashing
+            and not self.is_dodging
+            and not self.is_blocking
+            and not self.is_parrying
+            and (
+                not self.is_attacking
+                or self.can_cancel_attack_to_block()
+                or self.attack_recovery_timer > 0
+            )
+        )
+
+        if not can_guard:
+            return
+
+        self.block_direction = self.facing
+
+        if self.parry_cooldown_timer <= 0:
+            self.is_parrying = True
+            self.parry_window_timer = PLAYER_PARRY_WINDOW_DURATION
+            self.parry_cooldown_timer = PLAYER_PARRY_COOLDOWN
+
+    def parry_success(self, attacker_direction):
+        """Resolve a successful parry without entering the normal hurt state."""
+        self.is_parrying = False
+        self.parry_window_timer = 0
+        self.is_blocking = False
+        self.successful_parry_timer = PLAYER_PARRY_SUCCESS_DURATION
+        self.block_flash_timer = 0
+        self.knockback_velocity_x = attacker_direction * (self.block_pushback * 0.45)
+
+        return {
+            "hitstop": PLAYER_PARRY_HITSTOP,
+            "shake_duration": PLAYER_PARRY_SHAKE_DURATION,
+            "shake_strength": PLAYER_PARRY_SHAKE_STRENGTH,
+        }
+
     def block_hit(self, amount, attacker_direction):
         """Absorb part of an enemy hit without entering full hurt stun."""
         if self.defeated:
@@ -608,6 +695,15 @@ class Player:
             self.block_flash_timer,
             self.block_color,
             self.block_flash_color,
+        )
+        draw_parry_guard(
+            surface,
+            self.rect,
+            self.block_direction,
+            self.is_parrying,
+            self.successful_parry_timer,
+            self.parry_color,
+            self.parry_flash_color,
         )
         if self.is_dodging or self.dodge_invulnerability_timer > 0:
             draw_dodge_overlay(surface, self.rect, self.dodge_color)

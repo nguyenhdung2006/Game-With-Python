@@ -27,7 +27,9 @@ from settings import (
     ENEMY_STATE_DEFEATED,
     ENEMY_STATE_HURT,
     ENEMY_STATE_IDLE,
+    ENEMY_STATE_STAGGER,
     ENEMY_STATE_TELEGRAPH,
+    ENEMY_STAGGER_DURATION,
     ENEMY_TELEGRAPH_COLOR,
     ENEMY_TELEGRAPH_DURATION,
     ENEMY_WIDTH,
@@ -65,6 +67,7 @@ class Enemy:
         self.has_hit_this_attack = False
         self.retreat_timer = 0
         self.recovery_timer = 0
+        self.stagger_timer = 0
 
     def update(self, player, dt):
         """Update simple AI, attack timing, hurt recoil, and cooldowns."""
@@ -77,6 +80,13 @@ class Enemy:
 
         if self.hurt_flash_timer > 0:
             self.state = ENEMY_STATE_HURT
+            self.update_knockback(dt)
+            return
+
+        if self.stagger_timer > 0:
+            # Stagger is the reward for a clean parry. The enemy pauses here so
+            # the player can clearly feel that the attack was interrupted.
+            self.state = ENEMY_STATE_STAGGER
             self.update_knockback(dt)
             return
 
@@ -108,6 +118,9 @@ class Enemy:
 
         if self.recovery_timer > 0:
             self.recovery_timer = max(0, self.recovery_timer - dt)
+
+        if self.stagger_timer > 0:
+            self.stagger_timer = max(0, self.stagger_timer - dt)
 
     def update_knockback(self, dt):
         """Move the enemy while knockback is still active."""
@@ -189,6 +202,19 @@ class Enemy:
         self.retreat_timer = ENEMY_RETREAT_DURATION
         self.recovery_timer = ENEMY_RECOVERY_DURATION
 
+    def start_stagger(self):
+        """Interrupt the current action and leave the enemy briefly vulnerable."""
+        if self.defeated:
+            return
+
+        self.state = ENEMY_STATE_STAGGER
+        self.telegraph_timer = 0
+        self.attack_timer = 0
+        self.retreat_timer = 0
+        self.recovery_timer = 0
+        self.has_hit_this_attack = True
+        self.stagger_timer = ENEMY_STAGGER_DURATION
+
     def is_attack_active(self):
         """Return True while the enemy hitbox should damage the player."""
         return self.state == ENEMY_STATE_ATTACK and self.attack_timer > 0
@@ -206,6 +232,7 @@ class Enemy:
         self.attack_timer = 0
         self.retreat_timer = 0
         self.recovery_timer = 0
+        self.stagger_timer = 0
         self.has_hit_this_attack = False
 
         if self.health == 0:
@@ -218,6 +245,8 @@ class Enemy:
         """Draw the enemy dummy rectangle."""
         if self.defeated:
             color = ENEMY_DEFEATED_COLOR
+        elif self.state == ENEMY_STATE_STAGGER:
+            color = (255, 245, 185)
         else:
             color = choose_flash_color(ENEMY_COLOR, ENEMY_HURT_COLOR, self.hurt_flash_timer)
 
@@ -229,6 +258,12 @@ class Enemy:
 
         pygame.draw.rect(surface, color, self.rect)
         pygame.draw.rect(surface, WHITE, self.rect, 3)
+
+        if self.state == ENEMY_STATE_STAGGER:
+            spark_center = (self.rect.centerx, self.rect.top - 12)
+            pygame.draw.circle(surface, WHITE, spark_center, 10, 2)
+            pygame.draw.line(surface, WHITE, (spark_center[0] - 14, spark_center[1]), (spark_center[0] + 14, spark_center[1]), 2)
+            pygame.draw.line(surface, WHITE, (spark_center[0], spark_center[1] - 14), (spark_center[0], spark_center[1] + 14), 2)
 
         attack_rect = create_enemy_attack_hitbox(self)
 
