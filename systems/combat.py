@@ -7,13 +7,6 @@ main.py does not fill up with combat details as the game grows.
 import pygame
 
 from settings import (
-    ENEMY_ATTACK_DAMAGE,
-    ENEMY_ATTACK_HEIGHT,
-    ENEMY_ATTACK_HITSTOP,
-    ENEMY_ATTACK_KNOCKBACK,
-    ENEMY_ATTACK_RANGE,
-    ENEMY_ATTACK_SHAKE_DURATION,
-    ENEMY_ATTACK_SHAKE_STRENGTH,
     ENEMY_COUNTER_STAGGER_DURATION,
     LIGHT_ATTACK_COMBO,
 )
@@ -39,10 +32,10 @@ def create_enemy_attack_hitbox(enemy):
     if enemy.facing == 1:
         x = enemy.rect.right
     else:
-        x = enemy.rect.left - ENEMY_ATTACK_RANGE
+        x = enemy.rect.left - enemy.attack_range
 
-    y = enemy.rect.centery - ENEMY_ATTACK_HEIGHT // 2
-    return pygame.Rect(x, y, ENEMY_ATTACK_RANGE, ENEMY_ATTACK_HEIGHT)
+    y = enemy.rect.centery - enemy.attack_height // 2
+    return pygame.Rect(x, y, enemy.attack_range, enemy.attack_height)
 
 
 def get_combo_attack_data(combo_step):
@@ -99,24 +92,24 @@ def process_enemy_attack(enemy, player):
         if hasattr(player, "can_parry_attack_from") and player.can_parry_attack_from(enemy.facing):
             enemy.has_hit_this_attack = True
             enemy.start_stagger()
-            apply_knockback(enemy, player.facing, ENEMY_ATTACK_KNOCKBACK * 0.8)
+            apply_knockback(enemy, player.facing, enemy.attack_knockback * 0.8)
             return player.parry_success(enemy.facing)
 
         # Blocking only helps against attacks from the front. It reduces damage,
         # but unlike a future parry system it does not create a counter window.
         if hasattr(player, "can_block_attack_from") and player.can_block_attack_from(enemy.facing):
             enemy.has_hit_this_attack = True
-            return player.block_hit(ENEMY_ATTACK_DAMAGE, enemy.facing)
+            return player.block_hit(enemy.attack_damage, enemy.facing)
 
-        if not apply_damage(player, ENEMY_ATTACK_DAMAGE):
+        if not apply_damage(player, enemy.attack_damage):
             return None
 
-        apply_knockback(player, enemy.facing, ENEMY_ATTACK_KNOCKBACK)
+        apply_knockback(player, enemy.facing, enemy.attack_knockback)
         enemy.has_hit_this_attack = True
         return {
-            "hitstop": ENEMY_ATTACK_HITSTOP,
-            "shake_duration": ENEMY_ATTACK_SHAKE_DURATION,
-            "shake_strength": ENEMY_ATTACK_SHAKE_STRENGTH,
+            "hitstop": enemy.attack_hitstop,
+            "shake_duration": enemy.attack_shake_duration,
+            "shake_strength": enemy.attack_shake_strength,
         }
 
     return None

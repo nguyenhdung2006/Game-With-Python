@@ -34,6 +34,9 @@ main.py
 settings.py
 entities/
     player.py
+    base_enemy.py
+    basic_enemy.py
+    fast_enemy.py
     enemy.py
 systems/
     combat.py
@@ -54,6 +57,9 @@ assets/
 - `main.py` starts Pygame, creates objects, runs the game loop, and calls update/draw methods.
 - `settings.py` stores shared constants such as screen size, colors, physics values, dash values, and combat values.
 - `entities/` stores game objects such as the player, enemies, future bosses, and projectiles.
+- `entities/base_enemy.py` holds shared melee enemy behavior so new archetypes can reuse one AI/state foundation.
+- `entities/basic_enemy.py` defines the balanced baseline enemy archetype.
+- `entities/fast_enemy.py` defines the quicker, lower-health pressure archetype.
 - `systems/` stores reusable logic for physics, combat helpers, and visual effects.
 - `ui/` stores reusable interface drawing code such as health bars.
 - `world/` stores arena and environment drawing code.
@@ -73,6 +79,7 @@ assets/
 - Basic directional block / guard with reduced damage from front attacks
 - Timing-based parry window on guard press that staggers the enemy on success
 - Parry-earned counterattack window that turns `J` into a heavy punish attack
+- Enemy archetype system with a balanced BasicEnemy and a faster, lower-health FastEnemy
 - Short dodge / evade with cooldown and temporary invulnerability
 - Combat recovery and cancel timing for smoother action flow
 - Player and enemy health bars

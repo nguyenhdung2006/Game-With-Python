@@ -101,6 +101,73 @@ ENEMY_STATE_HURT = "HURT"
 ENEMY_STATE_STAGGER = "STAGGER"
 ENEMY_STATE_DEFEATED = "DEFEATED"
 
+# Enemy archetype configs keep each enemy type readable and scalable.
+# BaseEnemy reads one of these dictionaries so future archetypes can add
+# variety without duplicating the whole AI state machine.
+BASIC_ENEMY_CONFIG = {
+    "label": "BASIC ENEMY",
+    "width": ENEMY_WIDTH,
+    "height": ENEMY_HEIGHT,
+    "max_health": ENEMY_MAX_HEALTH,
+    "hurt_flash_duration": ENEMY_HURT_FLASH_DURATION,
+    "knockback_friction": ENEMY_KNOCKBACK_FRICTION,
+    "chase_speed": ENEMY_CHASE_SPEED,
+    "attack_start_distance": ENEMY_ATTACK_START_DISTANCE,
+    "telegraph_duration": ENEMY_TELEGRAPH_DURATION,
+    "attack_duration": ENEMY_ATTACK_DURATION,
+    "attack_cooldown": ENEMY_ATTACK_COOLDOWN,
+    "attack_damage": ENEMY_ATTACK_DAMAGE,
+    "attack_range": ENEMY_ATTACK_RANGE,
+    "attack_height": ENEMY_ATTACK_HEIGHT,
+    "attack_knockback": ENEMY_ATTACK_KNOCKBACK,
+    "retreat_duration": ENEMY_RETREAT_DURATION,
+    "retreat_speed": ENEMY_RETREAT_SPEED,
+    "attack_hitstop": ENEMY_ATTACK_HITSTOP,
+    "attack_shake_duration": ENEMY_ATTACK_SHAKE_DURATION,
+    "attack_shake_strength": ENEMY_ATTACK_SHAKE_STRENGTH,
+    "recovery_duration": ENEMY_RECOVERY_DURATION,
+    "stagger_duration": ENEMY_STAGGER_DURATION,
+    "body_color": (225, 70, 74),
+    "hurt_color": (255, 235, 235),
+    "defeated_color": (80, 45, 48),
+    "telegraph_color": ENEMY_TELEGRAPH_COLOR,
+    "attack_color": ENEMY_ATTACK_COLOR,
+    "telegraph_pulse_speed": 14,
+    "recoil_outline_color": (120, 35, 45),
+}
+
+FAST_ENEMY_CONFIG = {
+    "label": "FAST ENEMY",
+    "width": 46,
+    "height": 102,
+    "max_health": 72,
+    "hurt_flash_duration": 0.10,
+    "knockback_friction": 1750,
+    "chase_speed": 215,
+    "attack_start_distance": 84,
+    "telegraph_duration": 0.24,
+    "attack_duration": 0.16,
+    "attack_cooldown": 0.78,
+    "attack_damage": 5,
+    "attack_range": 64,
+    "attack_height": 52,
+    "attack_knockback": 170,
+    "retreat_duration": 0.18,
+    "retreat_speed": 168,
+    "attack_hitstop": 0.024,
+    "attack_shake_duration": 0.06,
+    "attack_shake_strength": 1,
+    "recovery_duration": 0.14,
+    "stagger_duration": 0.34,
+    "body_color": (245, 145, 92),
+    "hurt_color": (255, 234, 214),
+    "defeated_color": (90, 58, 42),
+    "telegraph_color": (255, 170, 95),
+    "attack_color": (255, 208, 110),
+    "telegraph_pulse_speed": 22,
+    "recoil_outline_color": (135, 80, 42),
+}
+
 # Light attack combo settings
 COMBO_RESET_TIME = 0.75
 LIGHT_ATTACK_COMBO = (

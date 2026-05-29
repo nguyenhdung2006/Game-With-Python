@@ -118,10 +118,10 @@ def draw_attack_rectangle(surface, hitbox, color, combo_step, is_counter=False):
     pygame.draw.line(surface, color, start_pos, end_pos, 3 + combo_step)
 
 
-def draw_enemy_warning(surface, rect, color, pulse_timer=0):
+def draw_enemy_warning(surface, rect, color, pulse_timer=0, pulse_speed=14):
     """Draw a warning box before the enemy attack becomes active."""
     # Clear telegraphs make combat readable and give the player time to react.
-    pulse_on = int(pulse_timer * 14) % 2 == 0
+    pulse_on = int(pulse_timer * pulse_speed) % 2 == 0
     alpha = 95 if pulse_on else 45
     outline_width = 5 if pulse_on else 3
 
