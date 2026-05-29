@@ -6,7 +6,16 @@ main.py does not fill up with combat details as the game grows.
 
 import pygame
 
-from settings import LIGHT_ATTACK_COMBO
+from settings import (
+    ENEMY_ATTACK_DAMAGE,
+    ENEMY_ATTACK_HEIGHT,
+    ENEMY_ATTACK_HITSTOP,
+    ENEMY_ATTACK_KNOCKBACK,
+    ENEMY_ATTACK_RANGE,
+    ENEMY_ATTACK_SHAKE_DURATION,
+    ENEMY_ATTACK_SHAKE_STRENGTH,
+    LIGHT_ATTACK_COMBO,
+)
 
 
 def create_attack_hitbox(player):
@@ -22,6 +31,17 @@ def create_attack_hitbox(player):
 
     y = player.rect.centery - player.attack_height // 2
     return pygame.Rect(x, y, player.attack_range, player.attack_height)
+
+
+def create_enemy_attack_hitbox(enemy):
+    """Create the enemy melee hitbox in front of its facing direction."""
+    if enemy.facing == 1:
+        x = enemy.rect.right
+    else:
+        x = enemy.rect.left - ENEMY_ATTACK_RANGE
+
+    y = enemy.rect.centery - ENEMY_ATTACK_HEIGHT // 2
+    return pygame.Rect(x, y, ENEMY_ATTACK_RANGE, ENEMY_ATTACK_HEIGHT)
 
 
 def get_combo_attack_data(combo_step):
@@ -56,6 +76,26 @@ def process_player_attack(player, enemy):
         apply_knockback(enemy, player.facing, player.attack_knockback)
         player.has_hit_this_attack = True
         return get_combo_attack_data(player.combo_step)
+
+    return None
+
+
+def process_enemy_attack(enemy, player):
+    """Apply one enemy attack hit if its active hitbox touches the player."""
+    if not enemy.is_attack_active() or enemy.has_hit_this_attack:
+        return None
+
+    attack_hitbox = create_enemy_attack_hitbox(enemy)
+
+    if attack_hitbox.colliderect(player.rect):
+        apply_damage(player, ENEMY_ATTACK_DAMAGE)
+        apply_knockback(player, enemy.facing, ENEMY_ATTACK_KNOCKBACK)
+        enemy.has_hit_this_attack = True
+        return {
+            "hitstop": ENEMY_ATTACK_HITSTOP,
+            "shake_duration": ENEMY_ATTACK_SHAKE_DURATION,
+            "shake_strength": ENEMY_ATTACK_SHAKE_STRENGTH,
+        }
 
     return None
 

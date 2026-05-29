@@ -3,7 +3,7 @@ import pygame
 
 from entities.enemy import Enemy
 from entities.player import Player
-from systems.combat import process_player_attack
+from systems.combat import process_enemy_attack, process_player_attack
 from systems.effects import CombatImpact
 from settings import (
     ENEMY_HEIGHT,
@@ -23,7 +23,7 @@ def main():
     pygame.init()
 
     screen = pygame.display.set_mode((WIDTH, HEIGHT))
-    pygame.display.set_caption("Anime Stickman Combat - Phase 6")
+    pygame.display.set_caption("Anime Stickman Combat - Phase 7")
     clock = pygame.time.Clock()
     scene_surface = pygame.Surface((WIDTH, HEIGHT))
 
@@ -53,12 +53,14 @@ def main():
         keys = pygame.key.get_pressed()
         if not hitstop_active:
             player.update(keys, dt)
-            hit_result = process_player_attack(player, enemy)
+            enemy.update(player, dt)
+            player_hit_result = process_player_attack(player, enemy)
+            enemy_hit_result = process_enemy_attack(enemy, player)
 
-            if hit_result:
-                impact.start_hit_impact(hit_result)
-            else:
-                enemy.update(dt)
+            if player_hit_result:
+                impact.start_hit_impact(player_hit_result)
+            if enemy_hit_result:
+                impact.start_hit_impact(enemy_hit_result)
 
         draw_arena(scene_surface)
 

@@ -117,6 +117,10 @@ class Player:
         # It lets quick taps chain smoothly without allowing held input to spam.
         self.queued_next_attack = False
 
+    def take_damage(self, amount):
+        """Receive enemy attack damage while keeping health from going below 0."""
+        self.health = max(0, self.health - amount)
+
     def update(self, keys, dt):
         """Run all per-frame player behavior."""
         self.update_dash_cooldown(dt)

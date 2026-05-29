@@ -66,6 +66,7 @@ assets/
 - Enemy training dummy with health, hurt flash, knockback, and defeated state
 - 3-hit light attack combo with different damage, hitboxes, and knockback
 - Combat impact polish with attack slowdown, hitstop, and camera shake
+- Basic enemy AI with chase, telegraph, and melee attack states
 - Player and enemy health bars
 
 This structure keeps each file focused. As the game grows, combat, enemies,

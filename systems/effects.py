@@ -108,6 +108,22 @@ def draw_attack_rectangle(surface, hitbox, color, combo_step):
     pygame.draw.line(surface, color, start_pos, end_pos, 3 + combo_step)
 
 
+def draw_enemy_warning(surface, rect, color):
+    """Draw a warning box before the enemy attack becomes active."""
+    warning_surface = pygame.Surface((rect.width, rect.height), pygame.SRCALPHA)
+    warning_surface.fill((*color, 70))
+    surface.blit(warning_surface, rect.topleft)
+    pygame.draw.rect(surface, color, rect, 3)
+
+
+def draw_enemy_attack_rectangle(surface, rect, color):
+    """Draw the enemy's active attack hitbox."""
+    attack_surface = pygame.Surface((rect.width, rect.height), pygame.SRCALPHA)
+    attack_surface.fill((*color, 105))
+    surface.blit(attack_surface, rect.topleft)
+    pygame.draw.rect(surface, color, rect, 4)
+
+
 def choose_flash_color(base_color, flash_color, flash_timer):
     """Use a flash color while an entity's hurt flash timer is active."""
     if flash_timer > 0:
