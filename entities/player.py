@@ -27,6 +27,13 @@ from settings import (
     PLAYER_BLOCK_SHAKE_STRENGTH,
     PLAYER_COLOR,
     PLAYER_DEFEATED_COLOR,
+    PLAYER_DODGE_COLOR,
+    PLAYER_DODGE_COOLDOWN,
+    PLAYER_DODGE_DURATION,
+    PLAYER_DODGE_INVULNERABILITY_DURATION,
+    PLAYER_DODGE_SHAKE_DURATION,
+    PLAYER_DODGE_SHAKE_STRENGTH,
+    PLAYER_DODGE_SPEED,
     PLAYER_HEIGHT,
     PLAYER_HURT_COLOR,
     PLAYER_HURT_DURATION,
@@ -46,6 +53,7 @@ from systems.effects import (
     create_afterimage,
     draw_block_guard,
     draw_attack_rectangle,
+    draw_dodge_overlay,
     draw_rect_afterimages,
     update_timed_effects,
 )
@@ -159,6 +167,18 @@ class Player:
         self.block_color = PLAYER_BLOCK_COLOR
         self.block_flash_color = PLAYER_BLOCK_FLASH_COLOR
 
+        # Dodge is a short defensive burst with temporary i-frames.
+        # Unlike dash, it is for avoiding attacks rather than covering distance.
+        self.is_dodging = False
+        self.dodge_timer = 0
+        self.dodge_duration = PLAYER_DODGE_DURATION
+        self.dodge_cooldown = PLAYER_DODGE_COOLDOWN
+        self.dodge_cooldown_timer = 0
+        self.dodge_invulnerability_timer = 0
+        self.dodge_direction = self.facing
+        self.dodge_speed = PLAYER_DODGE_SPEED
+        self.dodge_color = PLAYER_DODGE_COLOR
+
     def take_damage(self, amount):
         """Receive enemy attack damage and start hurt/i-frame feedback."""
         if not self.can_take_damage():
@@ -179,7 +199,11 @@ class Player:
 
     def can_take_damage(self):
         """Return True only when i-frames are not protecting the player."""
-        return not self.defeated and self.invulnerability_timer <= 0
+        return (
+            not self.defeated
+            and self.invulnerability_timer <= 0
+            and self.dodge_invulnerability_timer <= 0
+        )
 
     def update(self, keys, dt):
         """Run all per-frame player behavior."""
@@ -190,6 +214,7 @@ class Player:
             return
 
         self.update_dash_cooldown(dt)
+        self.update_dodge_timers(dt)
         self.update_attack_timers(dt)
         self.update_block_state(keys)
         self.handle_input(keys, dt)
@@ -211,12 +236,21 @@ class Player:
         if self.invulnerability_timer > 0:
             self.invulnerability_timer = max(0, self.invulnerability_timer - dt)
 
+        if self.dodge_invulnerability_timer > 0:
+            self.dodge_invulnerability_timer = max(0, self.dodge_invulnerability_timer - dt)
+
         if self.block_flash_timer > 0:
             self.block_flash_timer = max(0, self.block_flash_timer - dt)
 
     def update_block_state(self, keys):
         """Hold K to guard without turning this into a full parry system."""
-        can_block = not self.defeated and not self.is_hurt and not self.is_attacking and not self.is_dashing
+        can_block = (
+            not self.defeated
+            and not self.is_hurt
+            and not self.is_attacking
+            and not self.is_dashing
+            and not self.is_dodging
+        )
 
         if keys[pygame.K_k] and can_block:
             if not self.is_blocking:
@@ -241,7 +275,10 @@ class Player:
 
     def handle_input(self, keys, dt):
         """Move left/right normally, or move by dash velocity during a dash."""
-        if self.is_dashing:
+        if self.is_dodging:
+            self.x += self.dodge_direction * self.dodge_speed * dt
+            self.add_dash_trail()
+        elif self.is_dashing:
             self.x += self.facing * self.dash_speed * dt
             self.dash_timer -= dt
             self.add_dash_trail()
@@ -269,6 +306,9 @@ class Player:
         if self.is_hurt:
             return self.speed * 0.25
 
+        if self.is_dodging:
+            return 0
+
         if self.is_blocking:
             return self.speed * self.block_move_multiplier
 
@@ -292,7 +332,7 @@ class Player:
             return
 
         # Dashing during attacks makes combat hard to read, so attacks lock it out.
-        if self.is_attacking or self.is_blocking:
+        if self.is_attacking or self.is_blocking or self.is_dodging:
             return
 
         if not self.is_dashing and self.dash_cooldown_timer <= 0:
@@ -301,14 +341,48 @@ class Player:
             self.dash_cooldown_timer = self.dash_cooldown
             self.add_dash_trail()
 
+    def start_dodge(self):
+        """Start a short evade burst with temporary invulnerability."""
+        if self.defeated or self.is_hurt or self.is_attacking or self.is_blocking:
+            return None
+
+        if self.is_dodging or self.dodge_cooldown_timer > 0:
+            return None
+
+        self.is_dodging = True
+        self.is_dashing = False
+        self.dodge_direction = self.facing
+        self.dodge_timer = self.dodge_duration
+        self.dodge_cooldown_timer = self.dodge_cooldown
+        self.dodge_invulnerability_timer = PLAYER_DODGE_INVULNERABILITY_DURATION
+        self.add_dash_trail()
+
+        return {
+            "hitstop": 0,
+            "shake_duration": PLAYER_DODGE_SHAKE_DURATION,
+            "shake_strength": PLAYER_DODGE_SHAKE_STRENGTH,
+        }
+
     def update_dash_cooldown(self, dt):
         """Count down until the player is allowed to dash again."""
         if self.dash_cooldown_timer > 0:
             self.dash_cooldown_timer = max(0, self.dash_cooldown_timer - dt)
 
+    def update_dodge_timers(self, dt):
+        """Count dodge duration and cooldown with delta time."""
+        if self.is_dodging:
+            self.dodge_timer -= dt
+
+            if self.dodge_timer <= 0:
+                self.is_dodging = False
+                self.dodge_timer = 0
+
+        if self.dodge_cooldown_timer > 0:
+            self.dodge_cooldown_timer = max(0, self.dodge_cooldown_timer - dt)
+
     def start_light_attack(self):
         """Start or queue the next hit in the 3-hit light combo."""
-        if self.defeated or self.is_hurt or self.is_blocking:
+        if self.defeated or self.is_hurt or self.is_blocking or self.is_dodging:
             return
 
         if self.is_attacking:
@@ -451,6 +525,8 @@ class Player:
             self.block_color,
             self.block_flash_color,
         )
+        if self.is_dodging or self.dodge_invulnerability_timer > 0:
+            draw_dodge_overlay(surface, self.rect, self.dodge_color)
 
         color = PLAYER_COLOR
         if self.defeated:

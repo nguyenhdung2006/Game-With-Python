@@ -155,6 +155,13 @@ def draw_block_guard(surface, player_rect, direction, is_blocking, flash_timer, 
         pygame.draw.line(surface, flash_color, (spark_left, spark_y + 12), (spark_left + direction * 16, spark_y), 3)
 
 
+def draw_dodge_overlay(surface, rect, color):
+    """Draw a light tinted overlay so dodge i-frames read clearly."""
+    dodge_surface = pygame.Surface((rect.width, rect.height), pygame.SRCALPHA)
+    pygame.draw.rect(dodge_surface, (*color, 130), dodge_surface.get_rect(), border_radius=6)
+    surface.blit(dodge_surface, rect.topleft)
+
+
 def choose_flash_color(base_color, flash_color, flash_timer):
     """Use a flash color while an entity's hurt flash timer is active."""
     if flash_timer > 0:

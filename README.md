@@ -24,6 +24,7 @@ python main.py
 - `Left Shift` = dash
 - `J` = light attack / 3-hit combo
 - `K` = hold block / guard
+- `L` = dodge / evade
 
 ## Project Structure
 
@@ -70,6 +71,7 @@ assets/
 - Basic enemy AI with chase, telegraph, and melee attack states
 - Player hurt feedback, invulnerability frames, and enemy retreat spacing
 - Basic directional block / guard with reduced damage from front attacks
+- Short dodge / evade with cooldown and temporary invulnerability
 - Player and enemy health bars
 
 This structure keeps each file focused. As the game grows, combat, enemies,
