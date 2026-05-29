@@ -1,0 +1,71 @@
+"""Player drawing helpers."""
+
+import pygame
+
+from settings import (
+    PLAYER_COLOR,
+    PLAYER_DEFEATED_COLOR,
+    PLAYER_HURT_COLOR,
+    PLAYER_INVULNERABLE_COLOR,
+    WHITE,
+)
+from systems.effects import (
+    choose_flash_color,
+    draw_attack_rectangle,
+    draw_block_guard,
+    draw_counter_ready_glow,
+    draw_dodge_overlay,
+    draw_parry_guard,
+    draw_rect_afterimages,
+)
+
+
+def draw(player, surface):
+    """Draw the dash trail, combat effects, and placeholder rectangle player."""
+    draw_rect_afterimages(
+        surface,
+        player.dash_trail,
+        (player.width, player.height),
+        player.trail_lifetime,
+        PLAYER_COLOR,
+    )
+    draw_counter_ready_glow(surface, player.rect, player.counter_window_timer, player.counter_ready_color)
+    draw_attack_rectangle(
+        surface,
+        player.get_attack_hitbox(),
+        player.attack_color,
+        player.combo_step,
+        player.is_counter_attacking,
+    )
+    draw_block_guard(
+        surface,
+        player.rect,
+        player.block_direction,
+        player.is_blocking,
+        player.block_flash_timer,
+        player.block_color,
+        player.block_flash_color,
+    )
+    draw_parry_guard(
+        surface,
+        player.rect,
+        player.block_direction,
+        player.is_parrying,
+        player.successful_parry_timer,
+        player.parry_color,
+        player.parry_flash_color,
+    )
+    if player.is_dodging or player.dodge_invulnerability_timer > 0:
+        draw_dodge_overlay(surface, player.rect, player.dodge_color)
+
+    color = PLAYER_COLOR
+    if player.defeated:
+        color = PLAYER_DEFEATED_COLOR
+    elif player.invulnerability_timer > 0:
+        # Blinking during i-frames makes temporary safety visible to the player.
+        blink_on = int(player.invulnerability_timer * 20) % 2 == 0
+        color = PLAYER_INVULNERABLE_COLOR if blink_on else PLAYER_COLOR
+
+    color = choose_flash_color(color, PLAYER_HURT_COLOR, player.hurt_flash_timer)
+    pygame.draw.rect(surface, color, player.rect)
+    pygame.draw.rect(surface, WHITE, player.rect, 3)

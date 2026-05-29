@@ -34,7 +34,17 @@ main.py
 settings.py
 entities/
     player.py
+    player_parts/
+        setup.py
+        combat.py
+        defense.py
+        movement.py
+        render.py
     base_enemy.py
+    enemy_parts/
+        setup.py
+        behavior.py
+        render.py
     basic_enemy.py
     fast_enemy.py
     enemy.py
@@ -43,7 +53,12 @@ managers/
 systems/
     combat.py
     physics.py
-    effects.py
+    effects/
+        camera.py
+        trail.py
+        slash.py
+        defense.py
+        ui.py
 ui/
     health_bar.py
 world/
@@ -59,11 +74,15 @@ assets/
 - `main.py` starts Pygame, creates objects, runs the game loop, and calls update/draw methods.
 - `settings.py` stores shared constants such as screen size, colors, physics values, dash values, and combat values.
 - `entities/` stores game objects such as the player, enemies, future bosses, and projectiles.
+- `entities/player_parts/` keeps Player combat, defense, movement, setup, and rendering concerns in smaller modules.
 - `entities/base_enemy.py` holds shared melee enemy behavior so new archetypes can reuse one AI/state foundation.
+- `entities/enemy_parts/` keeps BaseEnemy setup, behavior, and drawing responsibilities separated.
 - `entities/basic_enemy.py` defines the balanced baseline enemy archetype.
 - `entities/fast_enemy.py` defines the quicker, lower-health pressure archetype.
 - `managers/` stores flow systems such as enemy wave spawning and encounter progression.
-- `systems/` stores reusable logic for physics, combat helpers, and visual effects.
+- `systems/combat.py` stores hitbox, damage, and defense resolution helpers.
+- `systems/effects/` stores camera impact, trails, slash visuals, and defense-related visual effects.
+- `systems/physics.py` stores shared movement and collision helpers.
 - `ui/` stores reusable interface drawing code such as health bars.
 - `world/` stores arena and environment drawing code.
 - `assets/` is reserved for future sprites, sounds, and music.
