@@ -49,9 +49,11 @@ entities/
     fast_enemy.py
     enemy.py
 managers/
+    encounter_director.py
     encounter_manager.py
 systems/
     combat.py
+    enemy_spacing.py
     physics.py
     effects/
         camera.py
@@ -61,6 +63,7 @@ systems/
         ui.py
 ui/
     health_bar.py
+    wave_banner.py
 world/
     battlefield.py
 assets/
@@ -80,10 +83,13 @@ assets/
 - `entities/basic_enemy.py` defines the balanced baseline enemy archetype.
 - `entities/fast_enemy.py` defines the quicker, lower-health pressure archetype.
 - `managers/` stores flow systems such as enemy wave spawning and encounter progression.
+- `managers/encounter_director.py` coordinates wave intros, activation timing, and clean attacker handoffs.
 - `systems/combat.py` stores hitbox, damage, and defense resolution helpers.
+- `systems/enemy_spacing.py` keeps multi-enemy spacing and flanking behavior lightweight and reusable.
 - `systems/effects/` stores camera impact, trails, slash visuals, and defense-related visual effects.
 - `systems/physics.py` stores shared movement and collision helpers.
 - `ui/` stores reusable interface drawing code such as health bars.
+- `ui/wave_banner.py` draws short centered wave-intro presentation text.
 - `world/` stores arena and environment drawing code.
 - `assets/` is reserved for future sprites, sounds, and music.
 
@@ -103,6 +109,7 @@ assets/
 - Parry-earned counterattack window that turns `J` into a heavy punish attack
 - Enemy archetype system with a balanced BasicEnemy and a faster, lower-health FastEnemy
 - Encounter wave manager with 3 hardcoded waves and encounter-cleared detection
+- Encounter pacing polish with wave banners, staged wave activation, better attack turns, and cleaner multi-enemy spacing
 - Short dodge / evade with cooldown and temporary invulnerability
 - Combat recovery and cancel timing for smoother action flow
 - Player and enemy health bars

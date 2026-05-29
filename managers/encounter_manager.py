@@ -1,21 +1,14 @@
 """Wave and encounter flow management.
 
-This manager owns active enemies, wave spawning, and encounter progression so
-main.py does not have to manually juggle enemy lists and transition rules.
+This manager owns wave definitions, active enemies, and progression, while a
+small director helper owns pacing and pressure presentation.
 """
-
-import pygame
 
 from entities.basic_enemy import BasicEnemy
 from entities.fast_enemy import FastEnemy
-from settings import (
-    ENCOUNTER_STATUS_Y,
-    ENCOUNTER_WAVE_DELAY,
-    ENEMY_STATE_TELEGRAPH,
-    HEALTH_ENEMY,
-    WHITE,
-    WIDTH,
-)
+from managers.encounter_director import EncounterDirector
+from settings import ENCOUNTER_WAVE_DELAY, ENEMY_STATE_TELEGRAPH, HEALTH_ENEMY, WIDTH
+from systems.enemy_spacing import apply_enemy_spacing
 from ui.health_bar import draw_health_bar
 
 
@@ -32,9 +25,13 @@ class EncounterManager:
         self.current_wave_index = -1
         self.wave_delay_timer = ENCOUNTER_WAVE_DELAY
         self.encounter_cleared = False
+        self.wave_clear_pending = False
+        self.director = EncounterDirector()
 
     def update(self, player, dt):
         """Update wave flow and all active enemies."""
+        self.director.update(dt, self.active_enemies)
+
         if self.encounter_cleared:
             return
 
@@ -43,22 +40,34 @@ class EncounterManager:
             return
 
         if all(enemy.defeated for enemy in self.active_enemies):
+            if not self.wave_clear_pending:
+                self.wave_clear_pending = True
+                self.wave_delay_timer = ENCOUNTER_WAVE_DELAY
+                self.director.start_recovery_window(
+                    self.current_wave_index < len(self.wave_definitions) - 1
+                )
+
             self.wave_delay_timer = max(0, self.wave_delay_timer - dt)
             if self.wave_delay_timer == 0:
+                if self.current_wave_index >= len(self.wave_definitions) - 1:
+                    self.encounter_cleared = True
+                    self.director.mark_encounter_cleared()
                 self.active_enemies = []
+                self.wave_clear_pending = False
             return
 
-        leader_enemy = self.get_attack_leader(player)
+        leader_enemy = self.director.get_attack_leader(self.active_enemies, player)
         for enemy in self.active_enemies:
-            allow_attack = leader_enemy is None or enemy is leader_enemy or enemy.is_attack_active()
+            allow_attack = enemy is leader_enemy or enemy.is_attack_active()
             if enemy.state == ENEMY_STATE_TELEGRAPH:
                 allow_attack = True
             enemy.update(player, dt, allow_attack=allow_attack)
 
+        apply_enemy_spacing(self.active_enemies, player, leader_enemy, dt)
+
     def update_wave_progress(self, dt, player):
         """Advance to the next wave after a short readable delay."""
-        if self.current_wave_index >= len(self.wave_definitions) - 1:
-            self.encounter_cleared = True
+        if self.encounter_cleared:
             return
 
         self.wave_delay_timer = max(0, self.wave_delay_timer - dt)
@@ -77,6 +86,8 @@ class EncounterManager:
             for index, enemy_class in enumerate(enemy_classes)
         ]
         self.wave_delay_timer = ENCOUNTER_WAVE_DELAY
+        self.wave_clear_pending = False
+        self.director.start_wave(wave_index + 1)
 
     def get_spawn_positions(self, count, player):
         """Choose side-based spawn positions away from the player."""
@@ -86,22 +97,6 @@ class EncounterManager:
             positions = [160, 330, 500]
 
         return positions[:count]
-
-    def get_attack_leader(self, player):
-        """Allow only one close enemy to initiate pressure at a time if possible."""
-        engaged_enemies = [
-            enemy
-            for enemy in self.active_enemies
-            if not enemy.defeated and (enemy.is_attack_active() or enemy.state == ENEMY_STATE_TELEGRAPH)
-        ]
-        if engaged_enemies:
-            return engaged_enemies[0]
-
-        alive_enemies = [enemy for enemy in self.active_enemies if not enemy.defeated]
-        if not alive_enemies:
-            return None
-
-        return min(alive_enemies, key=lambda enemy: abs(enemy.rect.centerx - player.rect.centerx))
 
     def get_enemies(self):
         """Expose the active enemies for combat processing."""
@@ -114,20 +109,8 @@ class EncounterManager:
 
     def draw_ui(self, surface):
         """Draw wave status and enemy health bars."""
-        self.draw_status_text(surface)
+        self.director.draw(surface, self.current_wave_index + 1)
         self.draw_enemy_bars(surface)
-
-    def draw_status_text(self, surface):
-        """Show the current wave number or encounter-cleared state."""
-        font = pygame.font.Font(None, 42)
-        if self.encounter_cleared:
-            text = "Encounter Cleared"
-        else:
-            text = f"Wave {max(1, self.current_wave_index + 1)}"
-
-        text_surface = font.render(text, True, WHITE)
-        text_rect = text_surface.get_rect(center=(WIDTH // 2, ENCOUNTER_STATUS_Y))
-        surface.blit(text_surface, text_rect)
 
     def draw_enemy_bars(self, surface):
         """Stack health bars for active enemies on the right side."""
