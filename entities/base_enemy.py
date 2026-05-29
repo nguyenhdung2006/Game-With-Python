@@ -84,8 +84,12 @@ class BaseEnemy:
         self.recovery_timer = 0
         self.stagger_timer = 0
 
-    def update(self, player, dt):
-        """Run the shared melee enemy state machine."""
+    def update(self, player, dt, allow_attack=True):
+        """Run the shared melee enemy state machine.
+
+        allow_attack lets encounter logic throttle how many enemies try to
+        start attacks at once. That keeps multi-enemy fights readable.
+        """
         self.update_timers(dt)
 
         if self.defeated:
@@ -116,7 +120,7 @@ class BaseEnemy:
         elif self.state == ENEMY_STATE_ATTACK:
             self.update_attack(dt)
         else:
-            self.update_idle_or_chase(player, dt)
+            self.update_idle_or_chase(player, dt, allow_attack)
 
         self.update_knockback(dt)
 
@@ -157,7 +161,7 @@ class BaseEnemy:
         else:
             self.facing = -1
 
-    def update_idle_or_chase(self, player, dt):
+    def update_idle_or_chase(self, player, dt, allow_attack=True):
         """Chase while far away, or telegraph when close enough to attack."""
         distance_to_player = abs(player.rect.centerx - self.rect.centerx)
 
@@ -170,7 +174,7 @@ class BaseEnemy:
 
         self.state = ENEMY_STATE_IDLE
 
-        if self.attack_cooldown_timer <= 0:
+        if self.attack_cooldown_timer <= 0 and allow_attack:
             self.start_telegraph()
 
     def update_retreat(self, dt):

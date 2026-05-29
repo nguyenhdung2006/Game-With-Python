@@ -11,6 +11,8 @@ FPS = 60
 
 # World settings
 GROUND_Y = 540
+ENCOUNTER_WAVE_DELAY = 1.10
+ENCOUNTER_STATUS_Y = 126
 
 # Player settings
 PLAYER_WIDTH = 54

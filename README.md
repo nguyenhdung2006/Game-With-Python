@@ -38,6 +38,8 @@ entities/
     basic_enemy.py
     fast_enemy.py
     enemy.py
+managers/
+    encounter_manager.py
 systems/
     combat.py
     physics.py
@@ -60,6 +62,7 @@ assets/
 - `entities/base_enemy.py` holds shared melee enemy behavior so new archetypes can reuse one AI/state foundation.
 - `entities/basic_enemy.py` defines the balanced baseline enemy archetype.
 - `entities/fast_enemy.py` defines the quicker, lower-health pressure archetype.
+- `managers/` stores flow systems such as enemy wave spawning and encounter progression.
 - `systems/` stores reusable logic for physics, combat helpers, and visual effects.
 - `ui/` stores reusable interface drawing code such as health bars.
 - `world/` stores arena and environment drawing code.
@@ -80,6 +83,7 @@ assets/
 - Timing-based parry window on guard press that staggers the enemy on success
 - Parry-earned counterattack window that turns `J` into a heavy punish attack
 - Enemy archetype system with a balanced BasicEnemy and a faster, lower-health FastEnemy
+- Encounter wave manager with 3 hardcoded waves and encounter-cleared detection
 - Short dodge / evade with cooldown and temporary invulnerability
 - Combat recovery and cancel timing for smoother action flow
 - Player and enemy health bars

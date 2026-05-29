@@ -78,6 +78,16 @@ def process_player_attack(player, enemy):
     return None
 
 
+def process_player_attacks(player, enemies):
+    """Apply the player's current attack to the first enemy it connects with."""
+    for enemy in enemies:
+        hit_result = process_player_attack(player, enemy)
+        if hit_result:
+            return hit_result
+
+    return None
+
+
 def process_enemy_attack(enemy, player):
     """Apply one enemy attack hit if its active hitbox touches the player."""
     if not enemy.is_attack_active() or enemy.has_hit_this_attack:
@@ -113,6 +123,18 @@ def process_enemy_attack(enemy, player):
         }
 
     return None
+
+
+def process_enemy_attacks(enemies, player):
+    """Collect impact results from every active enemy attack this frame."""
+    hit_results = []
+
+    for enemy in enemies:
+        hit_result = process_enemy_attack(enemy, player)
+        if hit_result:
+            hit_results.append(hit_result)
+
+    return hit_results
 
 
 def can_use_action(cooldown_timer):
