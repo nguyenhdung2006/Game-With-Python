@@ -24,6 +24,13 @@ def draw_wave_banner(surface, text, timer, duration):
         banner_surface.get_rect(),
         border_radius=10,
     )
+    line_rect = pygame.Rect(18, banner_surface.get_height() - 10, banner_surface.get_width() - 36, 3)
+    pygame.draw.rect(
+        banner_surface,
+        (255, 226, 150, int(alpha * 0.75)),
+        line_rect,
+        border_radius=3,
+    )
     text_surface.set_alpha(alpha)
     banner_surface.blit(text_surface, (24, 14))
 

@@ -4,9 +4,8 @@ This manager owns wave definitions, active enemies, and progression, while a
 small director helper owns pacing and pressure presentation.
 """
 
-from entities.basic_enemy import BasicEnemy
-from entities.fast_enemy import FastEnemy
 from managers.encounter_director import EncounterDirector
+from managers.encounter_profiles import WAVE_PROFILES
 from settings import ENCOUNTER_WAVE_DELAY, ENEMY_STATE_TELEGRAPH, HEALTH_ENEMY, WIDTH
 from systems.enemy_spacing import apply_enemy_spacing
 from ui.health_bar import draw_health_bar
@@ -16,11 +15,7 @@ class EncounterManager:
     """Spawn hardcoded waves and track when the encounter is cleared."""
 
     def __init__(self):
-        self.wave_definitions = [
-            [BasicEnemy],
-            [BasicEnemy, FastEnemy],
-            [FastEnemy, FastEnemy, BasicEnemy],
-        ]
+        self.wave_definitions = WAVE_PROFILES
         self.active_enemies = []
         self.current_wave_index = -1
         self.wave_delay_timer = ENCOUNTER_WAVE_DELAY
@@ -63,7 +58,7 @@ class EncounterManager:
                 allow_attack = True
             enemy.update(player, dt, allow_attack=allow_attack)
 
-        apply_enemy_spacing(self.active_enemies, player, leader_enemy, dt)
+        apply_enemy_spacing(self.active_enemies, player, leader_enemy, dt, self.get_current_wave_profile())
 
     def update_wave_progress(self, dt, player):
         """Advance to the next wave after a short readable delay."""
@@ -79,15 +74,25 @@ class EncounterManager:
 
     def spawn_wave(self, wave_index, player):
         """Create enemies for one wave at readable positions."""
-        enemy_classes = self.wave_definitions[wave_index]
+        wave_profile = self.wave_definitions[wave_index]
+        enemy_classes = wave_profile["enemies"]
         spawn_positions = self.get_spawn_positions(len(enemy_classes), player)
-        self.active_enemies = [
-            enemy_class(spawn_positions[index])
-            for index, enemy_class in enumerate(enemy_classes)
-        ]
+        self.active_enemies = []
+        spawn_from_right = player.rect.centerx < WIDTH // 2
+
+        for index, enemy_class in enumerate(enemy_classes):
+            enemy = enemy_class(spawn_positions[index])
+            self.configure_enemy_entrance(
+                enemy,
+                index,
+                spawn_from_right,
+                wave_profile,
+            )
+            self.active_enemies.append(enemy)
+
         self.wave_delay_timer = ENCOUNTER_WAVE_DELAY
         self.wave_clear_pending = False
-        self.director.start_wave(wave_index + 1)
+        self.director.start_wave(wave_index + 1, wave_profile)
 
     def get_spawn_positions(self, count, player):
         """Choose side-based spawn positions away from the player."""
@@ -97,6 +102,27 @@ class EncounterManager:
             positions = [160, 330, 500]
 
         return positions[:count]
+
+    def configure_enemy_entrance(self, enemy, index, spawn_from_right, wave_profile):
+        """Apply small staggered entrance timing so waves feel less robotic."""
+        enemy.spawn_target_x = enemy.rect.x
+        enemy.entrance_delay_timer = wave_profile["spawn_stagger"] * index
+        enemy.entrance_pause_timer = wave_profile["entrance_pause"] + (0.03 * index)
+        enemy.entrance_move_speed = wave_profile["entrance_move_speed"]
+
+        offset = wave_profile["entrance_offset"] + (index * 12)
+        if spawn_from_right:
+            enemy.x = min(WIDTH - enemy.width, enemy.spawn_target_x + offset)
+        else:
+            enemy.x = max(0, enemy.spawn_target_x - offset)
+        enemy.rect.x = round(enemy.x)
+
+    def get_current_wave_profile(self):
+        """Return the active wave's spacing/pacing profile."""
+        if self.current_wave_index < 0 or self.current_wave_index >= len(self.wave_definitions):
+            return self.wave_definitions[0]
+
+        return self.wave_definitions[self.current_wave_index]
 
     def get_enemies(self):
         """Expose the active enemies for combat processing."""

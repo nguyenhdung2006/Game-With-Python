@@ -21,6 +21,9 @@ def update(enemy, player, dt, allow_attack=True):
     """
     update_timers(enemy, dt)
 
+    if update_entrance(enemy, dt):
+        return
+
     if enemy.defeated:
         enemy.state = ENEMY_STATE_DEFEATED
         enemy.knockback_velocity_x = 0
@@ -70,6 +73,46 @@ def update_timers(enemy, dt):
 
     if enemy.stagger_timer > 0:
         enemy.stagger_timer = max(0, enemy.stagger_timer - dt)
+
+    if enemy.pressure_indicator_timer > 0:
+        enemy.pressure_indicator_timer = max(0, enemy.pressure_indicator_timer - dt)
+
+    if enemy.aggression_focus_timer > 0:
+        enemy.aggression_focus_timer = max(0, enemy.aggression_focus_timer - dt)
+
+
+def update_entrance(enemy, dt):
+    """Handle a lightweight staged entrance before full aggression starts."""
+    if enemy.entrance_delay_timer > 0:
+        enemy.entrance_delay_timer = max(0, enemy.entrance_delay_timer - dt)
+        update_spawn_slide(enemy, dt)
+        return True
+
+    if enemy.entrance_pause_timer > 0:
+        enemy.entrance_pause_timer = max(0, enemy.entrance_pause_timer - dt)
+        update_spawn_slide(enemy, dt)
+        return True
+
+    if enemy.rect.x != round(enemy.spawn_target_x):
+        update_spawn_slide(enemy, dt)
+
+    return False
+
+
+def update_spawn_slide(enemy, dt):
+    """Slide the enemy toward its staged spawn position."""
+    delta = enemy.spawn_target_x - enemy.x
+    if abs(delta) < 2:
+        enemy.x = float(enemy.spawn_target_x)
+        enemy.rect.x = round(enemy.x)
+        return
+
+    step = enemy.entrance_move_speed * dt
+    if delta > 0:
+        enemy.x = min(enemy.spawn_target_x, enemy.x + step)
+    else:
+        enemy.x = max(enemy.spawn_target_x, enemy.x - step)
+    enemy.rect.x = round(enemy.x)
 
 
 def update_knockback(enemy, dt):

@@ -5,6 +5,7 @@ import pygame
 from settings import ENEMY_STATE_ATTACK, ENEMY_STATE_STAGGER, ENEMY_STATE_TELEGRAPH, WHITE
 from systems.combat import create_enemy_attack_hitbox
 from systems.effects import choose_flash_color, draw_enemy_attack_rectangle, draw_enemy_warning
+from systems.pressure_indicator import draw_active_aggressor_indicator, draw_pressure_indicator
 
 
 def draw(enemy, surface):
@@ -23,6 +24,8 @@ def draw(enemy, surface):
 
     pygame.draw.rect(surface, color, enemy.rect)
     pygame.draw.rect(surface, WHITE, enemy.rect, 3)
+    draw_active_aggressor_indicator(surface, enemy)
+    draw_pressure_indicator(surface, enemy)
 
     if enemy.state == ENEMY_STATE_STAGGER:
         spark_center = (enemy.rect.centerx, enemy.rect.top - 12)

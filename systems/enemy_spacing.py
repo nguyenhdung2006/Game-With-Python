@@ -23,13 +23,13 @@ LOCKED_STATES = {
 }
 
 
-def apply_enemy_spacing(enemies, player, leader_enemy, dt):
-    """Spread enemies around the player without expensive steering logic."""
+def apply_enemy_spacing(enemies, player, leader_enemy, dt, wave_profile=None):
+    """Spread enemies around the player using the current wave spacing profile."""
     alive_enemies = [enemy for enemy in enemies if not enemy.defeated]
     if len(alive_enemies) <= 1:
         return
 
-    target_positions = build_flank_targets(alive_enemies, player, leader_enemy)
+    target_positions = build_flank_targets(alive_enemies, player, leader_enemy, wave_profile)
 
     for enemy in alive_enemies:
         if enemy is leader_enemy or enemy.state in LOCKED_STATES:
@@ -41,21 +41,31 @@ def apply_enemy_spacing(enemies, player, leader_enemy, dt):
 
         move_enemy_toward_target(enemy, target_x, dt)
 
-    apply_local_separation(alive_enemies, dt)
+    apply_local_separation(alive_enemies, dt, wave_profile)
 
 
-def build_flank_targets(enemies, player, leader_enemy):
+def build_flank_targets(enemies, player, leader_enemy, wave_profile=None):
     """Assign simple left/right spacing slots around the player."""
     non_leaders = [enemy for enemy in enemies if enemy is not leader_enemy]
     if not non_leaders:
         return {}
 
     player_x = player.rect.centerx
+    near_offset = (
+        wave_profile["flank_near_offset"]
+        if wave_profile is not None
+        else ENEMY_FLANK_NEAR_OFFSET
+    )
+    far_offset = (
+        wave_profile["flank_far_offset"]
+        if wave_profile is not None
+        else ENEMY_FLANK_FAR_OFFSET
+    )
     slot_offsets = [
-        -ENEMY_FLANK_NEAR_OFFSET,
-        ENEMY_FLANK_NEAR_OFFSET,
-        -ENEMY_FLANK_FAR_OFFSET,
-        ENEMY_FLANK_FAR_OFFSET,
+        -near_offset,
+        near_offset,
+        -far_offset,
+        far_offset,
     ]
 
     available_slots = [player_x + offset for offset in slot_offsets[: len(non_leaders)]]
@@ -86,8 +96,13 @@ def move_enemy_toward_target(enemy, target_center_x, dt):
     enemy.rect.x = round(enemy.x)
 
 
-def apply_local_separation(enemies, dt):
+def apply_local_separation(enemies, dt, wave_profile=None):
     """Push nearby enemies apart horizontally so they do not blob together."""
+    spacing_min_distance = (
+        wave_profile["spacing_min_distance"]
+        if wave_profile is not None
+        else ENEMY_SPACING_MIN_DISTANCE
+    )
     for index, left_enemy in enumerate(enemies):
         for right_enemy in enemies[index + 1 :]:
             if left_enemy.state in LOCKED_STATES and right_enemy.state in LOCKED_STATES:
@@ -97,10 +112,10 @@ def apply_local_separation(enemies, dt):
             if distance == 0:
                 distance = 1
 
-            if abs(distance) >= ENEMY_SPACING_MIN_DISTANCE:
+            if abs(distance) >= spacing_min_distance:
                 continue
 
-            overlap = ENEMY_SPACING_MIN_DISTANCE - abs(distance)
+            overlap = spacing_min_distance - abs(distance)
             push = min(
                 ENEMY_SPACING_MAX_STEP * dt * 0.7,
                 overlap * ENEMY_SPACING_SEPARATION_FORCE * dt,

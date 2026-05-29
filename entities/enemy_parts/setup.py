@@ -60,3 +60,12 @@ def initialize_enemy_state(enemy, x, y, config):
     enemy.retreat_timer = 0
     enemy.recovery_timer = 0
     enemy.stagger_timer = 0
+
+    # Presentation-state timers let the encounter director stage entrances and
+    # pressure communication without changing the combat rules themselves.
+    enemy.spawn_target_x = enemy.rect.x
+    enemy.entrance_delay_timer = 0
+    enemy.entrance_pause_timer = 0
+    enemy.entrance_move_speed = 0
+    enemy.pressure_indicator_timer = 0
+    enemy.aggression_focus_timer = 0

@@ -51,9 +51,11 @@ entities/
 managers/
     encounter_director.py
     encounter_manager.py
+    encounter_profiles.py
 systems/
     combat.py
     enemy_spacing.py
+    pressure_indicator.py
     physics.py
     effects/
         camera.py
@@ -84,8 +86,10 @@ assets/
 - `entities/fast_enemy.py` defines the quicker, lower-health pressure archetype.
 - `managers/` stores flow systems such as enemy wave spawning and encounter progression.
 - `managers/encounter_director.py` coordinates wave intros, activation timing, and clean attacker handoffs.
+- `managers/encounter_profiles.py` stores lightweight per-wave pacing profiles so encounters can escalate without giant scripts.
 - `systems/combat.py` stores hitbox, damage, and defense resolution helpers.
 - `systems/enemy_spacing.py` keeps multi-enemy spacing and flanking behavior lightweight and reusable.
+- `systems/pressure_indicator.py` draws subtle enemy intent and active-aggressor readability cues.
 - `systems/effects/` stores camera impact, trails, slash visuals, and defense-related visual effects.
 - `systems/physics.py` stores shared movement and collision helpers.
 - `ui/` stores reusable interface drawing code such as health bars.
@@ -110,6 +114,7 @@ assets/
 - Enemy archetype system with a balanced BasicEnemy and a faster, lower-health FastEnemy
 - Encounter wave manager with 3 hardcoded waves and encounter-cleared detection
 - Encounter pacing polish with wave banners, staged wave activation, better attack turns, and cleaner multi-enemy spacing
+- Encounter readability polish with staged entrances, wave-specific pacing profiles, and subtle pressure telegraphs
 - Short dodge / evade with cooldown and temporary invulnerability
 - Combat recovery and cancel timing for smoother action flow
 - Player and enemy health bars
