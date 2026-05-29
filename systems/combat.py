@@ -52,7 +52,9 @@ def get_combo_attack_data(combo_step):
 def apply_damage(target, amount):
     """Reduce target health through its own damage method."""
     if hasattr(target, "take_damage"):
-        target.take_damage(amount)
+        return target.take_damage(amount)
+
+    return False
 
 
 def apply_knockback(target, direction, strength):
@@ -88,7 +90,9 @@ def process_enemy_attack(enemy, player):
     attack_hitbox = create_enemy_attack_hitbox(enemy)
 
     if attack_hitbox.colliderect(player.rect):
-        apply_damage(player, ENEMY_ATTACK_DAMAGE)
+        if not apply_damage(player, ENEMY_ATTACK_DAMAGE):
+            return None
+
         apply_knockback(player, enemy.facing, ENEMY_ATTACK_KNOCKBACK)
         enemy.has_hit_this_attack = True
         return {

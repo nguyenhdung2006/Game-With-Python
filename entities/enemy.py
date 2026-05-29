@@ -19,6 +19,8 @@ from settings import (
     ENEMY_HURT_FLASH_DURATION,
     ENEMY_KNOCKBACK_FRICTION,
     ENEMY_MAX_HEALTH,
+    ENEMY_RETREAT_DURATION,
+    ENEMY_RETREAT_SPEED,
     ENEMY_STATE_ATTACK,
     ENEMY_STATE_CHASE,
     ENEMY_STATE_DEFEATED,
@@ -60,6 +62,7 @@ class Enemy:
         self.attack_timer = 0
         self.attack_cooldown_timer = 0
         self.has_hit_this_attack = False
+        self.retreat_timer = 0
 
     def update(self, player, dt):
         """Update simple AI, attack timing, hurt recoil, and cooldowns."""
@@ -77,7 +80,9 @@ class Enemy:
 
         self.face_player(player)
 
-        if self.state == ENEMY_STATE_TELEGRAPH:
+        if self.retreat_timer > 0:
+            self.update_retreat(dt)
+        elif self.state == ENEMY_STATE_TELEGRAPH:
             self.update_telegraph(dt)
         elif self.state == ENEMY_STATE_ATTACK:
             self.update_attack(dt)
@@ -93,6 +98,9 @@ class Enemy:
 
         if self.hurt_flash_timer > 0:
             self.hurt_flash_timer = max(0, self.hurt_flash_timer - dt)
+
+        if self.retreat_timer > 0:
+            self.retreat_timer = max(0, self.retreat_timer - dt)
 
     def update_knockback(self, dt):
         """Move the enemy while knockback is still active."""
@@ -130,6 +138,13 @@ class Enemy:
         if self.attack_cooldown_timer <= 0:
             self.start_telegraph()
 
+    def update_retreat(self, dt):
+        """Step away after attacking to create readable combat spacing."""
+        self.state = ENEMY_STATE_IDLE
+        self.x -= self.facing * ENEMY_RETREAT_SPEED * dt
+        self.x = clamp_x_to_screen(self.x, self.width, WIDTH)
+        self.rect.x = round(self.x)
+
     def start_telegraph(self):
         """Begin a visible warning before the enemy attack."""
         self.state = ENEMY_STATE_TELEGRAPH
@@ -154,8 +169,13 @@ class Enemy:
         self.attack_timer -= dt
 
         if self.attack_timer <= 0:
-            self.state = ENEMY_STATE_IDLE
-            self.attack_timer = 0
+            self.start_retreat()
+
+    def start_retreat(self):
+        """Pause pressure briefly after an attack instead of face-hugging."""
+        self.state = ENEMY_STATE_IDLE
+        self.attack_timer = 0
+        self.retreat_timer = ENEMY_RETREAT_DURATION
 
     def is_attack_active(self):
         """Return True while the enemy hitbox should damage the player."""
@@ -172,11 +192,14 @@ class Enemy:
         self.state = ENEMY_STATE_HURT
         self.telegraph_timer = 0
         self.attack_timer = 0
+        self.retreat_timer = 0
         self.has_hit_this_attack = False
 
         if self.health == 0:
             self.defeated = True
             self.state = ENEMY_STATE_DEFEATED
+
+        return True
 
     def draw(self, surface):
         """Draw the enemy dummy rectangle."""
@@ -197,6 +220,6 @@ class Enemy:
         attack_rect = create_enemy_attack_hitbox(self)
 
         if self.state == ENEMY_STATE_TELEGRAPH:
-            draw_enemy_warning(surface, attack_rect, ENEMY_TELEGRAPH_COLOR)
+            draw_enemy_warning(surface, attack_rect, ENEMY_TELEGRAPH_COLOR, self.telegraph_timer)
         elif self.state == ENEMY_STATE_ATTACK:
             draw_enemy_attack_rectangle(surface, attack_rect, ENEMY_ATTACK_COLOR)

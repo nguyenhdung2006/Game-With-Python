@@ -17,7 +17,14 @@ from settings import (
     JUMP_STRENGTH,
     LIGHT_ATTACK_COMBO,
     PLAYER_COLOR,
+    PLAYER_DEFEATED_COLOR,
     PLAYER_HEIGHT,
+    PLAYER_HURT_COLOR,
+    PLAYER_HURT_DURATION,
+    PLAYER_HURT_FLASH_DURATION,
+    PLAYER_INVULNERABILITY_DURATION,
+    PLAYER_INVULNERABLE_COLOR,
+    PLAYER_KNOCKBACK_FRICTION,
     PLAYER_MAX_HEALTH,
     PLAYER_SPEED,
     PLAYER_WIDTH,
@@ -26,12 +33,14 @@ from settings import (
 )
 from systems.combat import can_use_action, create_attack_hitbox, get_combo_attack_data, update_cooldown
 from systems.effects import (
+    choose_flash_color,
     create_afterimage,
     draw_attack_rectangle,
     draw_rect_afterimages,
     update_timed_effects,
 )
 from systems.physics import apply_gravity, clamp_x_to_screen, resolve_ground_collision
+from systems.physics import move_toward_zero
 
 
 class Player:
@@ -117,17 +126,79 @@ class Player:
         # It lets quick taps chain smoothly without allowing held input to spam.
         self.queued_next_attack = False
 
+        # Hurt timers make damage readable before sprites/animations exist.
+        self.hurt_timer = 0
+        self.hurt_flash_timer = 0
+
+        # Invulnerability frames prevent rapid repeated damage from one enemy.
+        self.invulnerability_timer = 0
+        self.is_hurt = False
+        self.defeated = False
+        self.knockback_velocity_x = 0
+
     def take_damage(self, amount):
-        """Receive enemy attack damage while keeping health from going below 0."""
+        """Receive enemy attack damage and start hurt/i-frame feedback."""
+        if not self.can_take_damage():
+            return False
+
         self.health = max(0, self.health - amount)
+        self.hurt_timer = PLAYER_HURT_DURATION
+        self.hurt_flash_timer = PLAYER_HURT_FLASH_DURATION
+        self.invulnerability_timer = PLAYER_INVULNERABILITY_DURATION
+        self.is_hurt = True
+        self.is_attacking = False
+        self.is_dashing = False
+
+        if self.health == 0:
+            self.defeated = True
+
+        return True
+
+    def can_take_damage(self):
+        """Return True only when i-frames are not protecting the player."""
+        return not self.defeated and self.invulnerability_timer <= 0
 
     def update(self, keys, dt):
         """Run all per-frame player behavior."""
+        self.update_hurt_timers(dt)
+
+        if self.defeated:
+            self.apply_physics(dt)
+            return
+
         self.update_dash_cooldown(dt)
         self.update_attack_timers(dt)
         self.handle_input(keys, dt)
+        self.update_knockback(dt)
         self.apply_physics(dt)
         self.update_dash_trail(dt)
+
+    def update_hurt_timers(self, dt):
+        """Count down hurt, flash, and invulnerability timers."""
+        if self.hurt_timer > 0:
+            self.hurt_timer = max(0, self.hurt_timer - dt)
+
+            if self.hurt_timer == 0:
+                self.is_hurt = False
+
+        if self.hurt_flash_timer > 0:
+            self.hurt_flash_timer = max(0, self.hurt_flash_timer - dt)
+
+        if self.invulnerability_timer > 0:
+            self.invulnerability_timer = max(0, self.invulnerability_timer - dt)
+
+    def update_knockback(self, dt):
+        """Move the player while hurt knockback is active."""
+        if self.knockback_velocity_x == 0:
+            return
+
+        self.x += self.knockback_velocity_x * dt
+        self.x = clamp_x_to_screen(self.x, self.width, WIDTH)
+        self.knockback_velocity_x = move_toward_zero(
+            self.knockback_velocity_x,
+            PLAYER_KNOCKBACK_FRICTION * dt,
+        )
+        self.rect.x = round(self.x)
 
     def handle_input(self, keys, dt):
         """Move left/right normally, or move by dash velocity during a dash."""
@@ -150,6 +221,9 @@ class Player:
 
     def get_current_move_speed(self):
         """Reduce movement during attacks so combo hits feel committed."""
+        if self.is_hurt:
+            return self.speed * 0.25
+
         if self.is_attacking:
             return self.speed * self.attack_movement_multiplier
 
@@ -157,12 +231,18 @@ class Player:
 
     def jump(self):
         """Start a jump only if the player is standing on the ground."""
+        if self.defeated or self.is_hurt:
+            return
+
         if self.grounded:
             self.velocity_y = -self.jump_strength
             self.grounded = False
 
     def start_dash(self):
         """Start a short dash if the cooldown has finished."""
+        if self.defeated or self.is_hurt:
+            return
+
         # Dashing during attacks makes combat hard to read, so attacks lock it out.
         if self.is_attacking:
             return
@@ -180,6 +260,9 @@ class Player:
 
     def start_light_attack(self):
         """Start or queue the next hit in the 3-hit light combo."""
+        if self.defeated or self.is_hurt:
+            return
+
         if self.is_attacking:
             if self.combo_step < len(LIGHT_ATTACK_COMBO) and self.combo_timer > 0:
                 self.queued_next_attack = True
@@ -287,5 +370,15 @@ class Player:
             PLAYER_COLOR,
         )
         draw_attack_rectangle(surface, self.get_attack_hitbox(), self.attack_color, self.combo_step)
-        pygame.draw.rect(surface, PLAYER_COLOR, self.rect)
+
+        color = PLAYER_COLOR
+        if self.defeated:
+            color = PLAYER_DEFEATED_COLOR
+        elif self.invulnerability_timer > 0:
+            # Blinking during i-frames makes temporary safety visible to the player.
+            blink_on = int(self.invulnerability_timer * 20) % 2 == 0
+            color = PLAYER_INVULNERABLE_COLOR if blink_on else PLAYER_COLOR
+
+        color = choose_flash_color(color, PLAYER_HURT_COLOR, self.hurt_flash_timer)
+        pygame.draw.rect(surface, color, self.rect)
         pygame.draw.rect(surface, WHITE, self.rect, 3)
