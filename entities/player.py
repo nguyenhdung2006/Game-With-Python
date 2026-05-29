@@ -31,15 +31,20 @@ from settings import (
     PLAYER_DODGE_COOLDOWN,
     PLAYER_DODGE_DURATION,
     PLAYER_DODGE_INVULNERABILITY_DURATION,
+    PLAYER_DODGE_RECOVERY_DURATION,
     PLAYER_DODGE_SHAKE_DURATION,
     PLAYER_DODGE_SHAKE_STRENGTH,
     PLAYER_DODGE_SPEED,
+    PLAYER_HARD_LANDING_RECOVERY_DURATION,
+    PLAYER_HARD_LANDING_SPEED,
     PLAYER_HEIGHT,
+    PLAYER_ATTACK_BUFFER_DURATION,
     PLAYER_HURT_COLOR,
     PLAYER_HURT_DURATION,
     PLAYER_HURT_FLASH_DURATION,
     PLAYER_INVULNERABILITY_DURATION,
     PLAYER_INVULNERABLE_COLOR,
+    PLAYER_LANDING_RECOVERY_DURATION,
     PLAYER_KNOCKBACK_FRICTION,
     PLAYER_MAX_HEALTH,
     PLAYER_SPEED,
@@ -122,8 +127,12 @@ class Player:
 
         # attack_duration is how long one light attack stays active.
         # attack_timer counts down while the swing is happening.
+        # attack_recovery_timer adds the committed end lag after the active swing.
         self.attack_duration = first_attack["duration"]
         self.attack_timer = 0
+        self.attack_recovery = first_attack["recovery"]
+        self.attack_cancel_window = first_attack["cancel_window"]
+        self.attack_recovery_timer = 0
 
         # attack_cooldown_timer prevents instant repeated attacks.
         # Holding J will not keep starting attacks because this must reach 0 first.
@@ -139,6 +148,8 @@ class Player:
         self.combo_step = 0
         self.combo_timer = 0
         self.combo_reset_time = COMBO_RESET_TIME
+        self.attack_buffer_timer = 0
+        self.buffered_attack = False
 
         # queued_next_attack stores one J press made during a current swing.
         # It lets quick taps chain smoothly without allowing held input to spam.
@@ -178,6 +189,11 @@ class Player:
         self.dodge_direction = self.facing
         self.dodge_speed = PLAYER_DODGE_SPEED
         self.dodge_color = PLAYER_DODGE_COLOR
+        self.dodge_recovery_timer = 0
+
+        # Landing recovery adds a tiny pause after touching ground.
+        # It is stronger after faster falls so jumps do not feel weightless.
+        self.landing_recovery_timer = 0
 
     def take_damage(self, amount):
         """Receive enemy attack damage and start hurt/i-frame feedback."""
@@ -242,14 +258,24 @@ class Player:
         if self.block_flash_timer > 0:
             self.block_flash_timer = max(0, self.block_flash_timer - dt)
 
+        if self.attack_buffer_timer > 0:
+            self.attack_buffer_timer = max(0, self.attack_buffer_timer - dt)
+
+        if self.landing_recovery_timer > 0:
+            self.landing_recovery_timer = max(0, self.landing_recovery_timer - dt)
+
     def update_block_state(self, keys):
         """Hold K to guard without turning this into a full parry system."""
         can_block = (
             not self.defeated
             and not self.is_hurt
-            and not self.is_attacking
             and not self.is_dashing
             and not self.is_dodging
+            and (
+                not self.is_attacking
+                or self.can_cancel_attack_to_block()
+                or self.attack_recovery_timer > 0
+            )
         )
 
         if keys[pygame.K_k] and can_block:
@@ -317,6 +343,18 @@ class Player:
 
         return self.speed
 
+    def can_cancel_attack_to_block(self):
+        """Allow guarding near the end of an attack instead of only after it ends."""
+        return self.is_attacking and self.attack_timer <= self.attack_cancel_window
+
+    def is_in_action_recovery(self):
+        """Recovery timers stop instant action spam between states."""
+        return (
+            self.attack_recovery_timer > 0
+            or self.dodge_recovery_timer > 0
+            or self.landing_recovery_timer > 0
+        )
+
     def jump(self):
         """Start a jump only if the player is standing on the ground."""
         if self.defeated or self.is_hurt:
@@ -332,7 +370,7 @@ class Player:
             return
 
         # Dashing during attacks makes combat hard to read, so attacks lock it out.
-        if self.is_attacking or self.is_blocking or self.is_dodging:
+        if self.is_attacking or self.is_blocking or self.is_dodging or self.is_in_action_recovery():
             return
 
         if not self.is_dashing and self.dash_cooldown_timer <= 0:
@@ -346,7 +384,7 @@ class Player:
         if self.defeated or self.is_hurt or self.is_attacking or self.is_blocking:
             return None
 
-        if self.is_dodging or self.dodge_cooldown_timer > 0:
+        if self.is_dodging or self.dodge_cooldown_timer > 0 or self.is_in_action_recovery():
             return None
 
         self.is_dodging = True
@@ -370,19 +408,31 @@ class Player:
 
     def update_dodge_timers(self, dt):
         """Count dodge duration and cooldown with delta time."""
+        ended_dodge_this_frame = False
+
         if self.is_dodging:
             self.dodge_timer -= dt
 
             if self.dodge_timer <= 0:
                 self.is_dodging = False
                 self.dodge_timer = 0
+                self.dodge_recovery_timer = PLAYER_DODGE_RECOVERY_DURATION
+                ended_dodge_this_frame = True
 
         if self.dodge_cooldown_timer > 0:
             self.dodge_cooldown_timer = max(0, self.dodge_cooldown_timer - dt)
 
+        if self.dodge_recovery_timer > 0 and not ended_dodge_this_frame:
+            self.dodge_recovery_timer = max(0, self.dodge_recovery_timer - dt)
+
     def start_light_attack(self):
         """Start or queue the next hit in the 3-hit light combo."""
         if self.defeated or self.is_hurt or self.is_blocking or self.is_dodging:
+            return
+
+        if self.is_in_action_recovery():
+            self.buffered_attack = True
+            self.attack_buffer_timer = PLAYER_ATTACK_BUFFER_DURATION
             return
 
         if self.is_attacking:
@@ -415,6 +465,8 @@ class Player:
         self.attack_color = attack_data["color"]
         self.attack_duration = attack_data["duration"]
         self.attack_cooldown = attack_data["cooldown"]
+        self.attack_recovery = attack_data["recovery"]
+        self.attack_cancel_window = attack_data["cancel_window"]
 
         self.is_attacking = True
         self.attack_timer = self.attack_duration
@@ -423,6 +475,8 @@ class Player:
 
     def update_attack_timers(self, dt):
         """Update attack duration, cooldown, and combo reset using delta time."""
+        ended_attack_this_frame = False
+
         if self.combo_timer > 0:
             self.combo_timer = max(0, self.combo_timer - dt)
 
@@ -435,26 +489,50 @@ class Player:
             if self.attack_timer <= 0:
                 self.is_attacking = False
                 self.attack_timer = 0
+                self.attack_recovery_timer = self.attack_recovery
+                ended_attack_this_frame = True
 
         if self.combo_timer == 0 and not self.is_attacking:
             self.reset_combo()
 
         self.attack_cooldown_timer = update_cooldown(self.attack_cooldown_timer, dt)
+        if self.attack_recovery_timer > 0 and not ended_attack_this_frame:
+            self.attack_recovery_timer = max(0, self.attack_recovery_timer - dt)
 
         if (
             self.queued_next_attack
             and not self.is_attacking
             and self.combo_timer > 0
             and can_use_action(self.attack_cooldown_timer)
+            and self.attack_recovery_timer <= 0
         ):
             self.queued_next_attack = False
             self.start_light_attack()
+
+        if (
+            self.buffered_attack
+            and not self.is_attacking
+            and not self.is_in_action_recovery()
+            and can_use_action(self.attack_cooldown_timer)
+        ):
+            self.buffered_attack = False
+            self.start_light_attack()
+
+        if self.buffered_attack and self.attack_buffer_timer == 0 and not self.is_attacking:
+            self.buffered_attack = False
 
     def reset_combo(self):
         """Return the combo chain to hit 1 after the timing window expires."""
         self.combo_step = 0
         self.combo_timer = 0
         self.queued_next_attack = False
+
+    def start_landing_recovery(self, fall_speed):
+        """Add a tiny grounded pause after landing, stronger on fast falls."""
+        if fall_speed >= PLAYER_HARD_LANDING_SPEED:
+            self.landing_recovery_timer = PLAYER_HARD_LANDING_RECOVERY_DURATION
+        else:
+            self.landing_recovery_timer = PLAYER_LANDING_RECOVERY_DURATION
 
     def get_attack_hitbox(self):
         """Return the active sword hitbox, or None when not attacking."""
@@ -489,6 +567,8 @@ class Player:
 
     def apply_physics(self, dt):
         """Apply gravity and stop the player exactly on the ground."""
+        was_grounded = self.grounded
+        landing_speed = self.velocity_y
         self.y, self.velocity_y = apply_gravity(self.y, self.velocity_y, self.gravity, dt)
         self.y, self.velocity_y, self.grounded = resolve_ground_collision(
             self.y,
@@ -496,6 +576,10 @@ class Player:
             self.velocity_y,
             GROUND_Y,
         )
+
+        if not was_grounded and self.grounded:
+            self.start_landing_recovery(landing_speed)
+
         self.rect.y = round(self.y)
 
     def add_dash_trail(self):

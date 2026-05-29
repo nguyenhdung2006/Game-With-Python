@@ -72,6 +72,7 @@ assets/
 - Player hurt feedback, invulnerability frames, and enemy retreat spacing
 - Basic directional block / guard with reduced damage from front attacks
 - Short dodge / evade with cooldown and temporary invulnerability
+- Combat recovery and cancel timing for smoother action flow
 - Player and enemy health bars
 
 This structure keeps each file focused. As the game grows, combat, enemies,

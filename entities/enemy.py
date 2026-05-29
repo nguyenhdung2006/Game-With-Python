@@ -19,6 +19,7 @@ from settings import (
     ENEMY_HURT_FLASH_DURATION,
     ENEMY_KNOCKBACK_FRICTION,
     ENEMY_MAX_HEALTH,
+    ENEMY_RECOVERY_DURATION,
     ENEMY_RETREAT_DURATION,
     ENEMY_RETREAT_SPEED,
     ENEMY_STATE_ATTACK,
@@ -63,6 +64,7 @@ class Enemy:
         self.attack_cooldown_timer = 0
         self.has_hit_this_attack = False
         self.retreat_timer = 0
+        self.recovery_timer = 0
 
     def update(self, player, dt):
         """Update simple AI, attack timing, hurt recoil, and cooldowns."""
@@ -82,6 +84,8 @@ class Enemy:
 
         if self.retreat_timer > 0:
             self.update_retreat(dt)
+        elif self.recovery_timer > 0:
+            self.update_recovery(dt)
         elif self.state == ENEMY_STATE_TELEGRAPH:
             self.update_telegraph(dt)
         elif self.state == ENEMY_STATE_ATTACK:
@@ -101,6 +105,9 @@ class Enemy:
 
         if self.retreat_timer > 0:
             self.retreat_timer = max(0, self.retreat_timer - dt)
+
+        if self.recovery_timer > 0:
+            self.recovery_timer = max(0, self.recovery_timer - dt)
 
     def update_knockback(self, dt):
         """Move the enemy while knockback is still active."""
@@ -145,6 +152,10 @@ class Enemy:
         self.x = clamp_x_to_screen(self.x, self.width, WIDTH)
         self.rect.x = round(self.x)
 
+    def update_recovery(self, dt):
+        """Pause briefly after attacking so the enemy cannot instantly restart pressure."""
+        self.state = ENEMY_STATE_IDLE
+
     def start_telegraph(self):
         """Begin a visible warning before the enemy attack."""
         self.state = ENEMY_STATE_TELEGRAPH
@@ -176,6 +187,7 @@ class Enemy:
         self.state = ENEMY_STATE_IDLE
         self.attack_timer = 0
         self.retreat_timer = ENEMY_RETREAT_DURATION
+        self.recovery_timer = ENEMY_RECOVERY_DURATION
 
     def is_attack_active(self):
         """Return True while the enemy hitbox should damage the player."""
@@ -193,6 +205,7 @@ class Enemy:
         self.telegraph_timer = 0
         self.attack_timer = 0
         self.retreat_timer = 0
+        self.recovery_timer = 0
         self.has_hit_this_attack = False
 
         if self.health == 0:

@@ -40,6 +40,11 @@ PLAYER_DODGE_INVULNERABILITY_DURATION = 0.16
 PLAYER_DODGE_SHAKE_DURATION = 0.05
 PLAYER_DODGE_SHAKE_STRENGTH = 1
 PLAYER_DODGE_COLOR = (190, 240, 255)
+PLAYER_DODGE_RECOVERY_DURATION = 0.10
+PLAYER_LANDING_RECOVERY_DURATION = 0.05
+PLAYER_HARD_LANDING_RECOVERY_DURATION = 0.10
+PLAYER_HARD_LANDING_SPEED = 700
+PLAYER_ATTACK_BUFFER_DURATION = 0.12
 
 # Physics settings
 GRAVITY = 2200
@@ -73,6 +78,7 @@ ENEMY_ATTACK_SHAKE_DURATION = 0.08
 ENEMY_ATTACK_SHAKE_STRENGTH = 2
 ENEMY_TELEGRAPH_COLOR = (255, 205, 80)
 ENEMY_ATTACK_COLOR = (255, 120, 95)
+ENEMY_RECOVERY_DURATION = 0.25
 
 # Enemy state names
 ENEMY_STATE_IDLE = "IDLE"
@@ -91,6 +97,8 @@ LIGHT_ATTACK_COMBO = (
         "height": 50,
         "duration": 0.14,
         "cooldown": 0.20,
+        "recovery": 0.08,
+        "cancel_window": 0.05,
         "knockback": 330,
         "movement_multiplier": 0.55,
         "hitstop": 0.035,
@@ -104,6 +112,8 @@ LIGHT_ATTACK_COMBO = (
         "height": 58,
         "duration": 0.16,
         "cooldown": 0.22,
+        "recovery": 0.10,
+        "cancel_window": 0.05,
         "knockback": 430,
         "movement_multiplier": 0.40,
         "hitstop": 0.045,
@@ -117,6 +127,8 @@ LIGHT_ATTACK_COMBO = (
         "height": 66,
         "duration": 0.22,
         "cooldown": 0.36,
+        "recovery": 0.16,
+        "cancel_window": 0.07,
         "knockback": 650,
         "movement_multiplier": 0.20,
         "hitstop": 0.060,
