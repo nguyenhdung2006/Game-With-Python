@@ -90,6 +90,12 @@ def process_enemy_attack(enemy, player):
     attack_hitbox = create_enemy_attack_hitbox(enemy)
 
     if attack_hitbox.colliderect(player.rect):
+        # Blocking only helps against attacks from the front. It reduces damage,
+        # but unlike a future parry system it does not create a counter window.
+        if hasattr(player, "can_block_attack_from") and player.can_block_attack_from(enemy.facing):
+            enemy.has_hit_this_attack = True
+            return player.block_hit(ENEMY_ATTACK_DAMAGE, enemy.facing)
+
         if not apply_damage(player, ENEMY_ATTACK_DAMAGE):
             return None
 

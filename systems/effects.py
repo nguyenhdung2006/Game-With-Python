@@ -129,6 +129,32 @@ def draw_enemy_attack_rectangle(surface, rect, color):
     pygame.draw.rect(surface, color, rect, 4)
 
 
+def draw_block_guard(surface, player_rect, direction, is_blocking, flash_timer, base_color, flash_color):
+    """Draw a simple shield shape in front of the player while guarding."""
+    if not is_blocking and flash_timer <= 0:
+        return
+
+    guard_width = 24
+    guard_height = max(72, player_rect.height - 18)
+    x = player_rect.right + 4 if direction == 1 else player_rect.left - guard_width - 4
+    y = player_rect.centery - guard_height // 2
+    guard_rect = pygame.Rect(x, y, guard_width, guard_height)
+
+    color = flash_color if flash_timer > 0 else base_color
+    alpha = 130 if flash_timer > 0 else 75
+
+    guard_surface = pygame.Surface((guard_rect.width, guard_rect.height), pygame.SRCALPHA)
+    pygame.draw.rect(guard_surface, (*color, alpha), guard_surface.get_rect(), border_radius=8)
+    surface.blit(guard_surface, guard_rect.topleft)
+    pygame.draw.rect(surface, color, guard_rect, 3, border_radius=8)
+
+    if flash_timer > 0:
+        spark_y = guard_rect.centery
+        spark_left = guard_rect.left if direction == 1 else guard_rect.right - 1
+        pygame.draw.line(surface, flash_color, (spark_left, spark_y - 12), (spark_left + direction * 16, spark_y), 3)
+        pygame.draw.line(surface, flash_color, (spark_left, spark_y + 12), (spark_left + direction * 16, spark_y), 3)
+
+
 def choose_flash_color(base_color, flash_color, flash_timer):
     """Use a flash color while an entity's hurt flash timer is active."""
     if flash_timer > 0:

@@ -16,6 +16,15 @@ from settings import (
     GROUND_Y,
     JUMP_STRENGTH,
     LIGHT_ATTACK_COMBO,
+    PLAYER_BLOCK_COLOR,
+    PLAYER_BLOCK_DAMAGE_REDUCTION,
+    PLAYER_BLOCK_FLASH_COLOR,
+    PLAYER_BLOCK_FLASH_DURATION,
+    PLAYER_BLOCK_HITSTOP,
+    PLAYER_BLOCK_MOVE_MULTIPLIER,
+    PLAYER_BLOCK_PUSHBACK,
+    PLAYER_BLOCK_SHAKE_DURATION,
+    PLAYER_BLOCK_SHAKE_STRENGTH,
     PLAYER_COLOR,
     PLAYER_DEFEATED_COLOR,
     PLAYER_HEIGHT,
@@ -35,6 +44,7 @@ from systems.combat import can_use_action, create_attack_hitbox, get_combo_attac
 from systems.effects import (
     choose_flash_color,
     create_afterimage,
+    draw_block_guard,
     draw_attack_rectangle,
     draw_rect_afterimages,
     update_timed_effects,
@@ -136,6 +146,19 @@ class Player:
         self.defeated = False
         self.knockback_velocity_x = 0
 
+        # Blocking reduces damage from attacks coming from the front.
+        # This is guard, not parry: it lowers damage but does not counterattack.
+        self.is_blocking = False
+        self.block_direction = self.facing
+        self.block_damage_reduction = PLAYER_BLOCK_DAMAGE_REDUCTION
+        self.block_pushback = PLAYER_BLOCK_PUSHBACK
+        self.block_stamina = 100
+        self.block_flash_timer = 0
+        self.block_flash_duration = PLAYER_BLOCK_FLASH_DURATION
+        self.block_move_multiplier = PLAYER_BLOCK_MOVE_MULTIPLIER
+        self.block_color = PLAYER_BLOCK_COLOR
+        self.block_flash_color = PLAYER_BLOCK_FLASH_COLOR
+
     def take_damage(self, amount):
         """Receive enemy attack damage and start hurt/i-frame feedback."""
         if not self.can_take_damage():
@@ -168,6 +191,7 @@ class Player:
 
         self.update_dash_cooldown(dt)
         self.update_attack_timers(dt)
+        self.update_block_state(keys)
         self.handle_input(keys, dt)
         self.update_knockback(dt)
         self.apply_physics(dt)
@@ -186,6 +210,21 @@ class Player:
 
         if self.invulnerability_timer > 0:
             self.invulnerability_timer = max(0, self.invulnerability_timer - dt)
+
+        if self.block_flash_timer > 0:
+            self.block_flash_timer = max(0, self.block_flash_timer - dt)
+
+    def update_block_state(self, keys):
+        """Hold K to guard without turning this into a full parry system."""
+        can_block = not self.defeated and not self.is_hurt and not self.is_attacking and not self.is_dashing
+
+        if keys[pygame.K_k] and can_block:
+            if not self.is_blocking:
+                self.block_direction = self.facing
+            self.is_blocking = True
+            self.facing = self.block_direction
+        else:
+            self.is_blocking = False
 
     def update_knockback(self, dt):
         """Move the player while hurt knockback is active."""
@@ -209,6 +248,12 @@ class Player:
 
             if self.dash_timer <= 0:
                 self.is_dashing = False
+        elif self.is_blocking:
+            if keys[pygame.K_a]:
+                self.x -= self.get_current_move_speed() * dt
+            if keys[pygame.K_d]:
+                self.x += self.get_current_move_speed() * dt
+            self.facing = self.block_direction
         elif keys[pygame.K_a]:
             self.x -= self.get_current_move_speed() * dt
             self.facing = -1
@@ -223,6 +268,9 @@ class Player:
         """Reduce movement during attacks so combo hits feel committed."""
         if self.is_hurt:
             return self.speed * 0.25
+
+        if self.is_blocking:
+            return self.speed * self.block_move_multiplier
 
         if self.is_attacking:
             return self.speed * self.attack_movement_multiplier
@@ -244,7 +292,7 @@ class Player:
             return
 
         # Dashing during attacks makes combat hard to read, so attacks lock it out.
-        if self.is_attacking:
+        if self.is_attacking or self.is_blocking:
             return
 
         if not self.is_dashing and self.dash_cooldown_timer <= 0:
@@ -260,7 +308,7 @@ class Player:
 
     def start_light_attack(self):
         """Start or queue the next hit in the 3-hit light combo."""
-        if self.defeated or self.is_hurt:
+        if self.defeated or self.is_hurt or self.is_blocking:
             return
 
         if self.is_attacking:
@@ -341,6 +389,30 @@ class Player:
 
         return create_attack_hitbox(self)
 
+    def can_block_attack_from(self, attacker_direction):
+        """Block only works when the player is guarding toward the attacker."""
+        return self.is_blocking and self.block_direction == -attacker_direction
+
+    def block_hit(self, amount, attacker_direction):
+        """Absorb part of an enemy hit without entering full hurt stun."""
+        if self.defeated:
+            return None
+
+        blocked_damage = max(1, round(amount * self.block_damage_reduction))
+        self.health = max(0, self.health - blocked_damage)
+        self.block_flash_timer = self.block_flash_duration
+        self.knockback_velocity_x = attacker_direction * self.block_pushback
+
+        if self.health == 0:
+            self.defeated = True
+            self.is_blocking = False
+
+        return {
+            "hitstop": PLAYER_BLOCK_HITSTOP,
+            "shake_duration": PLAYER_BLOCK_SHAKE_DURATION,
+            "shake_strength": PLAYER_BLOCK_SHAKE_STRENGTH,
+        }
+
     def apply_physics(self, dt):
         """Apply gravity and stop the player exactly on the ground."""
         self.y, self.velocity_y = apply_gravity(self.y, self.velocity_y, self.gravity, dt)
@@ -370,6 +442,15 @@ class Player:
             PLAYER_COLOR,
         )
         draw_attack_rectangle(surface, self.get_attack_hitbox(), self.attack_color, self.combo_step)
+        draw_block_guard(
+            surface,
+            self.rect,
+            self.block_direction,
+            self.is_blocking,
+            self.block_flash_timer,
+            self.block_color,
+            self.block_flash_color,
+        )
 
         color = PLAYER_COLOR
         if self.defeated:

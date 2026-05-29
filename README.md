@@ -23,6 +23,7 @@ python main.py
 - `W` = jump
 - `Left Shift` = dash
 - `J` = light attack / 3-hit combo
+- `K` = hold block / guard
 
 ## Project Structure
 
@@ -68,6 +69,7 @@ assets/
 - Combat impact polish with attack slowdown, hitstop, and camera shake
 - Basic enemy AI with chase, telegraph, and melee attack states
 - Player hurt feedback, invulnerability frames, and enemy retreat spacing
+- Basic directional block / guard with reduced damage from front attacks
 - Player and enemy health bars
 
 This structure keeps each file focused. As the game grows, combat, enemies,
