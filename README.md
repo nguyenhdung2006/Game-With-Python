@@ -56,6 +56,7 @@ systems/
     combat.py
     enemy_spacing.py
     pressure_indicator.py
+    reaction_feedback.py
     physics.py
     effects/
         camera.py
@@ -90,6 +91,7 @@ assets/
 - `systems/combat.py` stores hitbox, damage, and defense resolution helpers.
 - `systems/enemy_spacing.py` keeps multi-enemy spacing and flanking behavior lightweight and reusable.
 - `systems/pressure_indicator.py` draws subtle enemy intent and active-aggressor readability cues.
+- `systems/reaction_feedback.py` draws small enemy vulnerability, recovery, and stagger readability effects.
 - `systems/effects/` stores camera impact, trails, slash visuals, and defense-related visual effects.
 - `systems/physics.py` stores shared movement and collision helpers.
 - `ui/` stores reusable interface drawing code such as health bars.
@@ -115,6 +117,7 @@ assets/
 - Encounter wave manager with 3 hardcoded waves and encounter-cleared detection
 - Encounter pacing polish with wave banners, staged wave activation, better attack turns, and cleaner multi-enemy spacing
 - Encounter readability polish with staged entrances, wave-specific pacing profiles, and subtle pressure telegraphs
+- Enemy reaction and punish-window polish so vulnerability reads more clearly after hits and committed attacks
 - Short dodge / evade with cooldown and temporary invulnerability
 - Combat recovery and cancel timing for smoother action flow
 - Player and enemy health bars

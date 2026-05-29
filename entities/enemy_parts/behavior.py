@@ -1,5 +1,11 @@
 """Base enemy AI, combat-state, and damage helpers."""
 
+from entities.enemy_parts.reaction import (
+    begin_post_attack_recovery,
+    begin_stagger_reaction,
+    register_player_hit,
+    update_reaction_timers,
+)
 from settings import (
     ENEMY_STATE_ATTACK,
     ENEMY_STATE_CHASE,
@@ -29,7 +35,7 @@ def update(enemy, player, dt, allow_attack=True):
         enemy.knockback_velocity_x = 0
         return
 
-    if enemy.hurt_flash_timer > 0:
+    if enemy.hurt_reaction_timer > 0:
         enemy.state = ENEMY_STATE_HURT
         update_knockback(enemy, dt)
         return
@@ -72,13 +78,19 @@ def update_timers(enemy, dt):
         enemy.recovery_timer = max(0, enemy.recovery_timer - dt)
 
     if enemy.stagger_timer > 0:
+        was_active = enemy.stagger_timer > 0
         enemy.stagger_timer = max(0, enemy.stagger_timer - dt)
+        if was_active and enemy.stagger_timer == 0:
+            enemy.recovery_timer = max(enemy.recovery_timer, enemy.post_stagger_recovery_duration)
+            enemy.recovery_flash_timer = max(enemy.recovery_flash_timer, enemy.recovery_flash_duration * 0.75)
 
     if enemy.pressure_indicator_timer > 0:
         enemy.pressure_indicator_timer = max(0, enemy.pressure_indicator_timer - dt)
 
     if enemy.aggression_focus_timer > 0:
         enemy.aggression_focus_timer = max(0, enemy.aggression_focus_timer - dt)
+
+    update_reaction_timers(enemy, dt)
 
 
 def update_entrance(enemy, dt):
@@ -203,6 +215,7 @@ def start_retreat(enemy):
     enemy.attack_timer = 0
     enemy.retreat_timer = enemy.retreat_duration
     enemy.recovery_timer = enemy.recovery_duration
+    begin_post_attack_recovery(enemy)
 
 
 def start_stagger(enemy, duration=None):
@@ -220,6 +233,7 @@ def start_stagger(enemy, duration=None):
     enemy.recovery_timer = 0
     enemy.has_hit_this_attack = True
     enemy.stagger_timer = duration
+    begin_stagger_reaction(enemy)
 
 
 def is_attack_active(enemy):
@@ -248,3 +262,8 @@ def take_damage(enemy, amount, knockback_x=0):
         enemy.state = ENEMY_STATE_DEFEATED
 
     return True
+
+
+def register_attack_reaction(enemy, player):
+    """Expose player-hit reaction registration through the enemy parts layer."""
+    register_player_hit(enemy, player)

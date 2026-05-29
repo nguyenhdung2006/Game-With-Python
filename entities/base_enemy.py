@@ -7,6 +7,7 @@ groups now live in focused helper modules under `entities/enemy_parts/`.
 from entities.enemy_parts.behavior import (
     face_player as _face_player,
     is_attack_active as _is_attack_active,
+    register_attack_reaction as _register_attack_reaction,
     start_attack as _start_attack,
     start_retreat as _start_retreat,
     start_stagger as _start_stagger,
@@ -47,6 +48,7 @@ class BaseEnemy:
     start_stagger = _start_stagger
     is_attack_active = _is_attack_active
     take_damage = _take_damage
+    register_attack_reaction = _register_attack_reaction
 
     # Drawing
     draw = _draw

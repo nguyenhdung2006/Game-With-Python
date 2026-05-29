@@ -2,6 +2,7 @@
 
 import pygame
 
+from entities.enemy_parts.reaction import initialize_reaction_state
 from settings import ENEMY_STATE_IDLE, GROUND_Y
 
 
@@ -69,3 +70,5 @@ def initialize_enemy_state(enemy, x, y, config):
     enemy.entrance_move_speed = 0
     enemy.pressure_indicator_timer = 0
     enemy.aggression_focus_timer = 0
+
+    initialize_reaction_state(enemy, config)

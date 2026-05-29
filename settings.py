@@ -111,6 +111,9 @@ ENEMY_ATTACK_COLOR = (255, 120, 95)
 ENEMY_RECOVERY_DURATION = 0.25
 ENEMY_STAGGER_DURATION = 0.52
 ENEMY_COUNTER_STAGGER_DURATION = 0.45
+ENEMY_RECOVERY_TINT_COLOR = (255, 205, 150)
+ENEMY_PUNISH_OUTLINE_COLOR = (255, 234, 170)
+ENEMY_STAGGER_EMPHASIS_COLOR = (255, 250, 205)
 
 # Enemy state names
 ENEMY_STATE_IDLE = "IDLE"
@@ -154,6 +157,16 @@ BASIC_ENEMY_CONFIG = {
     "attack_color": ENEMY_ATTACK_COLOR,
     "telegraph_pulse_speed": 14,
     "recoil_outline_color": (120, 35, 45),
+    "hurt_reaction_duration": 0.11,
+    "hurt_reaction_heavy_bonus": 0.05,
+    "punish_window_duration": 0.26,
+    "recovery_flash_duration": 0.22,
+    "stagger_emphasis_duration": 0.18,
+    "post_stagger_recovery_duration": 0.10,
+    "reaction_recoil_pixels": 8,
+    "recovery_tint_color": ENEMY_RECOVERY_TINT_COLOR,
+    "punish_outline_color": ENEMY_PUNISH_OUTLINE_COLOR,
+    "stagger_emphasis_color": ENEMY_STAGGER_EMPHASIS_COLOR,
 }
 
 FAST_ENEMY_CONFIG = {
@@ -186,6 +199,16 @@ FAST_ENEMY_CONFIG = {
     "attack_color": (255, 208, 110),
     "telegraph_pulse_speed": 22,
     "recoil_outline_color": (135, 80, 42),
+    "hurt_reaction_duration": 0.08,
+    "hurt_reaction_heavy_bonus": 0.03,
+    "punish_window_duration": 0.18,
+    "recovery_flash_duration": 0.15,
+    "stagger_emphasis_duration": 0.13,
+    "post_stagger_recovery_duration": 0.06,
+    "reaction_recoil_pixels": 6,
+    "recovery_tint_color": (255, 215, 165),
+    "punish_outline_color": (255, 228, 175),
+    "stagger_emphasis_color": (255, 245, 215),
 }
 
 # Light attack combo settings

@@ -68,7 +68,9 @@ def process_player_attack(player, enemy):
         return
 
     if attack_hitbox.colliderect(enemy.rect):
-        apply_damage(enemy, player.attack_damage)
+        damage_applied = apply_damage(enemy, player.attack_damage)
+        if damage_applied and hasattr(enemy, "register_attack_reaction"):
+            enemy.register_attack_reaction(player)
         apply_knockback(enemy, player.facing, player.attack_knockback)
         if getattr(player, "is_counter_attacking", False):
             enemy.start_stagger(ENEMY_COUNTER_STAGGER_DURATION)
