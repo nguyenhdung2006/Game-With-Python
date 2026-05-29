@@ -72,5 +72,11 @@ class Enemy:
         else:
             color = choose_flash_color(ENEMY_COLOR, ENEMY_HURT_COLOR, self.hurt_flash_timer)
 
+        # A small offset outline makes hits read more clearly before sprites exist.
+        if self.hurt_flash_timer > 0 and not self.defeated:
+            recoil_rect = self.rect.copy()
+            recoil_rect.x -= 6 if self.knockback_velocity_x > 0 else -6
+            pygame.draw.rect(surface, (120, 35, 45), recoil_rect, 3)
+
         pygame.draw.rect(surface, color, self.rect)
         pygame.draw.rect(surface, WHITE, self.rect, 3)

@@ -45,6 +45,10 @@ LIGHT_ATTACK_COMBO = (
         "duration": 0.14,
         "cooldown": 0.20,
         "knockback": 330,
+        "movement_multiplier": 0.55,
+        "hitstop": 0.035,
+        "shake_duration": 0.10,
+        "shake_strength": 3,
         "color": (130, 220, 255),
     },
     {
@@ -54,6 +58,10 @@ LIGHT_ATTACK_COMBO = (
         "duration": 0.16,
         "cooldown": 0.22,
         "knockback": 430,
+        "movement_multiplier": 0.40,
+        "hitstop": 0.045,
+        "shake_duration": 0.13,
+        "shake_strength": 4,
         "color": (125, 255, 210),
     },
     {
@@ -63,6 +71,10 @@ LIGHT_ATTACK_COMBO = (
         "duration": 0.22,
         "cooldown": 0.36,
         "knockback": 650,
+        "movement_multiplier": 0.20,
+        "hitstop": 0.060,
+        "shake_duration": 0.18,
+        "shake_strength": 7,
         "color": (255, 210, 120),
     },
 )

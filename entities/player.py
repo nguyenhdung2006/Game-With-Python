@@ -90,6 +90,7 @@ class Player:
         self.attack_range = first_attack["range"]
         self.attack_height = first_attack["height"]
         self.attack_knockback = first_attack["knockback"]
+        self.attack_movement_multiplier = first_attack["movement_multiplier"]
         self.attack_color = first_attack["color"]
 
         # attack_duration is how long one light attack stays active.
@@ -134,14 +135,21 @@ class Player:
             if self.dash_timer <= 0:
                 self.is_dashing = False
         elif keys[pygame.K_a]:
-            self.x -= self.speed * dt
+            self.x -= self.get_current_move_speed() * dt
             self.facing = -1
         elif keys[pygame.K_d]:
-            self.x += self.speed * dt
+            self.x += self.get_current_move_speed() * dt
             self.facing = 1
 
         self.x = clamp_x_to_screen(self.x, self.width, WIDTH)
         self.rect.x = round(self.x)
+
+    def get_current_move_speed(self):
+        """Reduce movement during attacks so combo hits feel committed."""
+        if self.is_attacking:
+            return self.speed * self.attack_movement_multiplier
+
+        return self.speed
 
     def jump(self):
         """Start a jump only if the player is standing on the ground."""
@@ -151,6 +159,10 @@ class Player:
 
     def start_dash(self):
         """Start a short dash if the cooldown has finished."""
+        # Dashing during attacks makes combat hard to read, so attacks lock it out.
+        if self.is_attacking:
+            return
+
         if not self.is_dashing and self.dash_cooldown_timer <= 0:
             self.is_dashing = True
             self.dash_timer = self.dash_duration
@@ -190,6 +202,7 @@ class Player:
         self.attack_range = attack_data["range"]
         self.attack_height = attack_data["height"]
         self.attack_knockback = attack_data["knockback"]
+        self.attack_movement_multiplier = attack_data["movement_multiplier"]
         self.attack_color = attack_data["color"]
         self.attack_duration = attack_data["duration"]
         self.attack_cooldown = attack_data["cooldown"]

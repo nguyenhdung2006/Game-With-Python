@@ -55,6 +55,9 @@ def process_player_attack(player, enemy):
         apply_damage(enemy, player.attack_damage)
         apply_knockback(enemy, player.facing, player.attack_knockback)
         player.has_hit_this_attack = True
+        return get_combo_attack_data(player.combo_step)
+
+    return None
 
 
 def can_use_action(cooldown_timer):
