@@ -22,6 +22,7 @@ python main.py
 - `D` = move right
 - `W` = jump
 - `Left Shift` = dash
+- `J` = light attack
 
 ## Project Structure
 
@@ -55,6 +56,16 @@ project_root/
 - `ui/` stores reusable interface drawing code such as health bars.
 - `world/` stores arena and environment drawing code.
 - `assets/` is reserved for future sprites, sounds, and music.
+
+## Current Features
+
+- Ruined battlefield arena drawn with Pygame shapes
+- Player left/right movement
+- Jumping with gravity and ground collision
+- Short dash with cooldown and afterimage trail
+- Enemy training dummy with health, hurt flash, knockback, and defeated state
+- Basic light attack with a visible sword hitbox
+- Player and enemy health bars
 
 This structure keeps each file focused. As the game grows, combat, enemies,
 bosses, effects, and UI can expand without turning `main.py` into one giant file.

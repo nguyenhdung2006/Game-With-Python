@@ -33,6 +33,8 @@ class Enemy:
         self.rect = pygame.Rect(x, y, self.width, self.height)
 
         self.x = float(x)
+
+        # hurt_flash_timer briefly changes the enemy color after taking damage.
         self.hurt_flash_timer = 0
         self.knockback_velocity_x = 0
         self.defeated = False
@@ -52,7 +54,7 @@ class Enemy:
             self.rect.x = round(self.x)
 
     def take_damage(self, amount, knockback_x=0):
-        """Receive damage. This is ready for Phase 4 combat to call."""
+        """Receive damage while keeping health from dropping below zero."""
         if self.defeated:
             return
 

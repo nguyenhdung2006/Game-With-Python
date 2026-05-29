@@ -1,29 +1,55 @@
-"""Future combat helpers.
+"""Combat helpers.
 
-Phase 4 can build on this file for attacks, hitboxes, damage, and cooldowns.
-For now these helpers are intentionally small placeholders.
+This module keeps hitbox, damage, knockback, and cooldown rules reusable so
+main.py does not fill up with combat details as the game grows.
 """
 
 import pygame
 
-from settings import ATTACK_COOLDOWN, ATTACK_HEIGHT, ATTACK_RANGE
+from settings import ATTACK_COOLDOWN, ATTACK_HEIGHT, ATTACK_KNOCKBACK_SPEED, ATTACK_RANGE
 
 
-def create_attack_hitbox(attacker_rect, facing):
-    """Create a simple future melee hitbox in front of an attacker."""
-    if facing == 1:
-        x = attacker_rect.right
+def create_attack_hitbox(player):
+    """Create a sword hitbox in front of the player.
+
+    The hitbox is a pygame.Rect that only matters during an active attack.
+    It sits on the side the player is facing and lines up around the torso.
+    """
+    if player.facing == 1:
+        x = player.rect.right
     else:
-        x = attacker_rect.left - ATTACK_RANGE
+        x = player.rect.left - ATTACK_RANGE
 
-    y = attacker_rect.centery - ATTACK_HEIGHT // 2
+    y = player.rect.centery - ATTACK_HEIGHT // 2
     return pygame.Rect(x, y, ATTACK_RANGE, ATTACK_HEIGHT)
 
 
-def apply_damage(target, amount, knockback_x=0):
-    """Ask a target to take damage if it supports that behavior."""
+def apply_damage(target, amount):
+    """Reduce target health through its own damage method."""
     if hasattr(target, "take_damage"):
-        target.take_damage(amount, knockback_x)
+        target.take_damage(amount)
+
+
+def apply_knockback(target, direction):
+    """Push a target away from the attacker."""
+    if hasattr(target, "knockback_velocity_x"):
+        target.knockback_velocity_x = direction * ATTACK_KNOCKBACK_SPEED
+
+
+def process_player_attack(player, enemy):
+    """Apply one light-attack hit if the player's active hitbox touches enemy."""
+    if enemy.defeated:
+        return
+
+    attack_hitbox = player.get_attack_hitbox()
+
+    if attack_hitbox is None or player.has_hit_this_attack:
+        return
+
+    if attack_hitbox.colliderect(enemy.rect):
+        apply_damage(enemy, player.attack_damage)
+        apply_knockback(enemy, player.facing)
+        player.has_hit_this_attack = True
 
 
 def can_use_action(cooldown_timer):

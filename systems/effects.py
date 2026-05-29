@@ -36,6 +36,17 @@ def draw_rect_afterimages(surface, afterimages, size, lifetime, color):
         surface.blit(trail_surface, afterimage["rect"].topleft)
 
 
+def draw_attack_rectangle(surface, hitbox, color):
+    """Draw the active sword hitbox as a transparent rectangle."""
+    if hitbox is None:
+        return
+
+    attack_surface = pygame.Surface((hitbox.width, hitbox.height), pygame.SRCALPHA)
+    attack_surface.fill((*color, 95))
+    surface.blit(attack_surface, hitbox.topleft)
+    pygame.draw.rect(surface, color, hitbox, 3)
+
+
 def choose_flash_color(base_color, flash_color, flash_timer):
     """Use a flash color while an entity's hurt flash timer is active."""
     if flash_timer > 0:

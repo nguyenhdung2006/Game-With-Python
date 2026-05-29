@@ -35,11 +35,14 @@ ENEMY_MAX_HEALTH = 100
 ENEMY_HURT_FLASH_DURATION = 0.12
 ENEMY_KNOCKBACK_FRICTION = 1600
 
-# Future combat settings. These are placeholders for Phase 4 and beyond.
+# Light attack settings
 ATTACK_DAMAGE = 10
-ATTACK_RANGE = 80
-ATTACK_HEIGHT = 70
+ATTACK_RANGE = 75
+ATTACK_HEIGHT = 55
+ATTACK_DURATION = 0.16
 ATTACK_COOLDOWN = 0.35
+ATTACK_KNOCKBACK_SPEED = 430
+ATTACK_COLOR = (130, 220, 255)
 
 # Basic colors used by the arena and characters.
 SKY_TOP = (12, 14, 26)

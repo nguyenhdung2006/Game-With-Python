@@ -3,6 +3,7 @@ import pygame
 
 from entities.enemy import Enemy
 from entities.player import Player
+from systems.combat import process_player_attack
 from settings import (
     ENEMY_HEIGHT,
     FPS,
@@ -21,7 +22,7 @@ def main():
     pygame.init()
 
     screen = pygame.display.set_mode((WIDTH, HEIGHT))
-    pygame.display.set_caption("Anime Stickman Combat - Phase 3")
+    pygame.display.set_caption("Anime Stickman Combat - Phase 4")
     clock = pygame.time.Clock()
 
     player = Player(180, GROUND_Y - PLAYER_HEIGHT)
@@ -39,9 +40,12 @@ def main():
                 player.jump()
             if event.type == pygame.KEYDOWN and event.key == pygame.K_LSHIFT:
                 player.start_dash()
+            if event.type == pygame.KEYDOWN and event.key == pygame.K_j:
+                player.start_light_attack()
 
         keys = pygame.key.get_pressed()
         player.update(keys, dt)
+        process_player_attack(player, enemy)
         enemy.update(dt)
 
         draw_arena(screen)
