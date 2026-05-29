@@ -8,6 +8,7 @@ import pygame
 
 from settings import (
     COMBO_RESET_TIME,
+    COUNTER_ATTACK,
     DASH_COOLDOWN,
     DASH_DURATION,
     DASH_SPEED,
@@ -49,6 +50,8 @@ from settings import (
     PLAYER_MAX_HEALTH,
     PLAYER_PARRY_COLOR,
     PLAYER_PARRY_COOLDOWN,
+    PLAYER_COUNTER_READY_COLOR,
+    PLAYER_COUNTER_WINDOW_DURATION,
     PLAYER_PARRY_FLASH_COLOR,
     PLAYER_PARRY_HITSTOP,
     PLAYER_PARRY_SHAKE_DURATION,
@@ -66,6 +69,7 @@ from systems.effects import (
     create_afterimage,
     draw_block_guard,
     draw_attack_rectangle,
+    draw_counter_ready_glow,
     draw_dodge_overlay,
     draw_parry_guard,
     draw_rect_afterimages,
@@ -133,6 +137,9 @@ class Player:
         self.attack_knockback = first_attack["knockback"]
         self.attack_movement_multiplier = first_attack["movement_multiplier"]
         self.attack_color = first_attack["color"]
+        self.attack_hitstop = first_attack["hitstop"]
+        self.attack_shake_duration = first_attack["shake_duration"]
+        self.attack_shake_strength = first_attack["shake_strength"]
 
         # attack_duration is how long one light attack stays active.
         # attack_timer counts down while the swing is happening.
@@ -151,6 +158,7 @@ class Player:
 
         # has_hit_this_attack makes sure one swing damages an enemy only once.
         self.has_hit_this_attack = False
+        self.is_counter_attacking = False
 
         # combo_step tracks which part of the 3-hit combo is active or ready.
         # combo_timer is the short window where pressing J continues the chain.
@@ -196,6 +204,9 @@ class Player:
         self.parry_window_timer = 0
         self.parry_cooldown_timer = 0
         self.successful_parry_timer = 0
+        self.counter_window_timer = 0
+        self.can_counter = False
+        self.counter_ready_color = PLAYER_COUNTER_READY_COLOR
 
         # Dodge is a short defensive burst with temporary i-frames.
         # Unlike dash, it is for avoiding attacks rather than covering distance.
@@ -225,7 +236,10 @@ class Player:
         self.invulnerability_timer = PLAYER_INVULNERABILITY_DURATION
         self.is_hurt = True
         self.is_attacking = False
+        self.is_counter_attacking = False
         self.is_dashing = False
+        self.can_counter = False
+        self.counter_window_timer = 0
 
         if self.health == 0:
             self.defeated = True
@@ -284,6 +298,11 @@ class Player:
 
         if self.successful_parry_timer > 0:
             self.successful_parry_timer = max(0, self.successful_parry_timer - dt)
+
+        if self.counter_window_timer > 0:
+            self.counter_window_timer = max(0, self.counter_window_timer - dt)
+            if self.counter_window_timer == 0:
+                self.can_counter = False
 
         if self.block_flash_timer > 0:
             self.block_flash_timer = max(0, self.block_flash_timer - dt)
@@ -465,7 +484,16 @@ class Player:
 
     def start_light_attack(self):
         """Start or queue the next hit in the 3-hit light combo."""
-        if self.defeated or self.is_hurt or self.is_blocking or self.is_parrying or self.is_dodging:
+        if self.defeated or self.is_hurt or self.is_parrying or self.is_dodging:
+            return
+
+        # Counterattack is a separate reward attack. It does not continue the
+        # normal combo chain because it exists as the payoff for a correct parry.
+        if self.can_counter and self.counter_window_timer > 0 and not self.is_attacking:
+            self.begin_counter_attack()
+            return
+
+        if self.is_blocking:
             return
 
         if self.is_in_action_recovery():
@@ -474,6 +502,8 @@ class Player:
             return
 
         if self.is_attacking:
+            if self.is_counter_attacking:
+                return
             if self.combo_step < len(LIGHT_ATTACK_COMBO) and self.combo_timer > 0:
                 self.queued_next_attack = True
             return
@@ -501,11 +531,51 @@ class Player:
         self.attack_knockback = attack_data["knockback"]
         self.attack_movement_multiplier = attack_data["movement_multiplier"]
         self.attack_color = attack_data["color"]
+        self.attack_hitstop = attack_data["hitstop"]
+        self.attack_shake_duration = attack_data["shake_duration"]
+        self.attack_shake_strength = attack_data["shake_strength"]
         self.attack_duration = attack_data["duration"]
         self.attack_cooldown = attack_data["cooldown"]
         self.attack_recovery = attack_data["recovery"]
         self.attack_cancel_window = attack_data["cancel_window"]
 
+        self.is_counter_attacking = False
+        self.is_attacking = True
+        self.attack_timer = self.attack_duration
+        self.attack_cooldown_timer = self.attack_cooldown
+        self.has_hit_this_attack = False
+
+    def begin_counter_attack(self):
+        """Start the heavy punish attack granted by a successful parry.
+
+        The counter window is short on purpose. That turns parry into a
+        meaningful reward state instead of just free safety.
+        """
+        attack_data = COUNTER_ATTACK
+        self.can_counter = False
+        self.counter_window_timer = 0
+        self.is_blocking = False
+        self.combo_step = 0
+        self.combo_timer = 0
+        self.queued_next_attack = False
+        self.buffered_attack = False
+        self.attack_buffer_timer = 0
+
+        self.attack_damage = attack_data["damage"]
+        self.attack_range = attack_data["range"]
+        self.attack_height = attack_data["height"]
+        self.attack_knockback = attack_data["knockback"]
+        self.attack_movement_multiplier = attack_data["movement_multiplier"]
+        self.attack_color = attack_data["color"]
+        self.attack_hitstop = attack_data["hitstop"]
+        self.attack_shake_duration = attack_data["shake_duration"]
+        self.attack_shake_strength = attack_data["shake_strength"]
+        self.attack_duration = attack_data["duration"]
+        self.attack_cooldown = attack_data["cooldown"]
+        self.attack_recovery = attack_data["recovery"]
+        self.attack_cancel_window = attack_data["cancel_window"]
+
+        self.is_counter_attacking = True
         self.is_attacking = True
         self.attack_timer = self.attack_duration
         self.attack_cooldown_timer = self.attack_cooldown
@@ -528,6 +598,8 @@ class Player:
                 self.is_attacking = False
                 self.attack_timer = 0
                 self.attack_recovery_timer = self.attack_recovery
+                if self.is_counter_attacking:
+                    self.is_counter_attacking = False
                 ended_attack_this_frame = True
 
         if self.combo_timer == 0 and not self.is_attacking:
@@ -540,6 +612,7 @@ class Player:
         if (
             self.queued_next_attack
             and not self.is_attacking
+            and not self.is_counter_attacking
             and self.combo_timer > 0
             and can_use_action(self.attack_cooldown_timer)
             and self.attack_recovery_timer <= 0
@@ -564,6 +637,14 @@ class Player:
         self.combo_step = 0
         self.combo_timer = 0
         self.queued_next_attack = False
+
+    def get_attack_impact(self):
+        """Return the feel values for the currently active player attack."""
+        return {
+            "hitstop": self.attack_hitstop,
+            "shake_duration": self.attack_shake_duration,
+            "shake_strength": self.attack_shake_strength,
+        }
 
     def start_landing_recovery(self, fall_speed):
         """Add a tiny grounded pause after landing, stronger on fast falls."""
@@ -623,6 +704,8 @@ class Player:
         self.parry_window_timer = 0
         self.is_blocking = False
         self.successful_parry_timer = PLAYER_PARRY_SUCCESS_DURATION
+        self.counter_window_timer = PLAYER_COUNTER_WINDOW_DURATION
+        self.can_counter = True
         self.block_flash_timer = 0
         self.knockback_velocity_x = attacker_direction * (self.block_pushback * 0.45)
 
@@ -686,7 +769,14 @@ class Player:
             self.trail_lifetime,
             PLAYER_COLOR,
         )
-        draw_attack_rectangle(surface, self.get_attack_hitbox(), self.attack_color, self.combo_step)
+        draw_counter_ready_glow(surface, self.rect, self.counter_window_timer, self.counter_ready_color)
+        draw_attack_rectangle(
+            surface,
+            self.get_attack_hitbox(),
+            self.attack_color,
+            self.combo_step,
+            self.is_counter_attacking,
+        )
         draw_block_guard(
             surface,
             self.rect,

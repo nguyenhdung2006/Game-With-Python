@@ -202,7 +202,7 @@ class Enemy:
         self.retreat_timer = ENEMY_RETREAT_DURATION
         self.recovery_timer = ENEMY_RECOVERY_DURATION
 
-    def start_stagger(self):
+    def start_stagger(self, duration=ENEMY_STAGGER_DURATION):
         """Interrupt the current action and leave the enemy briefly vulnerable."""
         if self.defeated:
             return
@@ -213,7 +213,7 @@ class Enemy:
         self.retreat_timer = 0
         self.recovery_timer = 0
         self.has_hit_this_attack = True
-        self.stagger_timer = ENEMY_STAGGER_DURATION
+        self.stagger_timer = duration
 
     def is_attack_active(self):
         """Return True while the enemy hitbox should damage the player."""

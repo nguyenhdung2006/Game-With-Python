@@ -14,6 +14,7 @@ from settings import (
     ENEMY_ATTACK_RANGE,
     ENEMY_ATTACK_SHAKE_DURATION,
     ENEMY_ATTACK_SHAKE_STRENGTH,
+    ENEMY_COUNTER_STAGGER_DURATION,
     LIGHT_ATTACK_COMBO,
 )
 
@@ -76,8 +77,10 @@ def process_player_attack(player, enemy):
     if attack_hitbox.colliderect(enemy.rect):
         apply_damage(enemy, player.attack_damage)
         apply_knockback(enemy, player.facing, player.attack_knockback)
+        if getattr(player, "is_counter_attacking", False):
+            enemy.start_stagger(ENEMY_COUNTER_STAGGER_DURATION)
         player.has_hit_this_attack = True
-        return get_combo_attack_data(player.combo_step)
+        return player.get_attack_impact()
 
     return None
 

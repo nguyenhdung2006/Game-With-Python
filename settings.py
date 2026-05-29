@@ -41,6 +41,8 @@ PLAYER_PARRY_SHAKE_DURATION = 0.14
 PLAYER_PARRY_SHAKE_STRENGTH = 5
 PLAYER_PARRY_COLOR = (255, 245, 180)
 PLAYER_PARRY_FLASH_COLOR = (255, 255, 255)
+PLAYER_COUNTER_WINDOW_DURATION = 0.72
+PLAYER_COUNTER_READY_COLOR = (255, 236, 165)
 PLAYER_DODGE_SPEED = 820
 PLAYER_DODGE_DURATION = 0.12
 PLAYER_DODGE_COOLDOWN = 0.45
@@ -88,6 +90,7 @@ ENEMY_TELEGRAPH_COLOR = (255, 205, 80)
 ENEMY_ATTACK_COLOR = (255, 120, 95)
 ENEMY_RECOVERY_DURATION = 0.25
 ENEMY_STAGGER_DURATION = 0.52
+ENEMY_COUNTER_STAGGER_DURATION = 0.45
 
 # Enemy state names
 ENEMY_STATE_IDLE = "IDLE"
@@ -147,6 +150,22 @@ LIGHT_ATTACK_COMBO = (
         "color": (255, 210, 120),
     },
 )
+
+COUNTER_ATTACK = {
+    "damage": 30,
+    "range": 122,
+    "height": 82,
+    "duration": 0.24,
+    "cooldown": 0.42,
+    "recovery": 0.18,
+    "cancel_window": 0.00,
+    "knockback": 980,
+    "movement_multiplier": 0.14,
+    "hitstop": 0.090,
+    "shake_duration": 0.24,
+    "shake_strength": 9,
+    "color": (255, 240, 180),
+}
 
 # Basic colors used by the arena and characters.
 SKY_TOP = (12, 14, 26)

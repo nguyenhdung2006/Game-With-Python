@@ -79,18 +79,28 @@ def draw_rect_afterimages(surface, afterimages, size, lifetime, color):
         surface.blit(trail_surface, afterimage["rect"].topleft)
 
 
-def draw_attack_rectangle(surface, hitbox, color, combo_step):
+def draw_attack_rectangle(surface, hitbox, color, combo_step, is_counter=False):
     """Draw a layered slash placeholder for the active combo hitbox."""
     if hitbox is None:
         return
 
-    alpha = 80 + combo_step * 20
+    alpha = 150 if is_counter else 80 + combo_step * 20
     attack_surface = pygame.Surface((hitbox.width, hitbox.height), pygame.SRCALPHA)
     attack_surface.fill((*color, alpha // 2))
     inner_rect = attack_surface.get_rect().inflate(-12, -12)
     pygame.draw.rect(attack_surface, (*color, alpha), inner_rect, border_radius=4)
     surface.blit(attack_surface, hitbox.topleft)
-    pygame.draw.rect(surface, color, hitbox, 2 + combo_step)
+    pygame.draw.rect(surface, color, hitbox, 5 if is_counter else 2 + combo_step)
+
+    if is_counter:
+        glow_rect = hitbox.inflate(18, 18)
+        glow_surface = pygame.Surface((glow_rect.width, glow_rect.height), pygame.SRCALPHA)
+        pygame.draw.rect(glow_surface, (*color, 70), glow_surface.get_rect(), border_radius=10)
+        surface.blit(glow_surface, glow_rect.topleft)
+        pygame.draw.line(surface, color, (hitbox.left + 8, hitbox.top + 8), (hitbox.right - 8, hitbox.bottom - 8), 10)
+        pygame.draw.line(surface, (255, 255, 255), (hitbox.left + 8, hitbox.bottom - 8), (hitbox.right - 8, hitbox.top + 8), 6)
+        pygame.draw.line(surface, color, (hitbox.left + 14, hitbox.centery), (hitbox.right - 14, hitbox.centery), 5)
+        return
 
     # Different slash angles make each combo hit read as a separate strike.
     if combo_step == 1:
@@ -184,6 +194,24 @@ def draw_parry_guard(surface, player_rect, direction, is_parrying, flash_timer, 
     pygame.draw.circle(surface, color, burst_center, 12, 3)
     pygame.draw.line(surface, color, (burst_center[0], burst_center[1] - 18), (burst_center[0], burst_center[1] + 18), 2)
     pygame.draw.line(surface, color, (burst_center[0] - 18, burst_center[1]), (burst_center[0] + 18, burst_center[1]), 2)
+
+
+def draw_counter_ready_glow(surface, rect, timer, color):
+    """Draw a subtle glow while a parry-earned counter window is still active.
+
+    Counter readiness should be visible enough to invite a punish, but calmer
+    than a full attack effect so the screen does not become noisy.
+    """
+    if timer <= 0:
+        return
+
+    pulse_on = int(timer * 12) % 2 == 0
+    alpha = 60 if pulse_on else 36
+    glow_rect = rect.inflate(22, 18)
+    glow_surface = pygame.Surface((glow_rect.width, glow_rect.height), pygame.SRCALPHA)
+    pygame.draw.rect(glow_surface, (*color, alpha), glow_surface.get_rect(), border_radius=10)
+    surface.blit(glow_surface, glow_rect.topleft)
+    pygame.draw.rect(surface, color, glow_rect, 2, border_radius=10)
 
 
 def draw_dodge_overlay(surface, rect, color):

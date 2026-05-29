@@ -72,6 +72,7 @@ assets/
 - Player hurt feedback, invulnerability frames, and enemy retreat spacing
 - Basic directional block / guard with reduced damage from front attacks
 - Timing-based parry window on guard press that staggers the enemy on success
+- Parry-earned counterattack window that turns `J` into a heavy punish attack
 - Short dodge / evade with cooldown and temporary invulnerability
 - Combat recovery and cancel timing for smoother action flow
 - Player and enemy health bars
