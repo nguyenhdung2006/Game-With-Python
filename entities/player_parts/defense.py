@@ -169,6 +169,7 @@ def parry_success(player, attacker_direction):
     player.can_counter = True
     player.block_flash_timer = 0
     player.knockback_velocity_x = attacker_direction * (player.block_pushback * 0.45)
+    player.begin_parry_payoff_feedback()
 
     return {
         "hitstop": PLAYER_PARRY_HITSTOP,
@@ -186,6 +187,7 @@ def block_hit(player, amount, attacker_direction):
     player.health = max(0, player.health - blocked_damage)
     player.block_flash_timer = player.block_flash_duration
     player.knockback_velocity_x = attacker_direction * player.block_pushback
+    player.begin_guard_stress_feedback(attacker_direction)
 
     if player.health == 0:
         player.defeated = True

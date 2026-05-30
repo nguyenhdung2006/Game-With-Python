@@ -18,6 +18,12 @@ from systems.effects import (
     draw_parry_guard,
     draw_rect_afterimages,
 )
+from systems.player_feedback import (
+    draw_player_guard_stress,
+    draw_player_payoff_feedback,
+    draw_player_recovery_feedback,
+    get_player_draw_rect,
+)
 
 
 def draw(player, surface):
@@ -55,8 +61,7 @@ def draw(player, surface):
         player.parry_color,
         player.parry_flash_color,
     )
-    if player.is_dodging or player.dodge_invulnerability_timer > 0:
-        draw_dodge_overlay(surface, player.rect, player.dodge_color)
+    draw_rect = get_player_draw_rect(player)
 
     color = PLAYER_COLOR
     if player.defeated:
@@ -67,5 +72,12 @@ def draw(player, surface):
         color = PLAYER_INVULNERABLE_COLOR if blink_on else PLAYER_COLOR
 
     color = choose_flash_color(color, PLAYER_HURT_COLOR, player.hurt_flash_timer)
-    pygame.draw.rect(surface, color, player.rect)
-    pygame.draw.rect(surface, WHITE, player.rect, 3)
+    pygame.draw.rect(surface, color, draw_rect)
+    pygame.draw.rect(surface, WHITE, draw_rect, 3)
+
+    if player.is_dodging or player.dodge_invulnerability_timer > 0:
+        draw_dodge_overlay(surface, draw_rect, player.dodge_color)
+
+    draw_player_recovery_feedback(surface, player, draw_rect)
+    draw_player_guard_stress(surface, player, draw_rect)
+    draw_player_payoff_feedback(surface, player, draw_rect)

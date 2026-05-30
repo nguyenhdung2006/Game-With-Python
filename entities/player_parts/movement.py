@@ -149,6 +149,7 @@ def update_dodge_timers(player, dt):
             player.is_dodging = False
             player.dodge_timer = 0
             player.dodge_recovery_timer = PLAYER_DODGE_RECOVERY_DURATION
+            player.begin_dodge_recovery_feedback()
             ended_dodge_this_frame = True
 
     if player.dodge_cooldown_timer > 0:
@@ -164,6 +165,7 @@ def start_landing_recovery(player, fall_speed):
         player.landing_recovery_timer = PLAYER_HARD_LANDING_RECOVERY_DURATION
     else:
         player.landing_recovery_timer = PLAYER_LANDING_RECOVERY_DURATION
+    player.begin_landing_feedback(fall_speed)
 
 
 def apply_physics(player, dt):

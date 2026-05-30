@@ -87,6 +87,7 @@ def begin_counter_attack(player):
     player.attack_buffer_timer = 0
 
     _apply_attack_data(player, attack_data)
+    player.begin_counter_payoff_feedback()
     player.is_counter_attacking = True
     player.is_attacking = True
     player.attack_timer = player.attack_duration
@@ -128,6 +129,7 @@ def update_attack_timers(player, dt):
             player.is_attacking = False
             player.attack_timer = 0
             player.attack_recovery_timer = player.attack_recovery
+            player.begin_attack_recovery_feedback()
             if player.is_counter_attacking:
                 player.is_counter_attacking = False
             ended_attack_this_frame = True

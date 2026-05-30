@@ -75,6 +75,8 @@ def process_player_attack(player, enemy):
         if getattr(player, "is_counter_attacking", False):
             enemy.start_stagger(ENEMY_COUNTER_STAGGER_DURATION)
         player.has_hit_this_attack = True
+        if hasattr(player, "register_attack_payoff"):
+            player.register_attack_payoff()
         return player.get_attack_impact()
 
     return None

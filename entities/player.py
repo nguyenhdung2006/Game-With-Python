@@ -41,6 +41,17 @@ from entities.player_parts.movement import (
     update_dodge_timers as _update_dodge_timers,
     update_knockback as _update_knockback,
 )
+from entities.player_parts.reaction import (
+    begin_attack_recovery_feedback as _begin_attack_recovery_feedback,
+    begin_counter_payoff_feedback as _begin_counter_payoff_feedback,
+    begin_dodge_recovery_feedback as _begin_dodge_recovery_feedback,
+    begin_guard_stress_feedback as _begin_guard_stress_feedback,
+    begin_landing_feedback as _begin_landing_feedback,
+    begin_parry_payoff_feedback as _begin_parry_payoff_feedback,
+    get_player_reaction_offset as _get_player_reaction_offset,
+    register_attack_payoff as _register_attack_payoff,
+    update_reaction_timers as _update_reaction_timers,
+)
 from entities.player_parts.render import draw as _draw
 from entities.player_parts.setup import initialize_player_state
 
@@ -54,6 +65,7 @@ class Player:
     def update(self, keys, dt):
         """Run the per-frame player flow in one readable place."""
         self.update_hurt_timers(dt)
+        self.update_reaction_timers(dt)
 
         if self.defeated:
             self.apply_physics(dt)
@@ -78,6 +90,7 @@ class Player:
     reset_combo = _reset_combo
     get_attack_hitbox = _get_attack_hitbox
     get_attack_impact = _get_attack_impact
+    register_attack_payoff = _register_attack_payoff
 
     # Defense behavior
     take_damage = _take_damage
@@ -89,6 +102,16 @@ class Player:
     start_guard = _start_guard
     parry_success = _parry_success
     block_hit = _block_hit
+
+    # Player reaction and readability behavior
+    begin_attack_recovery_feedback = _begin_attack_recovery_feedback
+    begin_counter_payoff_feedback = _begin_counter_payoff_feedback
+    begin_dodge_recovery_feedback = _begin_dodge_recovery_feedback
+    begin_guard_stress_feedback = _begin_guard_stress_feedback
+    begin_landing_feedback = _begin_landing_feedback
+    begin_parry_payoff_feedback = _begin_parry_payoff_feedback
+    update_reaction_timers = _update_reaction_timers
+    get_reaction_offset = _get_player_reaction_offset
 
     # Movement and physics behavior
     update_knockback = _update_knockback

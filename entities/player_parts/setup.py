@@ -2,6 +2,7 @@
 
 import pygame
 
+from entities.player_parts.reaction import initialize_reaction_state
 from settings import (
     COMBO_RESET_TIME,
     COUNTER_ATTACK,
@@ -41,6 +42,7 @@ def initialize_player_state(player, x, y):
     initialize_attack_state(player)
     initialize_defense_state(player)
     initialize_mobility_state(player)
+    initialize_reaction_state(player)
 
 
 def initialize_core_state(player, x, y):
