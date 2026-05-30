@@ -95,7 +95,10 @@ def get_skill_lines(skill_manager):
     """Return compact mechanical skill slot status lines."""
     lines = ["Skills:"]
     for status in skill_manager.get_slot_statuses():
-        lines.append(f"Skill {status['slot']}: {status['status']}")
+        if status["unlocked"]:
+            lines.append(f"{status['input']}: {status['display_name']} {status['status']}")
+        else:
+            lines.append(f"{status['input']}: {status['display_name']}")
     return lines
 
 
