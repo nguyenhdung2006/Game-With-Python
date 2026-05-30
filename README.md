@@ -34,6 +34,7 @@ Dungeon / Wave Mode:
 - `J` = light attack / 3-hit combo
 - `K` = parry on press, block when held
 - `L` = dodge / evade
+- Reward select: `A/D` or `Left/Right` changes reward, `Enter` confirms
 
 ## Project Structure
 
@@ -74,6 +75,8 @@ systems/
     enemy_spacing.py
     player_feedback.py
     pressure_indicator.py
+    reward.py
+    reward_manager.py
     render_layers.py
     reaction_feedback.py
     sprite_loader.py
@@ -87,6 +90,7 @@ systems/
 ui/
     health_bar.py
     mode_select.py
+    reward_select.py
     room_banner.py
     wave_banner.py
 world/
@@ -127,6 +131,8 @@ assets/
 - `systems/enemy_spacing.py` keeps multi-enemy spacing and flanking behavior lightweight and reusable.
 - `systems/pressure_indicator.py` draws subtle enemy intent and active-aggressor readability cues.
 - `systems/player_feedback.py` draws subtle player recovery, unsafe, guard-stress, and payoff readability cues.
+- `systems/reward.py` defines purely mechanical room rewards and their stat effects.
+- `systems/reward_manager.py` owns reward option selection, navigation, application, and chosen reward tracking.
 - `systems/render_layers.py` keeps combat-space render ordering explicit.
 - `systems/reaction_feedback.py` draws small enemy vulnerability, recovery, and stagger readability effects.
 - `systems/sprite_loader.py` provides safe cached sprite loading with placeholder fallback.
@@ -134,6 +140,7 @@ assets/
 - `systems/physics.py` stores shared movement and collision helpers.
 - `ui/` stores reusable interface drawing code such as health bars.
 - `ui/mode_select.py` draws the mode select and coming-soon placeholder screens.
+- `ui/reward_select.py` draws the three-choice mechanical reward selection screen.
 - `ui/room_banner.py` draws dungeon room number, room clear, boss placeholder, and dungeon clear prompts.
 - `ui/wave_banner.py` draws short centered wave-intro presentation text.
 - `world/` stores arena and environment drawing code.
@@ -147,6 +154,7 @@ assets/
 - Dungeon / Wave Mode routes into the current playable combat encounter
 - Dungeon room flow foundation with Room 1 encounter, Room 2 encounter, Room 3 boss placeholder, and Dungeon Cleared state
 - Room clear flow that waits for `Enter` before advancing
+- Room reward foundation with three mechanical reward choices after encounter rooms
 - Team Round 3v3 locked / coming-soon screen
 - Ruined battlefield arena drawn with Pygame shapes
 - Player left/right movement
@@ -184,8 +192,9 @@ assets/
 - Room 2: encounter
 - Room 3: boss placeholder
 - Final state: Dungeon Cleared
-- `Enter` continues after room clears and from the boss placeholder
-- No animation playback, rewards, or boss implementation yet
+- Encounter rooms open a three-choice reward screen after clear
+- `Enter` confirms selected rewards and continues from the boss placeholder
+- Rewards are mechanical only: no named skills, fantasy effects, transformations, animation playback, reward rarity, inventory, save/load, or boss implementation yet
 
 This structure keeps each file focused. As the game grows, combat, enemies,
 bosses, effects, and UI can expand without turning `main.py` into one giant file.

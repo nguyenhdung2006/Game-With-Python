@@ -52,6 +52,10 @@ def initialize_core_state(player, x, y):
     player.speed = PLAYER_SPEED
     player.health = PLAYER_MAX_HEALTH
     player.max_health = PLAYER_MAX_HEALTH
+    player.max_health_bonus = 0
+    player.damage_multiplier = 1.0
+    player.stamina_regen_multiplier = 1.0
+    player.defense_cost_multiplier = 1.0
     player.rect = pygame.Rect(x, y, player.width, player.height)
 
     player.x = float(x)
@@ -140,6 +144,8 @@ def initialize_mobility_state(player):
     player.dash_speed = DASH_SPEED
     player.dash_duration = DASH_DURATION
     player.dash_timer = 0
+    player.base_dash_cooldown = DASH_COOLDOWN
+    player.dash_cooldown_multiplier = 1.0
     player.dash_cooldown = DASH_COOLDOWN
     player.dash_cooldown_timer = 0
     player.is_dashing = False

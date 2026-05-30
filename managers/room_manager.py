@@ -9,6 +9,7 @@ from managers.room_state import (
     ROOM_COMPLETE,
     ROOM_DUNGEON_CLEAR,
     ROOM_ENCOUNTER,
+    ROOM_REWARD,
 )
 
 
@@ -64,6 +65,10 @@ class RoomManager:
         """Return True while waiting for player confirmation after a clear."""
         return self.flow_state == ROOM_CLEARED
 
+    def is_reward_active(self):
+        """Return True while the player is choosing a room reward."""
+        return self.flow_state == ROOM_REWARD
+
     def is_dungeon_complete(self):
         """Return True after all rooms are finished."""
         return self.flow_state == ROOM_COMPLETE
@@ -72,6 +77,11 @@ class RoomManager:
         """Freeze room progress until the player continues."""
         if not self.is_dungeon_complete():
             self.flow_state = ROOM_CLEARED
+
+    def start_reward(self):
+        """Move from room clear into reward selection."""
+        if not self.is_dungeon_complete():
+            self.flow_state = ROOM_REWARD
 
     def advance_room(self):
         """Advance to the next room, or mark the dungeon complete."""

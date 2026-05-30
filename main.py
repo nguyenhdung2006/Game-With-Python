@@ -11,7 +11,7 @@ def main():
     pygame.init()
 
     screen = pygame.display.set_mode((WIDTH, HEIGHT))
-    pygame.display.set_caption("Anime Stickman Combat - Phase 23")
+    pygame.display.set_caption("Anime Stickman Combat - Phase 24")
     clock = pygame.time.Clock()
     scene_surface = pygame.Surface((WIDTH, HEIGHT))
 

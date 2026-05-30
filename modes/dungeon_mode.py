@@ -9,8 +9,10 @@ from managers.room_state import ROOM_BOSS_PLACEHOLDER, ROOM_ENCOUNTER
 from settings import GROUND_Y, HEALTH_PLAYER, PLAYER_HEIGHT
 from systems.combat import process_enemy_attacks, process_player_attacks
 from systems.effects import CombatImpact
+from systems.reward_manager import RewardManager
 from systems.render_layers import draw_combat_scene
 from ui.health_bar import draw_health_bar
+from ui.reward_select import draw_reward_select
 from ui.room_banner import (
     draw_boss_placeholder,
     draw_dungeon_cleared,
@@ -28,11 +30,16 @@ class DungeonMode:
         self.room_manager = RoomManager()
         self.encounter_manager = None
         self.impact = CombatImpact()
+        self.reward_manager = RewardManager()
         self.enter_current_room()
 
     def handle_event(self, event):
         """Handle room progression and combat inputs for dungeon mode."""
         if event.type != pygame.KEYDOWN:
+            return
+
+        if self.room_manager.is_reward_active():
+            self.handle_reward_input(event.key)
             return
 
         if event.key == pygame.K_RETURN:
@@ -77,7 +84,7 @@ class DungeonMode:
             self.impact.start_hit_impact(enemy_hit_result)
 
         if self.encounter_manager.encounter_cleared:
-            self.room_manager.mark_room_cleared()
+            self.start_reward_selection()
 
     def draw(self, screen, scene_surface):
         """Draw the active dungeon room and progression UI."""
@@ -97,6 +104,8 @@ class DungeonMode:
 
         if self.room_manager.is_room_cleared():
             draw_room_cleared(screen)
+        elif self.room_manager.is_reward_active():
+            draw_reward_select(screen, self.reward_manager)
         elif self.room_manager.is_dungeon_complete():
             draw_dungeon_cleared(screen)
         elif self.room_manager.current_room_type() == ROOM_BOSS_PLACEHOLDER:
@@ -105,13 +114,32 @@ class DungeonMode:
     def handle_continue(self):
         """Advance room flow from clear and placeholder states."""
         if self.room_manager.is_room_cleared():
-            self.room_manager.advance_room()
-            self.enter_current_room()
+            self.start_reward_selection()
             return
 
         if self.room_manager.current_room_type() == ROOM_BOSS_PLACEHOLDER:
             self.room_manager.advance_room()
             self.enter_current_room()
+
+    def handle_reward_input(self, key):
+        """Navigate and confirm room reward selection."""
+        if key in (pygame.K_a, pygame.K_LEFT):
+            self.reward_manager.select_previous()
+        elif key in (pygame.K_d, pygame.K_RIGHT):
+            self.reward_manager.select_next()
+        elif key == pygame.K_RETURN:
+            applied_reward = self.reward_manager.apply_selected(self.player)
+            if applied_reward is None:
+                return
+            self.room_manager.advance_room()
+            self.enter_current_room()
+
+    def start_reward_selection(self):
+        """Move an encounter clear into the reward selection state."""
+        self.room_manager.mark_room_cleared()
+        self.room_manager.start_reward()
+        if not self.reward_manager.has_options():
+            self.reward_manager.generate_options()
 
     def enter_current_room(self):
         """Initialize combat systems for the current room type."""

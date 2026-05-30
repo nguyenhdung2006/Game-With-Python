@@ -68,7 +68,8 @@ def process_player_attack(player, enemy):
         return
 
     if attack_hitbox.colliderect(enemy.rect):
-        damage_applied = apply_damage(enemy, player.attack_damage)
+        damage = round(player.attack_damage * getattr(player, "damage_multiplier", 1.0))
+        damage_applied = apply_damage(enemy, damage)
         if damage_applied and hasattr(enemy, "register_attack_reaction"):
             enemy.register_attack_reaction(player)
         apply_knockback(enemy, player.facing, player.attack_knockback)
