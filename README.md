@@ -123,6 +123,7 @@ assets/
 - Encounter readability polish with staged entrances, wave-specific pacing profiles, and subtle pressure telegraphs
 - Enemy reaction and punish-window polish so vulnerability reads more clearly after hits and committed attacks
 - Player-side readability polish for whiffs, landing recovery, guard stress, unsafe windows, and payoff moments
+- Combat stabilization pass with cleaner damage interrupts and scalable spawn/spacing helpers
 - Short dodge / evade with cooldown and temporary invulnerability
 - Combat recovery and cancel timing for smoother action flow
 - Player and enemy health bars

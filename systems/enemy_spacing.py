@@ -61,14 +61,9 @@ def build_flank_targets(enemies, player, leader_enemy, wave_profile=None):
         if wave_profile is not None
         else ENEMY_FLANK_FAR_OFFSET
     )
-    slot_offsets = [
-        -near_offset,
-        near_offset,
-        -far_offset,
-        far_offset,
-    ]
+    slot_offsets = build_slot_offsets(len(non_leaders), near_offset, far_offset)
 
-    available_slots = [player_x + offset for offset in slot_offsets[: len(non_leaders)]]
+    available_slots = [player_x + offset for offset in slot_offsets]
     targets = {}
 
     # Greedy matching minimizes unnecessary crossing while still distributing
@@ -79,6 +74,19 @@ def build_flank_targets(enemies, player, leader_enemy, wave_profile=None):
         available_slots.remove(best_slot)
 
     return targets
+
+
+def build_slot_offsets(count, near_offset, far_offset):
+    """Build enough alternating flank slots for current and future wave sizes."""
+    slot_offsets = []
+    ring_index = 0
+
+    while len(slot_offsets) < count:
+        offset = near_offset if ring_index == 0 else far_offset + (ring_index - 1) * near_offset
+        slot_offsets.extend([-offset, offset])
+        ring_index += 1
+
+    return slot_offsets[:count]
 
 
 def move_enemy_toward_target(enemy, target_center_x, dt):

@@ -97,11 +97,18 @@ class EncounterManager:
     def get_spawn_positions(self, count, player):
         """Choose side-based spawn positions away from the player."""
         if player.rect.centerx < WIDTH // 2:
-            positions = [760, 930, 1090]
+            positions = self.build_side_spawn_positions(count, 760, 170, WIDTH - 90)
         else:
-            positions = [160, 330, 500]
+            positions = self.build_side_spawn_positions(count, 160, 170, WIDTH - 90)
 
         return positions[:count]
+
+    def build_side_spawn_positions(self, count, start_x, spacing, max_x):
+        """Return enough clamped spawn positions for larger future waves."""
+        positions = []
+        for index in range(count):
+            positions.append(min(max_x, start_x + spacing * index))
+        return positions
 
     def configure_enemy_entrance(self, enemy, index, spawn_from_right, wave_profile):
         """Apply small staggered entrance timing so waves feel less robotic."""

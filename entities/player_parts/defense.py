@@ -26,20 +26,38 @@ def take_damage(player, amount):
         return False
 
     player.health = max(0, player.health - amount)
+    interrupt_actions_for_damage(player)
     player.hurt_timer = PLAYER_HURT_DURATION
     player.hurt_flash_timer = PLAYER_HURT_FLASH_DURATION
     player.invulnerability_timer = PLAYER_INVULNERABILITY_DURATION
     player.is_hurt = True
-    player.is_attacking = False
-    player.is_counter_attacking = False
-    player.is_dashing = False
-    player.can_counter = False
-    player.counter_window_timer = 0
 
     if player.health == 0:
         player.defeated = True
 
     return True
+
+
+def interrupt_actions_for_damage(player):
+    """Clear stale action state so hurt cleanly overrides prior commitments."""
+    player.is_attacking = False
+    player.is_counter_attacking = False
+    player.is_dashing = False
+    player.is_dodging = False
+    player.is_blocking = False
+    player.is_parrying = False
+
+    player.attack_timer = 0
+    player.dash_timer = 0
+    player.dodge_timer = 0
+    player.parry_window_timer = 0
+    player.block_flash_timer = 0
+
+    player.queued_next_attack = False
+    player.buffered_attack = False
+    player.attack_buffer_timer = 0
+    player.can_counter = False
+    player.counter_window_timer = 0
 
 
 def can_take_damage(player):
