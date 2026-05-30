@@ -88,6 +88,7 @@ systems/
         defense.py
         ui.py
 ui/
+    dungeon_hud.py
     health_bar.py
     mode_select.py
     reward_select.py
@@ -139,6 +140,7 @@ assets/
 - `systems/effects/` stores camera impact, trails, slash visuals, and defense-related visual effects.
 - `systems/physics.py` stores shared movement and collision helpers.
 - `ui/` stores reusable interface drawing code such as health bars.
+- `ui/dungeon_hud.py` draws Dungeon Mode run status, selected rewards, stat modifiers, and clear summary.
 - `ui/mode_select.py` draws the mode select and coming-soon placeholder screens.
 - `ui/reward_select.py` draws the three-choice mechanical reward selection screen.
 - `ui/room_banner.py` draws dungeon room number, room clear, boss placeholder, and dungeon clear prompts.
@@ -155,6 +157,8 @@ assets/
 - Dungeon room flow foundation with Room 1 encounter, Room 2 encounter, Room 3 boss placeholder, and Dungeon Cleared state
 - Room clear flow that waits for `Enter` before advancing
 - Room reward foundation with three mechanical reward choices after encounter rooms
+- Dungeon HUD and run status polish showing room status, reward count, selected rewards, and mechanical stat modifiers
+- Dungeon clear summary with rooms cleared, selected rewards, and final modifiers
 - Team Round 3v3 locked / coming-soon screen
 - Ruined battlefield arena drawn with Pygame shapes
 - Player left/right movement
@@ -194,7 +198,10 @@ assets/
 - Final state: Dungeon Cleared
 - Encounter rooms open a three-choice reward screen after clear
 - `Enter` confirms selected rewards and continues from the boss placeholder
+- Dungeon HUD shows current room, room type, reward count, damage multiplier, dash cooldown multiplier, and max HP bonus
+- Dungeon Clear shows selected rewards and final mechanical modifiers
 - Rewards are mechanical only: no named skills, fantasy effects, transformations, animation playback, reward rarity, inventory, save/load, or boss implementation yet
+- Phase 25 adds UI/readability polish only; it does not add new combat mechanics or fantasy/skill content
 
 This structure keeps each file focused. As the game grows, combat, enemies,
 bosses, effects, and UI can expand without turning `main.py` into one giant file.

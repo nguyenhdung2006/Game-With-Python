@@ -11,13 +11,12 @@ from systems.combat import process_enemy_attacks, process_player_attacks
 from systems.effects import CombatImpact
 from systems.reward_manager import RewardManager
 from systems.render_layers import draw_combat_scene
+from ui.dungeon_hud import draw_dungeon_clear_summary, draw_dungeon_hud
 from ui.health_bar import draw_health_bar
 from ui.reward_select import draw_reward_select
 from ui.room_banner import (
     draw_boss_placeholder,
-    draw_dungeon_cleared,
     draw_room_cleared,
-    draw_room_status,
 )
 from world.battlefield import draw_arena
 
@@ -100,14 +99,14 @@ class DungeonMode:
             self.draw_combat_ui(screen)
 
         if not self.room_manager.is_dungeon_complete():
-            draw_room_status(screen, self.room_manager)
+            draw_dungeon_hud(screen, self.room_manager, self.reward_manager, self.player)
 
         if self.room_manager.is_room_cleared():
             draw_room_cleared(screen)
         elif self.room_manager.is_reward_active():
             draw_reward_select(screen, self.reward_manager)
         elif self.room_manager.is_dungeon_complete():
-            draw_dungeon_cleared(screen)
+            draw_dungeon_clear_summary(screen, self.room_manager, self.reward_manager, self.player)
         elif self.room_manager.current_room_type() == ROOM_BOSS_PLACEHOLDER:
             draw_boss_placeholder(screen)
 

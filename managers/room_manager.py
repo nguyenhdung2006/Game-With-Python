@@ -53,6 +53,14 @@ class RoomManager:
         """Return total fixed dungeon rooms."""
         return len(self.rooms)
 
+    def cleared_room_count(self):
+        """Return how many rooms are cleared for run summary UI."""
+        if self.is_dungeon_complete():
+            return self.total_rooms()
+        if self.is_room_cleared() or self.is_reward_active():
+            return self.current_room_index + 1
+        return self.current_room_index
+
     def is_final_room(self):
         """Return True when the current room is the last fixed room."""
         return self.current_room_index >= self.total_rooms() - 1

@@ -11,6 +11,7 @@ class RewardManager:
         self.current_options = []
         self.selected_index = 0
         self.chosen_rewards = []
+        self.chosen_reward_names = []
 
     def generate_options(self, count=3):
         """Select a small deterministic set of reward options."""
@@ -46,6 +47,15 @@ class RewardManager:
 
         reward.apply(player)
         self.chosen_rewards.append(reward.reward_id)
+        self.chosen_reward_names.append(reward.display_name)
         self.current_options = []
         self.selected_index = 0
         return reward
+
+    def chosen_reward_count(self):
+        """Return how many rewards have been confirmed this run."""
+        return len(self.chosen_rewards)
+
+    def chosen_reward_display_names(self):
+        """Return selected reward names for run summary UI."""
+        return list(self.chosen_reward_names)
