@@ -65,6 +65,8 @@ managers/
     encounter_manager.py
     encounter_profiles.py
     game_state.py
+    room_manager.py
+    room_state.py
 modes/
     dungeon_mode.py
 systems/
@@ -85,6 +87,7 @@ systems/
 ui/
     health_bar.py
     mode_select.py
+    room_banner.py
     wave_banner.py
 world/
     battlefield.py
@@ -115,6 +118,8 @@ assets/
 - `entities/fast_enemy.py` defines the quicker, lower-health pressure archetype.
 - `managers/` stores flow systems such as enemy wave spawning and encounter progression.
 - `managers/game_state.py` stores top-level mode routing state.
+- `managers/room_manager.py` stores the fixed dungeon room sequence and progression state.
+- `managers/room_state.py` stores lightweight room type and flow-state constants.
 - `managers/encounter_director.py` coordinates wave intros, activation timing, and clean attacker handoffs.
 - `managers/encounter_profiles.py` stores lightweight per-wave pacing profiles so encounters can escalate without giant scripts.
 - `modes/dungeon_mode.py` wraps the current playable wave-combat loop so the game can route between modes.
@@ -129,6 +134,7 @@ assets/
 - `systems/physics.py` stores shared movement and collision helpers.
 - `ui/` stores reusable interface drawing code such as health bars.
 - `ui/mode_select.py` draws the mode select and coming-soon placeholder screens.
+- `ui/room_banner.py` draws dungeon room number, room clear, boss placeholder, and dungeon clear prompts.
 - `ui/wave_banner.py` draws short centered wave-intro presentation text.
 - `world/` stores arena and environment drawing code.
 - `assets/SPRITE_PIPELINE.md` documents sprite folder conventions and prepared visual states.
@@ -139,6 +145,8 @@ assets/
 - Mode select screen on launch with Solo / Versus, Dungeon / Wave, and Team Round 3v3 entries
 - Solo / Versus placeholder screen
 - Dungeon / Wave Mode routes into the current playable combat encounter
+- Dungeon room flow foundation with Room 1 encounter, Room 2 encounter, Room 3 boss placeholder, and Dungeon Cleared state
+- Room clear flow that waits for `Enter` before advancing
 - Team Round 3v3 locked / coming-soon screen
 - Ruined battlefield arena drawn with Pygame shapes
 - Player left/right movement
@@ -167,8 +175,17 @@ assets/
 ## Current Modes
 
 - Solo / Versus: placeholder
-- Dungeon / Wave Mode: playable
+- Dungeon / Wave Mode: playable fixed room flow
 - Team Round 3v3: locked / coming soon
+
+## Dungeon Flow
+
+- Room 1: encounter
+- Room 2: encounter
+- Room 3: boss placeholder
+- Final state: Dungeon Cleared
+- `Enter` continues after room clears and from the boss placeholder
+- No animation playback, rewards, or boss implementation yet
 
 This structure keeps each file focused. As the game grows, combat, enemies,
 bosses, effects, and UI can expand without turning `main.py` into one giant file.
