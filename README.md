@@ -34,6 +34,9 @@ Dungeon / Wave Mode:
 - `J` = light attack / 3-hit combo
 - `K` = parry on press, block when held
 - `L` = dodge / evade
+- `U` = Skill 1 foundation slot
+- `I` = Skill 2 foundation slot
+- `O` = Skill 3 foundation slot
 - Reward select: `A/D` or `Left/Right` changes reward, `Enter` confirms
 
 ## Project Structure
@@ -76,10 +79,14 @@ systems/
     enemy_spacing.py
     player_feedback.py
     pressure_indicator.py
+    projectile.py
+    projectile_manager.py
     reward.py
     reward_manager.py
     render_layers.py
     reaction_feedback.py
+    skill.py
+    skill_manager.py
     sprite_loader.py
     physics.py
     effects/
@@ -134,10 +141,14 @@ assets/
 - `systems/enemy_spacing.py` keeps multi-enemy spacing and flanking behavior lightweight and reusable.
 - `systems/pressure_indicator.py` draws subtle enemy intent and active-aggressor readability cues.
 - `systems/player_feedback.py` draws subtle player recovery, unsafe, guard-stress, and payoff readability cues.
+- `systems/projectile.py` defines a neutral projectile primitive for future skill-driven attacks.
+- `systems/projectile_manager.py` owns projectile updates, drawing, lifetime cleanup, and enemy collision.
 - `systems/reward.py` defines purely mechanical room rewards and their stat effects.
 - `systems/reward_manager.py` owns reward option selection, navigation, application, and chosen reward tracking.
 - `systems/render_layers.py` keeps combat-space render ordering explicit.
 - `systems/reaction_feedback.py` draws small enemy vulnerability, recovery, and stagger readability effects.
+- `systems/skill.py` defines neutral skill slot primitives with cooldown and resource-cost fields.
+- `systems/skill_manager.py` owns the three player skill slots and routes future skill use.
 - `systems/sprite_loader.py` provides safe cached sprite loading with placeholder fallback.
 - `systems/effects/` stores camera impact, trails, slash visuals, and defense-related visual effects.
 - `systems/physics.py` stores shared movement and collision helpers.
@@ -163,6 +174,9 @@ assets/
 - Dungeon clear summary with rooms cleared, selected rewards, and final modifiers
 - Elite/Boss foundation for Room 3 using a single heavy melee enemy with slower pacing, longer telegraphs, and clearer punish windows
 - Boss readability and pacing polish with slower attack cadence, stronger downtime, and clearer recovery punish windows
+- Skill slot foundation with three player slots, cooldown tracking, and `U/I/O` input routing
+- Projectile foundation with neutral rectangle visuals, lifetime cleanup, and one-hit enemy collision handling
+- Temporary foundation-only Debug Projectile in Skill 1 for validation; no final character moveset has been defined
 - Team Round 3v3 locked / coming-soon screen
 - Ruined battlefield arena drawn with Pygame shapes
 - Player left/right movement
@@ -203,10 +217,11 @@ assets/
 - Encounter rooms open a three-choice reward screen after clear
 - `Enter` confirms selected rewards before advancing to the next room
 - Dungeon HUD shows current room, room type, reward count, damage multiplier, dash cooldown multiplier, and max HP bonus
+- Dungeon HUD shows neutral skill slot readiness for Skill 1, Skill 2, and Skill 3
 - Dungeon Clear shows selected rewards and final mechanical modifiers
 - Rewards are mechanical only and appear after Room 1 and Room 2 encounter clears
 - The Room 3 elite/boss encounter has no post-fight reward and clears the dungeon when defeated
-- No named skills, fantasy effects, transformations, projectiles, animation playback, reward rarity, inventory, save/load, or boss identity/theme has been added
+- Phase 28 adds skill slot and projectile infrastructure only: no named attacks, fantasy effects, transformations, beams, animation playback, reward rarity, inventory, save/load, or boss identity/theme has been added
 - Phase 26 adds boss pacing foundation only: heavier melee tuning, longer telegraph/recovery, and punish-focused combat readability
 - Phase 27 polishes boss rhythm only: clearer telegraphs, longer recovery, slower pressure cadence, and more reliable punish timing without special attacks or VFX
 

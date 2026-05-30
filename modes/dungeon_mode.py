@@ -10,8 +10,10 @@ from managers.room_state import ROOM_BOSS_ENCOUNTER, ROOM_ENCOUNTER
 from settings import GROUND_Y, HEALTH_PLAYER, PLAYER_HEIGHT
 from systems.combat import process_enemy_attacks, process_player_attacks
 from systems.effects import CombatImpact
+from systems.projectile_manager import ProjectileManager
 from systems.reward_manager import RewardManager
 from systems.render_layers import draw_combat_scene
+from systems.skill_manager import SkillManager
 from ui.dungeon_hud import draw_dungeon_clear_summary, draw_dungeon_hud
 from ui.health_bar import draw_health_bar
 from ui.reward_select import draw_reward_select
@@ -27,6 +29,8 @@ class DungeonMode:
         self.room_manager = RoomManager()
         self.encounter_manager = None
         self.impact = CombatImpact()
+        self.projectile_manager = ProjectileManager()
+        self.skill_manager = SkillManager(self.projectile_manager)
         self.reward_manager = RewardManager()
         self.enter_current_room()
 
@@ -50,6 +54,12 @@ class DungeonMode:
             self.player.jump()
         elif event.key == pygame.K_LSHIFT:
             self.player.start_dash()
+        elif event.key == pygame.K_u:
+            self.skill_manager.use_slot(1, self.player)
+        elif event.key == pygame.K_i:
+            self.skill_manager.use_slot(2, self.player)
+        elif event.key == pygame.K_o:
+            self.skill_manager.use_slot(3, self.player)
         elif event.key == pygame.K_k:
             self.player.start_guard()
         elif event.key == pygame.K_l:
@@ -68,9 +78,11 @@ class DungeonMode:
         if self.impact.is_hitstop_active():
             return
 
+        self.skill_manager.update(dt)
         self.player.update(keys, dt)
         self.encounter_manager.update(self.player, dt)
         active_enemies = self.encounter_manager.get_enemies()
+        self.projectile_manager.update(dt, active_enemies)
 
         player_hit_result = process_player_attacks(self.player, active_enemies)
         enemy_hit_results = process_enemy_attacks(active_enemies, self.player)
@@ -86,7 +98,13 @@ class DungeonMode:
     def draw(self, screen, scene_surface):
         """Draw the active dungeon room and progression UI."""
         if self.encounter_manager is not None:
-            draw_combat_scene(scene_surface, self.player, self.encounter_manager, draw_arena)
+            draw_combat_scene(
+                scene_surface,
+                self.player,
+                self.encounter_manager,
+                draw_arena,
+                self.projectile_manager,
+            )
         else:
             draw_arena(scene_surface)
 
@@ -97,7 +115,13 @@ class DungeonMode:
             self.draw_combat_ui(screen)
 
         if not self.room_manager.is_dungeon_complete():
-            draw_dungeon_hud(screen, self.room_manager, self.reward_manager, self.player)
+            draw_dungeon_hud(
+                screen,
+                self.room_manager,
+                self.reward_manager,
+                self.player,
+                self.skill_manager,
+            )
 
         if self.room_manager.is_room_cleared():
             draw_room_cleared(screen)
@@ -143,6 +167,7 @@ class DungeonMode:
     def enter_current_room(self):
         """Initialize combat systems for the current room type."""
         self.impact = CombatImpact()
+        self.projectile_manager.clear()
 
         if self.room_manager.current_room_type() == ROOM_ENCOUNTER:
             self.encounter_manager = EncounterManager()

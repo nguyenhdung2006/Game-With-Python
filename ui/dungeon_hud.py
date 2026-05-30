@@ -13,7 +13,7 @@ CLEAR_COLOR = (255, 240, 180)
 MUTED = (190, 198, 212)
 
 
-def draw_dungeon_hud(surface, room_manager, reward_manager, player):
+def draw_dungeon_hud(surface, room_manager, reward_manager, player, skill_manager=None):
     """Draw compact run status during Dungeon Mode."""
     lines = [
         f"Room: {room_manager.room_number()} / {room_manager.total_rooms()}",
@@ -21,6 +21,8 @@ def draw_dungeon_hud(surface, room_manager, reward_manager, player):
         f"Rewards: {reward_manager.chosen_reward_count()}",
     ]
     lines.extend(get_stat_lines(player))
+    if skill_manager is not None:
+        lines.extend(get_skill_lines(skill_manager))
     draw_text_panel(surface, lines, 24, 98, 310)
 
     reward_names = reward_manager.chosen_reward_display_names()
@@ -87,6 +89,14 @@ def get_stat_lines(player):
         f"Dash CD: x{getattr(player, 'dash_cooldown_multiplier', 1.0):.2f}",
         f"Max HP Bonus: +{getattr(player, 'max_health_bonus', 0)}",
     ]
+
+
+def get_skill_lines(skill_manager):
+    """Return compact mechanical skill slot status lines."""
+    lines = ["Skills:"]
+    for status in skill_manager.get_slot_statuses():
+        lines.append(f"Skill {status['slot']}: {status['status']}")
+    return lines
 
 
 def format_room_type(room_type):
