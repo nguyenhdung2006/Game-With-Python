@@ -20,7 +20,7 @@ python main.py
 
 Mode select:
 
-- `1` = Solo / Versus placeholder
+- `1` = Solo / Versus
 - `2` = Dungeon / Wave Mode
 - `3` = Team Round 3v3 locked screen
 - `Esc` = quit on mode select, return to mode select from modes
@@ -38,6 +38,12 @@ Dungeon / Wave Mode:
 - `I` = Kamehameha
 - `O` = locked skill slot
 - Reward select: `A/D` or `Left/Right` changes reward, `Enter` confirms
+
+Solo / Versus Mode:
+
+- Same movement, defense, combo, and skill controls as Dungeon / Wave Mode
+- No rewards or room progression
+- `Esc` returns to mode select
 
 ## Project Structure
 
@@ -74,6 +80,7 @@ managers/
     room_state.py
 modes/
     dungeon_mode.py
+    solo_mode.py
 systems/
     beam.py
     combat.py
@@ -138,6 +145,7 @@ assets/
 - `managers/encounter_director.py` coordinates wave intros, activation timing, and clean attacker handoffs.
 - `managers/encounter_profiles.py` stores lightweight per-wave pacing profiles so encounters can escalate without giant scripts.
 - `modes/dungeon_mode.py` wraps the current playable wave-combat loop so the game can route between modes.
+- `modes/solo_mode.py` owns the playable 1v1 arena sandbox without dungeon rewards or room progression.
 - `systems/beam.py` defines the short-lived rectangular Kamehameha prototype hitbox.
 - `systems/combat.py` stores hitbox, damage, and defense resolution helpers.
 - `systems/enemy_spacing.py` keeps multi-enemy spacing and flanking behavior lightweight and reusable.
@@ -156,7 +164,7 @@ assets/
 - `systems/physics.py` stores shared movement and collision helpers.
 - `ui/` stores reusable interface drawing code such as health bars.
 - `ui/dungeon_hud.py` draws Dungeon Mode run status, selected rewards, stat modifiers, and clear summary.
-- `ui/mode_select.py` draws the mode select and coming-soon placeholder screens.
+- `ui/mode_select.py` draws the mode select and locked coming-soon screens.
 - `ui/reward_select.py` draws the three-choice mechanical reward selection screen.
 - `ui/room_banner.py` draws dungeon room number, room clear, and dungeon clear prompts.
 - `ui/wave_banner.py` draws short centered wave-intro presentation text.
@@ -167,7 +175,7 @@ assets/
 ## Current Features
 
 - Mode select screen on launch with Solo / Versus, Dungeon / Wave, and Team Round 3v3 entries
-- Solo / Versus placeholder screen
+- Solo / Versus playable 1v1 arena foundation with one player and one duel enemy
 - Dungeon / Wave Mode routes into the current playable combat encounter
 - Dungeon room flow foundation with Room 1 encounter, Room 2 encounter, Room 3 elite/boss encounter, and Dungeon Cleared state
 - Room clear flow that waits for `Enter` before advancing
@@ -179,6 +187,7 @@ assets/
 - Goku skill prototype with `U` Ki Blast, `I` Kamehameha, and `O` locked
 - Ki Blast as a fast projectile with cooldown, damage multiplier support, lifetime cleanup, and one-hit collision
 - Kamehameha as a short-lived rectangular beam prototype that damages each enemy once per use
+- Solo / Versus supports movement, jump, dash, combo attacks, Ki Blast, Kamehameha, enemy chase/telegraph/attack, and Victory/Defeat overlays
 - Team Round 3v3 locked / coming-soon screen
 - Ruined battlefield arena drawn with Pygame shapes
 - Player left/right movement
@@ -206,9 +215,21 @@ assets/
 
 ## Current Modes
 
-- Solo / Versus: placeholder
+- Solo / Versus: playable 1v1 arena sandbox
 - Dungeon / Wave Mode: playable fixed room flow
 - Team Round 3v3: locked / coming soon
+
+## Solo / Versus Flow
+
+- Press `1` from mode select to start a 1v1 arena fight
+- The arena spawns the player and one duel enemy
+- The player can use existing movement, combo, guard/dodge, Ki Blast, and Kamehameha controls
+- The enemy uses the existing chase, telegraph, attack, hurt, and defeat behavior
+- Player and enemy health bars are shown
+- Skill cooldown HUD is shown
+- Enemy defeat shows `Victory`
+- Player defeat shows `Defeat`
+- No rewards, room progression, new assets, animation, or new skills are added
 
 ## Dungeon Flow
 

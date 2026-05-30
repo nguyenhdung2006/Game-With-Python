@@ -20,7 +20,7 @@ def draw_mode_select(surface):
     _draw_center_text(surface, "Select Mode", 185, 42, WHITE)
 
     options = [
-        ("1", "Solo / Versus", "Coming soon placeholder", False),
+        ("1", "Solo / Versus", "Playable 1v1 arena sandbox", True),
         ("2", "Dungeon / Wave Mode", "Playable combat vertical slice", True),
         ("3", "Team Round 3v3", "Coming soon", False),
     ]
@@ -30,15 +30,6 @@ def draw_mode_select(surface):
         _draw_mode_option(surface, start_y + index * 92, *option)
 
     _draw_center_text(surface, "Press 1 / 2 / 3 to choose. Esc quits.", HEIGHT - 72, 28, TEXT_MUTED)
-
-
-def draw_solo_placeholder(surface):
-    """Draw the Solo / Versus placeholder screen."""
-    draw_placeholder_screen(
-        surface,
-        "Solo / Versus Mode - Coming Soon",
-        "Future mode: a focused 1v1 duel sandbox.",
-    )
 
 
 def draw_team_locked(surface):

@@ -32,4 +32,4 @@ class GameState:
         return self.current == DUNGEON_MODE
 
     def is_placeholder_screen(self):
-        return self.current in {SOLO_MODE, TEAM_MODE_LOCKED}
+        return self.current == TEAM_MODE_LOCKED
