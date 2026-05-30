@@ -40,11 +40,13 @@ entities/
         defense.py
         movement.py
         reaction.py
+        render_state.py
         render.py
     base_enemy.py
     enemy_parts/
         setup.py
         behavior.py
+        render_state.py
         render.py
     basic_enemy.py
     fast_enemy.py
@@ -58,7 +60,9 @@ systems/
     enemy_spacing.py
     player_feedback.py
     pressure_indicator.py
+    render_layers.py
     reaction_feedback.py
+    sprite_loader.py
     physics.py
     effects/
         camera.py
@@ -72,7 +76,13 @@ ui/
 world/
     battlefield.py
 assets/
+    SPRITE_PIPELINE.md
     sprites/
+        player/
+        enemies/
+        effects/
+        ui/
+        backgrounds/
     sounds/
     music/
 ```
@@ -84,8 +94,10 @@ assets/
 - `entities/` stores game objects such as the player, enemies, future bosses, and projectiles.
 - `entities/player_parts/` keeps Player combat, defense, movement, setup, and rendering concerns in smaller modules.
 - `entities/player_parts/reaction.py` tracks player-side whiff, landing, guard stress, and payoff feedback timers.
+- `entities/player_parts/render_state.py` maps gameplay state into animation-ready player visual states.
 - `entities/base_enemy.py` holds shared melee enemy behavior so new archetypes can reuse one AI/state foundation.
 - `entities/enemy_parts/` keeps BaseEnemy setup, behavior, and drawing responsibilities separated.
+- `entities/enemy_parts/render_state.py` maps enemy AI state into animation-ready visual states.
 - `entities/basic_enemy.py` defines the balanced baseline enemy archetype.
 - `entities/fast_enemy.py` defines the quicker, lower-health pressure archetype.
 - `managers/` stores flow systems such as enemy wave spawning and encounter progression.
@@ -95,12 +107,15 @@ assets/
 - `systems/enemy_spacing.py` keeps multi-enemy spacing and flanking behavior lightweight and reusable.
 - `systems/pressure_indicator.py` draws subtle enemy intent and active-aggressor readability cues.
 - `systems/player_feedback.py` draws subtle player recovery, unsafe, guard-stress, and payoff readability cues.
+- `systems/render_layers.py` keeps combat-space render ordering explicit.
 - `systems/reaction_feedback.py` draws small enemy vulnerability, recovery, and stagger readability effects.
+- `systems/sprite_loader.py` provides safe cached sprite loading with placeholder fallback.
 - `systems/effects/` stores camera impact, trails, slash visuals, and defense-related visual effects.
 - `systems/physics.py` stores shared movement and collision helpers.
 - `ui/` stores reusable interface drawing code such as health bars.
 - `ui/wave_banner.py` draws short centered wave-intro presentation text.
 - `world/` stores arena and environment drawing code.
+- `assets/SPRITE_PIPELINE.md` documents sprite folder conventions and prepared visual states.
 - `assets/` is reserved for future sprites, sounds, and music.
 
 ## Current Features
@@ -124,6 +139,7 @@ assets/
 - Enemy reaction and punish-window polish so vulnerability reads more clearly after hits and committed attacks
 - Player-side readability polish for whiffs, landing recovery, guard stress, unsafe windows, and payoff moments
 - Combat stabilization pass with cleaner damage interrupts and scalable spawn/spacing helpers
+- Visual pipeline foundation with sprite-ready rendering hooks, visual-state mapping, and structured sprite folders
 - Short dodge / evade with cooldown and temporary invulnerability
 - Combat recovery and cancel timing for smoother action flow
 - Player and enemy health bars

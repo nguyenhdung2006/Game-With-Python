@@ -52,6 +52,10 @@ def initialize_enemy_state(enemy, x, y, config):
     enemy.knockback_velocity_x = 0
     enemy.defeated = False
     enemy.facing = -1
+    enemy.sprite_paths = config.get("sprite_paths", {})
+    enemy.sprite_size = config.get("sprite_size", (enemy.width, enemy.height))
+    enemy.sprite_offset = config.get("sprite_offset", (0, 0))
+    enemy.sprite_flip_with_facing = config.get("sprite_flip_with_facing", True)
 
     enemy.state = ENEMY_STATE_IDLE
     enemy.telegraph_timer = 0

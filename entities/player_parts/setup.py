@@ -62,6 +62,11 @@ def initialize_core_state(player, x, y):
     player.jump_strength = JUMP_STRENGTH
     player.grounded = True
     player.facing = 1
+    player.last_move_direction = 0
+    player.sprite_paths = {}
+    player.sprite_size = (player.width, player.height)
+    player.sprite_offset = (0, 0)
+    player.sprite_flip_with_facing = True
 
     player.knockback_velocity_x = 0
     player.is_hurt = False

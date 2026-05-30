@@ -5,6 +5,7 @@ from entities.player import Player
 from managers.encounter_manager import EncounterManager
 from systems.combat import process_enemy_attacks, process_player_attacks
 from systems.effects import CombatImpact
+from systems.render_layers import draw_combat_scene
 from settings import (
     FPS,
     GROUND_Y,
@@ -68,10 +69,7 @@ def main():
             for enemy_hit_result in enemy_hit_results:
                 impact.start_hit_impact(enemy_hit_result)
 
-        draw_arena(scene_surface)
-
-        player.draw(scene_surface)
-        encounter_manager.draw(scene_surface)
+        draw_combat_scene(scene_surface, player, encounter_manager, draw_arena)
 
         screen.fill((0, 0, 0))
         camera_offset = impact.get_camera_offset()

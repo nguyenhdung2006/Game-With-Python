@@ -24,6 +24,8 @@ from systems.player_feedback import (
     draw_player_recovery_feedback,
     get_player_draw_rect,
 )
+from systems.sprite_loader import draw_entity_sprite
+from entities.player_parts.render_state import get_player_visual_state
 
 
 def draw(player, surface):
@@ -63,17 +65,20 @@ def draw(player, surface):
     )
     draw_rect = get_player_draw_rect(player)
 
-    color = PLAYER_COLOR
-    if player.defeated:
-        color = PLAYER_DEFEATED_COLOR
-    elif player.invulnerability_timer > 0:
-        # Blinking during i-frames makes temporary safety visible to the player.
-        blink_on = int(player.invulnerability_timer * 20) % 2 == 0
-        color = PLAYER_INVULNERABLE_COLOR if blink_on else PLAYER_COLOR
+    visual_state = get_player_visual_state(player)
+    sprite_drawn = draw_entity_sprite(surface, player, draw_rect, visual_state)
+    if not sprite_drawn:
+        color = PLAYER_COLOR
+        if player.defeated:
+            color = PLAYER_DEFEATED_COLOR
+        elif player.invulnerability_timer > 0:
+            # Blinking during i-frames makes temporary safety visible to the player.
+            blink_on = int(player.invulnerability_timer * 20) % 2 == 0
+            color = PLAYER_INVULNERABLE_COLOR if blink_on else PLAYER_COLOR
 
-    color = choose_flash_color(color, PLAYER_HURT_COLOR, player.hurt_flash_timer)
-    pygame.draw.rect(surface, color, draw_rect)
-    pygame.draw.rect(surface, WHITE, draw_rect, 3)
+        color = choose_flash_color(color, PLAYER_HURT_COLOR, player.hurt_flash_timer)
+        pygame.draw.rect(surface, color, draw_rect)
+        pygame.draw.rect(surface, WHITE, draw_rect, 3)
 
     if player.is_dodging or player.dodge_invulnerability_timer > 0:
         draw_dodge_overlay(surface, draw_rect, player.dodge_color)

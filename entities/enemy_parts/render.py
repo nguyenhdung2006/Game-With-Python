@@ -11,6 +11,8 @@ from systems.reaction_feedback import (
     draw_enemy_stagger_feedback,
     get_enemy_reaction_offset,
 )
+from systems.sprite_loader import draw_entity_sprite
+from entities.enemy_parts.render_state import get_enemy_visual_state
 
 
 def draw(enemy, surface):
@@ -25,13 +27,18 @@ def draw(enemy, surface):
     else:
         color = choose_flash_color(enemy.body_color, enemy.hurt_color, enemy.hurt_flash_timer)
 
+    visual_state = get_enemy_visual_state(enemy)
+    sprite_drawn = draw_entity_sprite(surface, enemy, draw_rect, visual_state)
+
     if enemy.hurt_flash_timer > 0 and not enemy.defeated:
         recoil_rect = draw_rect.copy()
         recoil_rect.x -= 6 if enemy.knockback_velocity_x > 0 else -6
         pygame.draw.rect(surface, enemy.recoil_outline_color, recoil_rect, 3)
 
-    pygame.draw.rect(surface, color, draw_rect)
-    pygame.draw.rect(surface, WHITE, draw_rect, 3)
+    if not sprite_drawn:
+        pygame.draw.rect(surface, color, draw_rect)
+        pygame.draw.rect(surface, WHITE, draw_rect, 3)
+
     draw_enemy_recovery_feedback(surface, enemy)
     draw_active_aggressor_indicator(surface, enemy)
     draw_pressure_indicator(surface, enemy)
