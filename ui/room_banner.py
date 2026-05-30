@@ -41,7 +41,7 @@ def format_room_type(room_type):
     if room_type == ROOM_ENCOUNTER:
         return "Encounter"
     if room_type == ROOM_BOSS_ENCOUNTER:
-        return "Elite Encounter"
+        return "Boss Encounter"
     if room_type == ROOM_DUNGEON_CLEAR:
         return "Dungeon Cleared"
     return room_type.replace("_", " ").title()

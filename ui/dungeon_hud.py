@@ -94,7 +94,7 @@ def format_room_type(room_type):
     if room_type == ROOM_ENCOUNTER:
         return "ENCOUNTER"
     if room_type == ROOM_BOSS_ENCOUNTER:
-        return "BOSS_ENCOUNTER"
+        return "BOSS"
     if room_type == ROOM_DUNGEON_CLEAR:
         return "DUNGEON_CLEAR"
     return room_type

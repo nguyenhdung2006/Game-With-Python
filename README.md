@@ -162,6 +162,7 @@ assets/
 - Dungeon HUD and run status polish showing room status, reward count, selected rewards, and mechanical stat modifiers
 - Dungeon clear summary with rooms cleared, selected rewards, and final modifiers
 - Elite/Boss foundation for Room 3 using a single heavy melee enemy with slower pacing, longer telegraphs, and clearer punish windows
+- Boss readability and pacing polish with slower attack cadence, stronger downtime, and clearer recovery punish windows
 - Team Round 3v3 locked / coming-soon screen
 - Ruined battlefield arena drawn with Pygame shapes
 - Player left/right movement
@@ -207,6 +208,7 @@ assets/
 - The Room 3 elite/boss encounter has no post-fight reward and clears the dungeon when defeated
 - No named skills, fantasy effects, transformations, projectiles, animation playback, reward rarity, inventory, save/load, or boss identity/theme has been added
 - Phase 26 adds boss pacing foundation only: heavier melee tuning, longer telegraph/recovery, and punish-focused combat readability
+- Phase 27 polishes boss rhythm only: clearer telegraphs, longer recovery, slower pressure cadence, and more reliable punish timing without special attacks or VFX
 
 This structure keeps each file focused. As the game grows, combat, enemies,
 bosses, effects, and UI can expand without turning `main.py` into one giant file.
