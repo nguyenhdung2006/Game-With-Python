@@ -2,7 +2,7 @@
 
 import pygame
 
-from managers.room_state import ROOM_BOSS_PLACEHOLDER, ROOM_DUNGEON_CLEAR, ROOM_ENCOUNTER
+from managers.room_state import ROOM_BOSS_ENCOUNTER, ROOM_DUNGEON_CLEAR, ROOM_ENCOUNTER
 from settings import HEIGHT, WHITE, WIDTH
 
 
@@ -93,8 +93,8 @@ def format_room_type(room_type):
     """Return readable labels for dungeon HUD room types."""
     if room_type == ROOM_ENCOUNTER:
         return "ENCOUNTER"
-    if room_type == ROOM_BOSS_PLACEHOLDER:
-        return "BOSS_PLACEHOLDER"
+    if room_type == ROOM_BOSS_ENCOUNTER:
+        return "BOSS_ENCOUNTER"
     if room_type == ROOM_DUNGEON_CLEAR:
         return "DUNGEON_CLEAR"
     return room_type

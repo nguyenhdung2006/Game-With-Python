@@ -231,6 +231,48 @@ FAST_ENEMY_CONFIG = {
     "stagger_emphasis_color": (255, 245, 215),
 }
 
+ELITE_ENEMY_CONFIG = {
+    "label": "ELITE ENEMY",
+    "width": 74,
+    "height": 140,
+    "max_health": 380,
+    "hurt_flash_duration": 0.12,
+    "knockback_friction": 2100,
+    "chase_speed": 92,
+    "attack_start_distance": 118,
+    "telegraph_duration": 0.72,
+    "attack_duration": 0.28,
+    "attack_cooldown": 1.35,
+    "attack_damage": 14,
+    "attack_range": 98,
+    "attack_height": 78,
+    "attack_knockback": 340,
+    "retreat_duration": 0.22,
+    "retreat_speed": 72,
+    "attack_hitstop": 0.050,
+    "attack_shake_duration": 0.13,
+    "attack_shake_strength": 4,
+    "recovery_duration": 0.58,
+    "stagger_duration": 0.44,
+    "body_color": (165, 58, 84),
+    "hurt_color": (255, 226, 236),
+    "defeated_color": (62, 38, 50),
+    "telegraph_color": (255, 214, 115),
+    "attack_color": (255, 105, 95),
+    "telegraph_pulse_speed": 9,
+    "recoil_outline_color": (95, 32, 52),
+    "hurt_reaction_duration": 0.09,
+    "hurt_reaction_heavy_bonus": 0.03,
+    "punish_window_duration": 0.42,
+    "recovery_flash_duration": 0.34,
+    "stagger_emphasis_duration": 0.16,
+    "post_stagger_recovery_duration": 0.16,
+    "reaction_recoil_pixels": 5,
+    "recovery_tint_color": (255, 218, 170),
+    "punish_outline_color": (255, 238, 180),
+    "stagger_emphasis_color": (255, 246, 210),
+}
+
 # Light attack combo settings
 COMBO_RESET_TIME = 0.75
 LIGHT_ATTACK_COMBO = (

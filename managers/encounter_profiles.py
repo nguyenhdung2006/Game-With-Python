@@ -5,6 +5,7 @@ turning encounter flow into giant scripted sequences.
 """
 
 from entities.basic_enemy import BasicEnemy
+from entities.elite_enemy import EliteEnemy
 from entities.fast_enemy import FastEnemy
 from settings import (
     ENCOUNTER_ATTACK_SWAP_DELAY,
@@ -69,5 +70,24 @@ WAVE_PROFILES = [
         "flank_far_offset": ENEMY_FLANK_FAR_OFFSET + 30,
         "spacing_min_distance": ENEMY_SPACING_MIN_DISTANCE + 10,
         "recovery_text": "Final Push",
+    },
+]
+
+BOSS_ROOM_PROFILES = [
+    {
+        "label": "Elite Room",
+        "enemies": [EliteEnemy],
+        "banner_duration": ENCOUNTER_WAVE_BANNER_DURATION + 0.15,
+        "activation_delay": ENCOUNTER_WAVE_ACTIVATION_DELAY + 0.28,
+        "attack_swap_delay": ENCOUNTER_ATTACK_SWAP_DELAY + 0.22,
+        "pressure_lead_time": ENCOUNTER_PRESSURE_LEAD_TIME + 0.18,
+        "spawn_stagger": 0,
+        "entrance_offset": ENCOUNTER_ENTRANCE_OFFSET + 18,
+        "entrance_move_speed": ENCOUNTER_ENTRANCE_MOVE_SPEED - 70,
+        "entrance_pause": ENCOUNTER_ENTRANCE_PAUSE + 0.12,
+        "flank_near_offset": ENEMY_FLANK_NEAR_OFFSET,
+        "flank_far_offset": ENEMY_FLANK_FAR_OFFSET,
+        "spacing_min_distance": ENEMY_SPACING_MIN_DISTANCE + 24,
+        "recovery_text": "Regroup",
     },
 ]

@@ -58,6 +58,7 @@ entities/
         behavior.py
         render_state.py
         render.py
+    elite_enemy.py
     basic_enemy.py
     fast_enemy.py
     enemy.py
@@ -119,6 +120,7 @@ assets/
 - `entities/base_enemy.py` holds shared melee enemy behavior so new archetypes can reuse one AI/state foundation.
 - `entities/enemy_parts/` keeps BaseEnemy setup, behavior, and drawing responsibilities separated.
 - `entities/enemy_parts/render_state.py` maps enemy AI state into animation-ready visual states.
+- `entities/elite_enemy.py` defines the heavy, readable single-enemy archetype used for the Room 3 boss foundation.
 - `entities/basic_enemy.py` defines the balanced baseline enemy archetype.
 - `entities/fast_enemy.py` defines the quicker, lower-health pressure archetype.
 - `managers/` stores flow systems such as enemy wave spawning and encounter progression.
@@ -143,7 +145,7 @@ assets/
 - `ui/dungeon_hud.py` draws Dungeon Mode run status, selected rewards, stat modifiers, and clear summary.
 - `ui/mode_select.py` draws the mode select and coming-soon placeholder screens.
 - `ui/reward_select.py` draws the three-choice mechanical reward selection screen.
-- `ui/room_banner.py` draws dungeon room number, room clear, boss placeholder, and dungeon clear prompts.
+- `ui/room_banner.py` draws dungeon room number, room clear, and dungeon clear prompts.
 - `ui/wave_banner.py` draws short centered wave-intro presentation text.
 - `world/` stores arena and environment drawing code.
 - `assets/SPRITE_PIPELINE.md` documents sprite folder conventions and prepared visual states.
@@ -154,11 +156,12 @@ assets/
 - Mode select screen on launch with Solo / Versus, Dungeon / Wave, and Team Round 3v3 entries
 - Solo / Versus placeholder screen
 - Dungeon / Wave Mode routes into the current playable combat encounter
-- Dungeon room flow foundation with Room 1 encounter, Room 2 encounter, Room 3 boss placeholder, and Dungeon Cleared state
+- Dungeon room flow foundation with Room 1 encounter, Room 2 encounter, Room 3 elite/boss encounter, and Dungeon Cleared state
 - Room clear flow that waits for `Enter` before advancing
 - Room reward foundation with three mechanical reward choices after encounter rooms
 - Dungeon HUD and run status polish showing room status, reward count, selected rewards, and mechanical stat modifiers
 - Dungeon clear summary with rooms cleared, selected rewards, and final modifiers
+- Elite/Boss foundation for Room 3 using a single heavy melee enemy with slower pacing, longer telegraphs, and clearer punish windows
 - Team Round 3v3 locked / coming-soon screen
 - Ruined battlefield arena drawn with Pygame shapes
 - Player left/right movement
@@ -194,14 +197,16 @@ assets/
 
 - Room 1: encounter
 - Room 2: encounter
-- Room 3: boss placeholder
+- Room 3: elite/boss encounter
 - Final state: Dungeon Cleared
 - Encounter rooms open a three-choice reward screen after clear
-- `Enter` confirms selected rewards and continues from the boss placeholder
+- `Enter` confirms selected rewards before advancing to the next room
 - Dungeon HUD shows current room, room type, reward count, damage multiplier, dash cooldown multiplier, and max HP bonus
 - Dungeon Clear shows selected rewards and final mechanical modifiers
-- Rewards are mechanical only: no named skills, fantasy effects, transformations, animation playback, reward rarity, inventory, save/load, or boss implementation yet
-- Phase 25 adds UI/readability polish only; it does not add new combat mechanics or fantasy/skill content
+- Rewards are mechanical only and appear after Room 1 and Room 2 encounter clears
+- The Room 3 elite/boss encounter has no post-fight reward and clears the dungeon when defeated
+- No named skills, fantasy effects, transformations, projectiles, animation playback, reward rarity, inventory, save/load, or boss identity/theme has been added
+- Phase 26 adds boss pacing foundation only: heavier melee tuning, longer telegraph/recovery, and punish-focused combat readability
 
 This structure keeps each file focused. As the game grows, combat, enemies,
 bosses, effects, and UI can expand without turning `main.py` into one giant file.

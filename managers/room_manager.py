@@ -4,7 +4,7 @@ from dataclasses import dataclass
 
 from managers.room_state import (
     ROOM_ACTIVE,
-    ROOM_BOSS_PLACEHOLDER,
+    ROOM_BOSS_ENCOUNTER,
     ROOM_CLEARED,
     ROOM_COMPLETE,
     ROOM_DUNGEON_CLEAR,
@@ -27,7 +27,7 @@ class RoomManager:
         self.rooms = [
             DungeonRoom(ROOM_ENCOUNTER),
             DungeonRoom(ROOM_ENCOUNTER),
-            DungeonRoom(ROOM_BOSS_PLACEHOLDER),
+            DungeonRoom(ROOM_BOSS_ENCOUNTER),
         ]
         self.current_room_index = 0
         self.flow_state = ROOM_ACTIVE

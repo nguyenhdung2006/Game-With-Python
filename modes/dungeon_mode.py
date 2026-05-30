@@ -4,8 +4,9 @@ import pygame
 
 from entities.player import Player
 from managers.encounter_manager import EncounterManager
+from managers.encounter_profiles import BOSS_ROOM_PROFILES
 from managers.room_manager import RoomManager
-from managers.room_state import ROOM_BOSS_PLACEHOLDER, ROOM_ENCOUNTER
+from managers.room_state import ROOM_BOSS_ENCOUNTER, ROOM_ENCOUNTER
 from settings import GROUND_Y, HEALTH_PLAYER, PLAYER_HEIGHT
 from systems.combat import process_enemy_attacks, process_player_attacks
 from systems.effects import CombatImpact
@@ -14,10 +15,7 @@ from systems.render_layers import draw_combat_scene
 from ui.dungeon_hud import draw_dungeon_clear_summary, draw_dungeon_hud
 from ui.health_bar import draw_health_bar
 from ui.reward_select import draw_reward_select
-from ui.room_banner import (
-    draw_boss_placeholder,
-    draw_room_cleared,
-)
+from ui.room_banner import draw_room_cleared
 from world.battlefield import draw_arena
 
 
@@ -83,7 +81,7 @@ class DungeonMode:
             self.impact.start_hit_impact(enemy_hit_result)
 
         if self.encounter_manager.encounter_cleared:
-            self.start_reward_selection()
+            self.complete_current_encounter_room()
 
     def draw(self, screen, scene_surface):
         """Draw the active dungeon room and progression UI."""
@@ -107,18 +105,11 @@ class DungeonMode:
             draw_reward_select(screen, self.reward_manager)
         elif self.room_manager.is_dungeon_complete():
             draw_dungeon_clear_summary(screen, self.room_manager, self.reward_manager, self.player)
-        elif self.room_manager.current_room_type() == ROOM_BOSS_PLACEHOLDER:
-            draw_boss_placeholder(screen)
 
     def handle_continue(self):
-        """Advance room flow from clear and placeholder states."""
+        """Advance room flow from clear states."""
         if self.room_manager.is_room_cleared():
             self.start_reward_selection()
-            return
-
-        if self.room_manager.current_room_type() == ROOM_BOSS_PLACEHOLDER:
-            self.room_manager.advance_room()
-            self.enter_current_room()
 
     def handle_reward_input(self, key):
         """Navigate and confirm room reward selection."""
@@ -140,12 +131,23 @@ class DungeonMode:
         if not self.reward_manager.has_options():
             self.reward_manager.generate_options()
 
+    def complete_current_encounter_room(self):
+        """Resolve normal and boss room clears without changing combat rules."""
+        if self.room_manager.current_room_type() == ROOM_BOSS_ENCOUNTER:
+            self.room_manager.advance_room()
+            self.enter_current_room()
+            return
+
+        self.start_reward_selection()
+
     def enter_current_room(self):
         """Initialize combat systems for the current room type."""
         self.impact = CombatImpact()
 
         if self.room_manager.current_room_type() == ROOM_ENCOUNTER:
             self.encounter_manager = EncounterManager()
+        elif self.room_manager.current_room_type() == ROOM_BOSS_ENCOUNTER:
+            self.encounter_manager = EncounterManager(BOSS_ROOM_PROFILES)
         else:
             self.encounter_manager = None
 
@@ -153,7 +155,7 @@ class DungeonMode:
         """Return True only while an encounter room is actively running."""
         return (
             self.room_manager.is_room_active()
-            and self.room_manager.current_room_type() == ROOM_ENCOUNTER
+            and self.room_manager.current_room_type() in {ROOM_ENCOUNTER, ROOM_BOSS_ENCOUNTER}
             and self.encounter_manager is not None
         )
 

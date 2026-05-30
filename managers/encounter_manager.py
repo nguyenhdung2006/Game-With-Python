@@ -14,8 +14,8 @@ from ui.health_bar import draw_health_bar
 class EncounterManager:
     """Spawn hardcoded waves and track when the encounter is cleared."""
 
-    def __init__(self):
-        self.wave_definitions = WAVE_PROFILES
+    def __init__(self, wave_definitions=None):
+        self.wave_definitions = WAVE_PROFILES if wave_definitions is None else wave_definitions
         self.active_enemies = []
         self.current_wave_index = -1
         self.wave_delay_timer = ENCOUNTER_WAVE_DELAY

@@ -2,7 +2,7 @@
 
 import pygame
 
-from managers.room_state import ROOM_BOSS_PLACEHOLDER, ROOM_DUNGEON_CLEAR, ROOM_ENCOUNTER
+from managers.room_state import ROOM_BOSS_ENCOUNTER, ROOM_DUNGEON_CLEAR, ROOM_ENCOUNTER
 from settings import HEIGHT, WHITE, WIDTH
 
 
@@ -30,13 +30,6 @@ def draw_room_cleared(surface):
     _draw_center_text(surface, "Press Enter to continue", HEIGHT // 2 + 30, 32, WHITE)
 
 
-def draw_boss_placeholder(surface):
-    """Draw a non-combat placeholder for the future boss room."""
-    _draw_center_text(surface, "Boss Placeholder", HEIGHT // 2 - 42, 52, CLEAR_COLOR)
-    _draw_center_text(surface, "Boss implementation is not active yet.", HEIGHT // 2 + 8, 30, MUTED)
-    _draw_center_text(surface, "Press Enter to clear the dungeon", HEIGHT // 2 + 54, 30, WHITE)
-
-
 def draw_dungeon_cleared(surface):
     """Draw final dungeon clear state."""
     _draw_center_text(surface, "Dungeon Cleared", HEIGHT // 2 - 18, 58, CLEAR_COLOR)
@@ -47,8 +40,8 @@ def format_room_type(room_type):
     """Return readable labels for current room types."""
     if room_type == ROOM_ENCOUNTER:
         return "Encounter"
-    if room_type == ROOM_BOSS_PLACEHOLDER:
-        return "Boss Placeholder"
+    if room_type == ROOM_BOSS_ENCOUNTER:
+        return "Elite Encounter"
     if room_type == ROOM_DUNGEON_CLEAR:
         return "Dungeon Cleared"
     return room_type.replace("_", " ").title()
