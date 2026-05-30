@@ -1,82 +1,61 @@
 import os
 import pygame
 
-from entities.player import Player
-from managers.encounter_manager import EncounterManager
-from systems.combat import process_enemy_attacks, process_player_attacks
-from systems.effects import CombatImpact
-from systems.render_layers import draw_combat_scene
-from settings import (
-    FPS,
-    GROUND_Y,
-    HEALTH_PLAYER,
-    HEIGHT,
-    PLAYER_HEIGHT,
-    WIDTH,
-)
-from ui.health_bar import draw_health_bar
-from world.battlefield import draw_arena
+from managers.game_state import DUNGEON_MODE, MODE_SELECT, SOLO_MODE, TEAM_MODE_LOCKED, GameState
+from modes.dungeon_mode import DungeonMode
+from settings import FPS, HEIGHT, WIDTH
+from ui.mode_select import draw_mode_select, draw_solo_placeholder, draw_team_locked
 
 
 def main():
     pygame.init()
 
     screen = pygame.display.set_mode((WIDTH, HEIGHT))
-    pygame.display.set_caption("Anime Stickman Combat - Phase 19")
+    pygame.display.set_caption("Anime Stickman Combat - Phase 22")
     clock = pygame.time.Clock()
     scene_surface = pygame.Surface((WIDTH, HEIGHT))
 
-    player = Player(180, GROUND_Y - PLAYER_HEIGHT)
-    encounter_manager = EncounterManager()
-    impact = CombatImpact()
+    game_state = GameState()
+    dungeon_mode = None
 
     running = True
     while running:
         # Delta time is the number of seconds since the last frame.
         dt = clock.tick(FPS) / 1000
-        impact.update(dt)
-        hitstop_active = impact.is_hitstop_active()
 
         for event in pygame.event.get():
             if event.type == pygame.QUIT:
                 running = False
-            if hitstop_active:
-                continue
-            if event.type == pygame.KEYDOWN and event.key == pygame.K_w:
-                player.jump()
-            if event.type == pygame.KEYDOWN and event.key == pygame.K_LSHIFT:
-                player.start_dash()
-            if event.type == pygame.KEYDOWN and event.key == pygame.K_k:
-                player.start_guard()
-            if event.type == pygame.KEYDOWN and event.key == pygame.K_l:
-                dodge_result = player.start_dodge()
-                if dodge_result:
-                    impact.start_hit_impact(dodge_result)
-            if event.type == pygame.KEYDOWN and event.key == pygame.K_j:
-                player.start_light_attack()
+            elif event.type == pygame.KEYDOWN:
+                if game_state.is_mode_select():
+                    if event.key == pygame.K_ESCAPE:
+                        running = False
+                    elif event.key == pygame.K_1:
+                        game_state.enter_solo_mode()
+                    elif event.key == pygame.K_2:
+                        dungeon_mode = DungeonMode()
+                        game_state.enter_dungeon_mode()
+                    elif event.key == pygame.K_3:
+                        game_state.enter_team_mode_locked()
+                elif game_state.is_dungeon_mode():
+                    if event.key == pygame.K_ESCAPE:
+                        dungeon_mode = None
+                        game_state.enter_mode_select()
+                    elif dungeon_mode is not None:
+                        dungeon_mode.handle_event(event)
+                elif game_state.is_placeholder_screen() and event.key == pygame.K_ESCAPE:
+                    game_state.enter_mode_select()
 
         keys = pygame.key.get_pressed()
-        if not hitstop_active:
-            player.update(keys, dt)
-            encounter_manager.update(player, dt)
-            active_enemies = encounter_manager.get_enemies()
-
-            player_hit_result = process_player_attacks(player, active_enemies)
-            enemy_hit_results = process_enemy_attacks(active_enemies, player)
-
-            if player_hit_result:
-                impact.start_hit_impact(player_hit_result)
-            for enemy_hit_result in enemy_hit_results:
-                impact.start_hit_impact(enemy_hit_result)
-
-        draw_combat_scene(scene_surface, player, encounter_manager, draw_arena)
-
-        screen.fill((0, 0, 0))
-        camera_offset = impact.get_camera_offset()
-        screen.blit(scene_surface, camera_offset)
-
-        draw_health_bar(screen, 60, 55, 420, 28, player.health, player.max_health, HEALTH_PLAYER, "PLAYER")
-        encounter_manager.draw_ui(screen)
+        if game_state.current == DUNGEON_MODE and dungeon_mode is not None:
+            dungeon_mode.update(keys, dt)
+            dungeon_mode.draw(screen, scene_surface)
+        elif game_state.current == SOLO_MODE:
+            draw_solo_placeholder(screen)
+        elif game_state.current == TEAM_MODE_LOCKED:
+            draw_team_locked(screen)
+        elif game_state.current == MODE_SELECT:
+            draw_mode_select(screen)
 
         pygame.display.flip()
 

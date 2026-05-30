@@ -18,6 +18,15 @@ python main.py
 
 ## Controls
 
+Mode select:
+
+- `1` = Solo / Versus placeholder
+- `2` = Dungeon / Wave Mode
+- `3` = Team Round 3v3 locked screen
+- `Esc` = quit on mode select, return to mode select from modes
+
+Dungeon / Wave Mode:
+
 - `A` = move left
 - `D` = move right
 - `W` = jump
@@ -55,6 +64,9 @@ managers/
     encounter_director.py
     encounter_manager.py
     encounter_profiles.py
+    game_state.py
+modes/
+    dungeon_mode.py
 systems/
     combat.py
     enemy_spacing.py
@@ -72,6 +84,7 @@ systems/
         ui.py
 ui/
     health_bar.py
+    mode_select.py
     wave_banner.py
 world/
     battlefield.py
@@ -101,8 +114,10 @@ assets/
 - `entities/basic_enemy.py` defines the balanced baseline enemy archetype.
 - `entities/fast_enemy.py` defines the quicker, lower-health pressure archetype.
 - `managers/` stores flow systems such as enemy wave spawning and encounter progression.
+- `managers/game_state.py` stores top-level mode routing state.
 - `managers/encounter_director.py` coordinates wave intros, activation timing, and clean attacker handoffs.
 - `managers/encounter_profiles.py` stores lightweight per-wave pacing profiles so encounters can escalate without giant scripts.
+- `modes/dungeon_mode.py` wraps the current playable wave-combat loop so the game can route between modes.
 - `systems/combat.py` stores hitbox, damage, and defense resolution helpers.
 - `systems/enemy_spacing.py` keeps multi-enemy spacing and flanking behavior lightweight and reusable.
 - `systems/pressure_indicator.py` draws subtle enemy intent and active-aggressor readability cues.
@@ -113,6 +128,7 @@ assets/
 - `systems/effects/` stores camera impact, trails, slash visuals, and defense-related visual effects.
 - `systems/physics.py` stores shared movement and collision helpers.
 - `ui/` stores reusable interface drawing code such as health bars.
+- `ui/mode_select.py` draws the mode select and coming-soon placeholder screens.
 - `ui/wave_banner.py` draws short centered wave-intro presentation text.
 - `world/` stores arena and environment drawing code.
 - `assets/SPRITE_PIPELINE.md` documents sprite folder conventions and prepared visual states.
@@ -120,6 +136,10 @@ assets/
 
 ## Current Features
 
+- Mode select screen on launch with Solo / Versus, Dungeon / Wave, and Team Round 3v3 entries
+- Solo / Versus placeholder screen
+- Dungeon / Wave Mode routes into the current playable combat encounter
+- Team Round 3v3 locked / coming-soon screen
 - Ruined battlefield arena drawn with Pygame shapes
 - Player left/right movement
 - Jumping with gravity and ground collision
@@ -143,6 +163,12 @@ assets/
 - Short dodge / evade with cooldown and temporary invulnerability
 - Combat recovery and cancel timing for smoother action flow
 - Player and enemy health bars
+
+## Current Modes
+
+- Solo / Versus: placeholder
+- Dungeon / Wave Mode: playable
+- Team Round 3v3: locked / coming soon
 
 This structure keeps each file focused. As the game grows, combat, enemies,
 bosses, effects, and UI can expand without turning `main.py` into one giant file.
