@@ -315,6 +315,7 @@ assets/
 - Phase 35 adds fixed Dungeon layout foundation only: START, ENCOUNTER, ELITE/BOSS, and CLEAR layouts now provide spawn anchors, placeholder bounds, walls, labels, and clear-state exits. No final art, procedural generation, lore, or new gameplay content has been added
 - Phase 36 expands the config-driven mechanical reward foundation with offense, defense, mobility, resource, and utility categories plus safe stack caps and clamps. No fantasy rewards, skills, animation, or assets have been added
 - Phase 37 adds lightweight standalone regression checks and a prototype balance audit report only. No gameplay content, skills, rebalance, animation, or assets have been added
+- Phase 38 caps the immediate mechanical heal reward so the balance audit is clean without changing the current Dungeon run feel. No new content or broad rebalance has been added
 - Phase 26 adds boss pacing foundation only: heavier melee tuning, longer telegraph/recovery, and punish-focused combat readability
 - Phase 27 polishes boss rhythm only: clearer telegraphs, longer recovery, slower pressure cadence, and more reliable punish timing without special attacks or VFX
 

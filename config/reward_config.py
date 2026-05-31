@@ -113,7 +113,7 @@ REWARD_DEFINITIONS = (
         "description": "Heal 18 HP immediately.",
         "category": "utility",
         "value": 18,
-        "max_stacks": None,
+        "max_stacks": 3,
         "effect_id": "small_heal_now",
     },
 )

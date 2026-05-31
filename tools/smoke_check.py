@@ -209,6 +209,16 @@ def check_reward_runtime():
     manager.current_options = [attack_reward]
     check(manager.apply_selected(player) is None, "Reward applied after reaching max stacks")
 
+    heal_manager = RewardManager()
+    heal_reward = next(reward for reward in heal_manager.reward_pool if reward.reward_id == "small_heal_now")
+    heal_player = create_player()
+    for _ in range(heal_reward.max_stacks):
+        heal_player.health = 50
+        heal_manager.current_options = [heal_reward]
+        check(heal_manager.apply_selected(heal_player) is heal_reward, "Immediate heal failed before cap")
+    heal_manager.current_options = [heal_reward]
+    check(heal_manager.apply_selected(heal_player) is None, "Immediate heal applied after reaching max stacks")
+
     clamp_player = create_player()
     for reward in create_reward_pool():
         for _ in range(20):
