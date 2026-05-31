@@ -56,8 +56,9 @@ Dungeon / Wave Mode:
 Solo / Versus Mode:
 
 - Same movement, defense, combo, and skill controls as Dungeon / Wave Mode
+- Pre-fight setup: `Up/Down` selects HP slider, `A/D` or `Left/Right` adjusts, `Enter` starts
 - `U` = Combo Burst prototype (costs Solo energy)
-- `I` = Kamehameha
+- `I` = Kamehameha (costs Solo energy)
 - `O` = locked skill slot
 - No rewards or room progression
 - Victory / Defeat: `R` starts a rematch, `Esc` returns to mode select
@@ -123,6 +124,7 @@ systems/
     skill.py
     skill_manager.py
     solo_combo_burst.py
+    solo_boss_combo_controller.py
     solo_sprite_renderer.py
     sprite_loader.py
     physics.py
@@ -141,6 +143,7 @@ ui/
     mode_select.py
     reward_select.py
     room_banner.py
+    solo_setup.py
     wave_banner.py
 world/
     battlefield.py
@@ -197,6 +200,7 @@ assets/
 - `systems/skill.py` defines neutral skill slot primitives with cooldown and resource-cost fields.
 - `systems/skill_manager.py` owns the three player skill slots and routes Ki Blast, Kamehameha, and the locked slot.
 - `systems/solo_combo_burst.py` sequences the Solo-only three-hit Combo Burst using existing normal attack setup.
+- `systems/solo_boss_combo_controller.py` owns the Solo-only boss energy meter and user-approved multi-hit frame sequences.
 - `systems/solo_sprite_renderer.py` loads and draws Solo-only shaman, slash, boss, and boss-technique prototype frames with safe fallbacks.
 - `systems/sprite_loader.py` provides safe cached sprite loading with placeholder fallback.
 - `systems/effects/` stores camera impact, trails, slash visuals, and defense-related visual effects.
@@ -209,6 +213,7 @@ assets/
 - `ui/mode_select.py` draws the mode select and locked coming-soon screens.
 - `ui/reward_select.py` draws the three-choice mechanical reward selection screen.
 - `ui/room_banner.py` draws dungeon room number, room clear, and dungeon clear prompts.
+- `ui/solo_setup.py` draws the Solo pre-fight player and boss HP sliders.
 - `ui/wave_banner.py` draws short centered wave-intro presentation text.
 - `world/` stores arena and environment drawing code.
 - `world/dungeon_room.py` layers placeholder walls, floor bounds, room labels, and clear-state exit markers over Dungeon rooms.
@@ -239,6 +244,10 @@ assets/
 - Ki Blast as a fast projectile with cooldown, damage multiplier support, lifetime cleanup, and one-hit collision
 - Kamehameha as a short-lived rectangular beam prototype that damages each enemy once per use
 - Solo / Versus supports movement, jump, dash, combo attacks, Solo Combo Burst, Kamehameha, enemy chase/telegraph/attack, and Victory/Defeat overlays
+- Solo / Versus has pre-fight player and boss HP sliders plus player and boss energy bars
+- Solo boss normal attacks hold one logical technique frame; energy skills use user-approved `1-2-3`, `4-5-6`, and `1-2-3-4-5-6` multi-hit sequences
+- Solo boss combo combat polish adds weighted anti-spam AI, tier-specific pacing, Final lockout, and punishable major-skill recovery windows
+- Solo HUD shows lightweight `STUNNED` and `SKILL LOCKED` timer feedback
 - Boss skill AI foundation with cooldown spacing, readable telegraph, one-hit placeholder rectangle, and recovery punish window
 - Solo sprite combat prototype with shaman player frames, close-range slash visuals, boss sprite playback, boss technique frames, energy bar, and `U` Combo Burst
 - Team Round 3v3 locked / coming-soon screen
@@ -278,9 +287,10 @@ assets/
 - The arena spawns the player and one duel enemy
 - The player can use existing movement, combo, guard/dodge, and Kamehameha controls
 - In Solo, `U` is overridden by the energy-driven three-hit Combo Burst prototype; Dungeon keeps `U` Ki Blast
-- The Solo boss uses the existing chase, telegraph, attack, hurt, defeat, and Phase 31 boss-skill behavior
+- The Solo boss keeps the shared chase, telegraph, attack, hurt, and defeat behavior while a Solo-only controller owns its energy combo skills
 - Player and enemy health bars are shown
 - Player energy and skill HUD are shown
+- Boss energy increases from damage exchanges and is spent on the Solo-only multi-hit skill tiers
 - Solo attack hitboxes are shorter than their sprite visuals to keep close-range combat fair
 - Enemy defeat shows `Victory`
 - Player defeat shows `Defeat`
@@ -316,6 +326,7 @@ assets/
 - Phase 36 expands the config-driven mechanical reward foundation with offense, defense, mobility, resource, and utility categories plus safe stack caps and clamps. No fantasy rewards, skills, animation, or assets have been added
 - Phase 37 adds lightweight standalone regression checks and a prototype balance audit report only. No gameplay content, skills, rebalance, animation, or assets have been added
 - Phase 38 caps the immediate mechanical heal reward so the balance audit is clean without changing the current Dungeon run feel. No new content or broad rebalance has been added
+- Phase 39 polishes Solo boss combo combat only: weighted anti-spam decisions, readable per-tier tempo, Final group pause and lockout, major-skill punish windows, and stun / skill-lock feedback. Dungeon behavior remains stable
 - Phase 26 adds boss pacing foundation only: heavier melee tuning, longer telegraph/recovery, and punish-focused combat readability
 - Phase 27 polishes boss rhythm only: clearer telegraphs, longer recovery, slower pressure cadence, and more reliable punish timing without special attacks or VFX
 

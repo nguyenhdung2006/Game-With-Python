@@ -109,6 +109,8 @@ class SkillManager:
             return False
         if getattr(player, "is_hurt", False) or getattr(player, "hurt_timer", 0) > 0:
             return False
+        if getattr(player, "skill_lock_timer", 0) > 0:
+            return False
         if require_grounded and not getattr(player, "grounded", True):
             return False
         return True

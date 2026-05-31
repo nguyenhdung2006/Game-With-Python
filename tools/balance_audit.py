@@ -8,7 +8,7 @@ PROJECT_ROOT = Path(__file__).resolve().parents[1]
 if str(PROJECT_ROOT) not in sys.path:
     sys.path.insert(0, str(PROJECT_ROOT))
 
-from config.boss_config import BOSS_SKILL_CONFIG, ELITE_ENEMY_CONFIG
+from config.boss_config import BOSS_SKILL_CONFIG, ELITE_ENEMY_CONFIG, SOLO_BOSS_COMBO_CONFIG
 from config.enemy_config import BASIC_ENEMY_CONFIG, FAST_ENEMY_CONFIG
 from config.player_config import LIGHT_ATTACK_COMBO, PLAYER_MAX_HEALTH
 from config.reward_config import (
@@ -49,6 +49,14 @@ def collect_warnings():
         warnings.append(f"Boss skill range may be difficult to avoid: {BOSS_SKILL_CONFIG['skill_range']}")
     if BOSS_SKILL_CONFIG["damage"] >= PLAYER_MAX_HEALTH * 0.40:
         warnings.append(f"Boss skill damage is high relative to player HP: {BOSS_SKILL_CONFIG['damage']}")
+    if SOLO_BOSS_COMBO_CONFIG["final_skill"]["energy_cost"] > SOLO_BOSS_COMBO_CONFIG["max_energy"]:
+        warnings.append("Solo boss final skill costs more energy than the boss can store")
+    if SOLO_BOSS_COMBO_CONFIG["final_lockout"] < 8.0:
+        warnings.append("Solo boss final skill lockout may allow repeated high-threat combos")
+    if SOLO_BOSS_COMBO_CONFIG["final_skill"]["recovery_duration"] < 1.0:
+        warnings.append("Solo boss final skill recovery may be too short to punish")
+    if SOLO_BOSS_COMBO_CONFIG["skill_lock_duration"] > 3.0:
+        warnings.append("Solo player skill-lock duration may feel oppressive")
 
     for label, skill in (("Ki Blast", KI_BLAST_CONFIG), ("Kamehameha", KAMEHAMEHA_CONFIG)):
         if skill["damage"] >= ELITE_ENEMY_CONFIG["max_health"] * 0.35:
@@ -82,6 +90,25 @@ def run():
     print_section("Player Skills")
     print(f"Ki Blast: damage {KI_BLAST_CONFIG['damage']}, cooldown {KI_BLAST_CONFIG['cooldown']:.2f}s")
     print(f"Kamehameha: damage {KAMEHAMEHA_CONFIG['damage']}, cooldown {KAMEHAMEHA_CONFIG['cooldown']:.2f}s")
+
+    print_section("Solo Boss Combo Skills")
+    base_damage = SOLO_BOSS_COMBO_CONFIG["base_hit_damage"]
+    for skill_id in ("skill_1", "skill_2", "final_skill"):
+        skill = SOLO_BOSS_COMBO_CONFIG[skill_id]
+        damage = [base_damage[index % 3] * skill["damage_multiplier"] for index, _ in enumerate(skill["frames"])]
+        print(
+            f"{skill_id}: frames {skill['frames']}, damage {damage}, energy cost {skill['energy_cost']}, "
+            f"telegraph {skill['telegraph_duration']:.2f}s, recovery {skill['recovery_duration']:.2f}s"
+        )
+    print(
+        f"Anti-spam: major spacing {SOLO_BOSS_COMBO_CONFIG['major_skill_spacing']:.2f}s, "
+        f"final lockout {SOLO_BOSS_COMBO_CONFIG['final_lockout']:.2f}s, "
+        f"final prior skills {SOLO_BOSS_COMBO_CONFIG['final_min_prior_skills']}"
+    )
+    print(
+        f"Player control effects: stun {SOLO_BOSS_COMBO_CONFIG['stun_duration']:.2f}s, "
+        f"skill lock {SOLO_BOSS_COMBO_CONFIG['skill_lock_duration']:.2f}s"
+    )
 
     print_section("Reward Caps")
     print(f"Damage: x{MAX_DAMAGE_MULTIPLIER:.2f}")

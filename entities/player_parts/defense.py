@@ -72,10 +72,19 @@ def can_take_damage(player):
 
 def update_hurt_timers(player, dt):
     """Count down hurt, flash, invulnerability, block, parry, and counter timers."""
+    if player.stun_timer > 0:
+        player.stun_timer = max(0, player.stun_timer - dt)
+
     if player.hurt_timer > 0:
         player.hurt_timer = max(0, player.hurt_timer - dt)
-        if player.hurt_timer == 0:
+        if player.hurt_timer == 0 and player.stun_timer == 0:
             player.is_hurt = False
+
+    if player.skill_lock_timer > 0:
+        player.skill_lock_timer = max(0, player.skill_lock_timer - dt)
+
+    if player.hurt_timer == 0 and player.stun_timer == 0:
+        player.is_hurt = False
 
     if player.hurt_flash_timer > 0:
         player.hurt_flash_timer = max(0, player.hurt_flash_timer - dt)

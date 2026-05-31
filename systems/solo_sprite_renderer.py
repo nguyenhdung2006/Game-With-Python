@@ -91,15 +91,20 @@ class SoloSpriteRenderer:
             self.select_next_boss_normal_attack_frame()
 
         if self.is_boss_skill_visual(boss):
-            self.boss_skill_technique_timer += dt
-            if (
-                self.boss_technique_frames
-                and self.boss_skill_technique_timer >= self.boss_skill_technique_delay
-            ):
-                self.boss_skill_technique_timer %= self.boss_skill_technique_delay
-                self.boss_skill_technique_index = (
-                    self.boss_skill_technique_index + 1
-                ) % len(self.boss_technique_frames)
+            controlled_frame_index = getattr(boss.skill_controller, "visual_frame_index", None)
+            if controlled_frame_index is not None:
+                self.boss_skill_technique_index = controlled_frame_index
+                self.boss_skill_technique_timer = 0.0
+            else:
+                self.boss_skill_technique_timer += dt
+                if (
+                    self.boss_technique_frames
+                    and self.boss_skill_technique_timer >= self.boss_skill_technique_delay
+                ):
+                    self.boss_skill_technique_timer %= self.boss_skill_technique_delay
+                    self.boss_skill_technique_index = (
+                        self.boss_skill_technique_index + 1
+                    ) % len(self.boss_technique_frames)
         else:
             self.boss_skill_technique_index = 0
             self.boss_skill_technique_timer = 0.0

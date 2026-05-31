@@ -85,6 +85,8 @@ def initialize_core_state(player, x, y):
     player.hurt_timer = 0
     player.hurt_flash_timer = 0
     player.invulnerability_timer = 0
+    player.stun_timer = 0
+    player.skill_lock_timer = 0
 
 
 def initialize_attack_state(player):

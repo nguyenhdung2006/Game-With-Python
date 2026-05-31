@@ -16,7 +16,7 @@ os.environ.setdefault("SDL_AUDIODRIVER", "dummy")
 
 import pygame
 
-from config.boss_config import BOSS_SKILL_CONFIG, ELITE_ENEMY_CONFIG
+from config.boss_config import BOSS_SKILL_CONFIG, ELITE_ENEMY_CONFIG, SOLO_BOSS_COMBO_CONFIG
 from config.dungeon_layout_config import (
     DUNGEON_CLEAR_LAYOUT,
     DUNGEON_ROOM_LAYOUTS,
@@ -40,13 +40,14 @@ from config.reward_config import (
     REWARD_DEFINITIONS,
 )
 from config.skill_config import KAMEHAMEHA_CONFIG, KI_BLAST_CONFIG
+from config.mode_config import SOLO_KAMEHAMEHA_ENERGY_COST
 from entities.basic_enemy import BasicEnemy
 from entities.elite_enemy import EliteEnemy
 from entities.player import Player
 from managers.dungeon_layout import DungeonLayoutManager
 from managers.room_state import ROOM_ACTIVE, ROOM_CLEARED, ROOM_REWARD
 from modes.dungeon_mode import DungeonMode
-from modes.solo_mode import SOLO_ACTIVE, SOLO_VICTORY, SoloMode
+from modes.solo_mode import SOLO_ACTIVE, SOLO_SETUP, SOLO_VICTORY, SoloMode
 from settings import (
     ENEMY_STATE_ATTACK,
     ENEMY_STATE_IDLE,
@@ -69,7 +70,10 @@ from systems.projectile_manager import ProjectileManager
 from systems.reward import REWARD_EFFECTS, create_reward_pool
 from systems.reward_manager import RewardManager
 from systems.skill_manager import SkillManager
+from systems.solo_boss_combo_controller import SoloBossComboController
+from systems.solo_combo_burst import SoloComboBurst
 from systems.solo_sprite_renderer import SoloSpriteRenderer
+from ui.solo_setup import SLIDER_LEFT, SLIDER_WIDTH, SLIDER_Y
 
 
 def check(condition, message):
@@ -129,6 +133,18 @@ def check_config_values():
     check(BOSS_SKILL_CONFIG["recovery_duration"] > 0, "Boss skill recovery must be positive")
     check(BOSS_SKILL_CONFIG["skill_range"] > 0, "Boss skill range must be positive")
     check(BOSS_SKILL_CONFIG["damage"] > 0, "Boss skill damage must be positive")
+    check(SOLO_BOSS_COMBO_CONFIG["max_energy"] > 0, "Solo boss max energy must be positive")
+    check(
+        SOLO_BOSS_COMBO_CONFIG["dealt_hit_energy_gain"] == 3 * SOLO_BOSS_COMBO_CONFIG["hurt_energy_gain"],
+        "Solo boss energy gain ratio must stay 3:1",
+    )
+    for skill_id in ("skill_1", "skill_2", "final_skill"):
+        profile = SOLO_BOSS_COMBO_CONFIG[skill_id]
+        check(profile["energy_cost"] <= SOLO_BOSS_COMBO_CONFIG["max_energy"], f"{skill_id} costs too much energy")
+        check(profile["frames"], f"{skill_id} must expose logical frames")
+        check(len(profile["hit_durations"]) == len(profile["frames"]), f"{skill_id} pacing does not match frames")
+        check(profile["telegraph_duration"] > 0, f"{skill_id} telegraph must be readable")
+        check(profile["recovery_duration"] > 0, f"{skill_id} recovery must be punishable")
 
 
 def check_reward_definitions():
@@ -250,12 +266,34 @@ def check_reward_runtime():
 def check_modes_and_reward_flow():
     """Initialize modes and exercise reward transition plus retry state reset."""
     solo = SoloMode()
-    check(solo.is_active(), "Solo mode failed to initialize")
+    check(solo.result_state == SOLO_SETUP, "Solo setup state failed to initialize")
+    screen = pygame.Surface((WIDTH, HEIGHT))
+    scene_surface = pygame.Surface((WIDTH, HEIGHT))
+    solo.draw(screen, scene_surface)
+    solo.handle_event(
+        pygame.event.Event(
+            pygame.MOUSEBUTTONDOWN,
+            button=1,
+            pos=(SLIDER_LEFT + SLIDER_WIDTH, SLIDER_Y[0]),
+        )
+    )
+    check(solo.setup_player_hp > PLAYER_MAX_HEALTH, "Solo player HP mouse slider failed")
+    solo.handle_event(pygame.event.Event(pygame.MOUSEBUTTONUP, button=1, pos=(0, 0)))
+    solo.handle_event(pygame.event.Event(pygame.KEYDOWN, key=pygame.K_d))
+    selected_player_hp = solo.setup_player_hp
+    solo.handle_event(pygame.event.Event(pygame.KEYDOWN, key=pygame.K_RETURN))
+    check(solo.is_active(), "Solo setup did not start the fight")
+    check(solo.player.max_health == selected_player_hp, "Solo player HP setup was not applied")
+    solo.player.stun_timer = 0.5
+    solo.player.skill_lock_timer = 1.0
+    solo.draw(screen, scene_surface)
     solo.enemy.defeated = True
     solo.update_result_state()
     check(solo.result_state == SOLO_VICTORY, "Solo victory state failed")
     solo.handle_event(pygame.event.Event(pygame.KEYDOWN, key=pygame.K_r))
     check(solo.result_state == SOLO_ACTIVE, "Solo rematch failed")
+    check(solo.player.stun_timer == 0, "Solo rematch kept stale stun")
+    check(solo.player.skill_lock_timer == 0, "Solo rematch kept stale skill lock")
 
     dungeon = DungeonMode()
     check(dungeon.is_active_encounter_room(), "Dungeon mode failed to initialize")
@@ -335,7 +373,10 @@ def check_solo_boss_technique_playback():
     """Hold one logical technique frame per normal Solo boss attack."""
     renderer = SoloSpriteRenderer()
     renderer.boss_technique_frames = [pygame.Surface((1, 1)) for _ in range(6)]
-    boss_visual = SimpleNamespace(state=ENEMY_STATE_IDLE)
+    boss_visual = SimpleNamespace(
+        state=ENEMY_STATE_IDLE,
+        skill_controller=SimpleNamespace(visual_frame_index=None),
+    )
     observed_frames = []
 
     for _ in range(7):
@@ -390,6 +431,133 @@ def check_solo_boss_technique_playback():
     check(player.health < start_health, "Solo boss normal attack did not damage player")
 
 
+def check_solo_boss_combo_skills():
+    """Validate Solo boss pacing, anti-spam, frame damage, status locks, and energy."""
+    player = create_player(420)
+    player.max_health = 1000
+    player.health = player.max_health
+    boss = EliteEnemy(520)
+    boss.facing = -1
+    boss.skill_controller = SoloBossComboController()
+    boss.max_energy = boss.skill_controller.max_energy
+    boss.energy = 100
+    controller = boss.skill_controller
+    controller.cooldown_timer = 0
+    controller.decision_delay_timer = 0
+
+    def select_and_record():
+        skill_id, profile = controller.choose_skill(boss, player)
+        check(profile is not None, "Solo boss weighted cycle returned no skill")
+        controller.start_telegraph(boss, skill_id, profile)
+        controller.cancel()
+        controller.cooldown_timer = 0
+        controller.decision_delay_timer = 0
+        controller.major_skill_spacing_timer = 0
+        for cooldown_skill_id in controller.skill_cooldown_timers:
+            controller.skill_cooldown_timers[cooldown_skill_id] = 0
+        boss.state = ENEMY_STATE_IDLE
+        boss.energy = 100
+        return skill_id
+
+    weighted_cycle = [select_and_record() for _ in range(5)]
+    check(
+        weighted_cycle == ["skill_1", "skill_1", "skill_2", "skill_2", "final_skill"],
+        "Solo boss weighted anti-spam cycle failed",
+    )
+    check(controller.final_lockout_timer > 0, "Solo boss final skill lockout did not start")
+    check(controller.choose_skill(boss, player)[0] != "final_skill", "Solo boss repeated final during lockout")
+
+    controller = SoloBossComboController()
+    boss.skill_controller = controller
+    boss.energy = 100
+    controller.skills_since_final = SOLO_BOSS_COMBO_CONFIG["final_min_prior_skills"]
+    controller.selection_cursor = len(controller.weighted_skill_cycle) - 1
+    controller.cooldown_timer = 0
+    controller.decision_delay_timer = 0
+    far_player = create_player(100)
+    check(
+        not controller.can_select_skill("final_skill", SOLO_BOSS_COMBO_CONFIG["final_skill"], boss, far_player),
+        "Solo boss final skill started from fullscreen range",
+    )
+    check(
+        controller.can_select_skill("final_skill", SOLO_BOSS_COMBO_CONFIG["final_skill"], boss, player),
+        "Solo boss final skill gate did not open",
+    )
+    check(controller.update(boss, player, 0.016), "Solo boss final skill did not start")
+    check(boss.energy == 0, "Solo boss final skill did not spend energy")
+    controller.update(boss, player, SOLO_BOSS_COMBO_CONFIG["final_skill"]["telegraph_duration"])
+    renderer = SoloSpriteRenderer()
+    renderer.boss_technique_frames = [pygame.Surface((1, 1)) for _ in range(6)]
+
+    observed_frames = []
+    observed_damage = []
+    for hit_number in range(1, 7):
+        observed_frames.append(controller.visual_frame_index)
+        renderer.update_boss_technique(boss, 0)
+        check(
+            renderer.get_boss_technique_index(boss) == controller.visual_frame_index,
+            "Solo boss rendered the wrong combo frame",
+        )
+        start_health = player.health
+        controller.update(boss, player, 0.001)
+        observed_damage.append(start_health - player.health)
+        if hit_number in {3, 6}:
+            check(
+                player.stun_timer >= SOLO_BOSS_COMBO_CONFIG["stun_duration"],
+                f"Solo boss final skill hit {hit_number} did not stun",
+            )
+            check(
+                player.skill_lock_timer >= SOLO_BOSS_COMBO_CONFIG["skill_lock_duration"],
+                f"Solo boss final skill hit {hit_number} did not lock skills",
+            )
+        controller.update(boss, player, controller.state_timer)
+        if hit_number == 3:
+            expected_pause = (
+                SOLO_BOSS_COMBO_CONFIG["final_skill"]["hit_durations"][3]
+                + SOLO_BOSS_COMBO_CONFIG["final_skill"]["group_pause_after_hits"][3]
+            )
+            check(controller.state_timer == expected_pause, "Solo boss final group pause failed")
+
+    check(observed_frames == [0, 1, 2, 3, 4, 5], "Solo boss final skill frame sequence failed")
+    check(observed_damage == [18, 24, 30, 18, 24, 30], "Solo boss final skill damage sequence failed")
+    check(controller.state == BOSS_SKILL_RECOVERY, "Solo boss final skill recovery did not start")
+    check(
+        controller.state_timer == SOLO_BOSS_COMBO_CONFIG["final_skill"]["recovery_duration"],
+        "Solo boss final skill recovery window is incorrect",
+    )
+
+    def profile_damage(skill_id):
+        profile = SOLO_BOSS_COMBO_CONFIG[skill_id]
+        return [
+            SOLO_BOSS_COMBO_CONFIG["base_hit_damage"][index % 3] * profile["damage_multiplier"]
+            for index, _ in enumerate(profile["frames"])
+        ]
+
+    check(profile_damage("skill_1") == [6, 8, 10], "Solo boss Skill 1 damage sequence failed")
+    check(profile_damage("skill_2") == [12, 16, 20], "Solo boss Skill 2 damage sequence failed")
+
+    solo = SoloMode()
+    solo.handle_event(pygame.event.Event(pygame.KEYDOWN, key=pygame.K_RETURN))
+    start_player_energy = solo.energy
+    start_boss_energy = solo.enemy.energy
+    previous_player_health = solo.player.health
+    previous_enemy_health = solo.enemy.health
+    solo.player.health -= 1
+    solo.enemy.health -= 1
+    solo.apply_energy_from_health_changes(previous_player_health, previous_enemy_health)
+    check(solo.energy == start_player_energy + 12, "Solo player damage-exchange energy gain failed")
+    check(solo.enemy.energy == start_boss_energy + 12, "Solo boss damage-exchange energy gain failed")
+    solo.energy = SOLO_KAMEHAMEHA_ENERGY_COST
+    check(solo.try_use_kamehameha(), "Solo Kamehameha did not start with enough energy")
+    check(solo.energy == 0, "Solo Kamehameha did not spend its configured energy")
+    locked_player = create_player()
+    locked_player.skill_lock_timer = 1.0
+    locked_skills = SkillManager(ProjectileManager())
+    check(not locked_skills.use_slot(1, locked_player), "Player skill lock did not block skill use")
+    locked_burst = SoloComboBurst()
+    check(not locked_burst.can_start(locked_player, 100), "Player skill lock did not block Combo Burst")
+
+
 def run():
     """Run every standalone smoke section."""
     pygame.init()
@@ -403,6 +571,7 @@ def run():
         ("boss skill states", check_boss_skill_transitions),
         ("projectile and beam", check_projectile_and_beam),
         ("solo boss technique playback", check_solo_boss_technique_playback),
+        ("solo boss combo skills", check_solo_boss_combo_skills),
     )
     try:
         for label, callback in checks:

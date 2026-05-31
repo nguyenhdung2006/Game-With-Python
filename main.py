@@ -12,7 +12,7 @@ def main():
     pygame.init()
 
     screen = pygame.display.set_mode((WIDTH, HEIGHT))
-    pygame.display.set_caption("Anime Stickman Combat - Phase 38")
+    pygame.display.set_caption("Anime Stickman Combat - Phase 39")
     clock = pygame.time.Clock()
     scene_surface = pygame.Surface((WIDTH, HEIGHT))
 
@@ -54,6 +54,8 @@ def main():
                         dungeon_mode.handle_event(event)
                 elif game_state.is_placeholder_screen() and event.key == pygame.K_ESCAPE:
                     game_state.enter_mode_select()
+            elif game_state.current == SOLO_MODE and solo_mode is not None:
+                solo_mode.handle_event(event)
 
         keys = pygame.key.get_pressed()
         if game_state.current == DUNGEON_MODE and dungeon_mode is not None:

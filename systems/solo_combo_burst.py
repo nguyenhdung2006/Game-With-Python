@@ -20,6 +20,7 @@ class SoloComboBurst:
             and not self.active
             and not player.defeated
             and not player.is_hurt
+            and player.skill_lock_timer <= 0
             and not player.is_attacking
             and not player.is_blocking
             and not player.is_parrying
