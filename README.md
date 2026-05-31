@@ -16,6 +16,18 @@ Run the game from the project root:
 python main.py
 ```
 
+Run the lightweight regression checks:
+
+```powershell
+python tools/smoke_check.py
+```
+
+Print the prototype balance snapshot and warnings:
+
+```powershell
+python tools/balance_audit.py
+```
+
 ## Controls
 
 Mode select:
@@ -120,6 +132,9 @@ systems/
         slash.py
         defense.py
         ui.py
+tools/
+    smoke_check.py
+    balance_audit.py
 ui/
     dungeon_hud.py
     health_bar.py
@@ -186,6 +201,8 @@ assets/
 - `systems/sprite_loader.py` provides safe cached sprite loading with placeholder fallback.
 - `systems/effects/` stores camera impact, trails, slash visuals, and defense-related visual effects.
 - `systems/physics.py` stores shared movement and collision helpers.
+- `tools/smoke_check.py` runs lightweight standalone regression assertions for config, flow, rewards, boss skills, projectiles, and beams.
+- `tools/balance_audit.py` prints the current prototype tuning snapshot and conservative warning diagnostics.
 - `ui/` stores reusable interface drawing code such as health bars.
 - `ui/completion_overlay.py` draws shared retry and return-to-menu prompts for terminal states.
 - `ui/dungeon_hud.py` draws Dungeon Mode run status, selected rewards, stat modifiers, and clear summary.
@@ -215,6 +232,7 @@ assets/
 - Dungeon room bounds, player spawn points, enemy spawn anchors, room labels, wall markers, and clear-state exit markers
 - Expanded mechanical reward pool with offense, defense, mobility, resource, and utility categories
 - Reward stack caps and clamps for damage, cooldowns, damage reduction, dash distance, and move speed
+- Lightweight regression smoke checks and a first balance-audit report for prototype tuning
 - Elite/Boss foundation for Room 3 using a single heavy melee enemy with slower pacing, longer telegraphs, and clearer punish windows
 - Boss readability and pacing polish with slower attack cadence, stronger downtime, and clearer recovery punish windows
 - Goku skill prototype with `U` Ki Blast, `I` Kamehameha, and `O` locked
@@ -296,6 +314,7 @@ assets/
 - Phase 34 adds a lightweight gameplay config foundation: player, enemy, boss, skill, reward, Solo, and Dungeon prototype tuning now live in focused Python modules. Existing behavior is preserved; no new gameplay content has been added
 - Phase 35 adds fixed Dungeon layout foundation only: START, ENCOUNTER, ELITE/BOSS, and CLEAR layouts now provide spawn anchors, placeholder bounds, walls, labels, and clear-state exits. No final art, procedural generation, lore, or new gameplay content has been added
 - Phase 36 expands the config-driven mechanical reward foundation with offense, defense, mobility, resource, and utility categories plus safe stack caps and clamps. No fantasy rewards, skills, animation, or assets have been added
+- Phase 37 adds lightweight standalone regression checks and a prototype balance audit report only. No gameplay content, skills, rebalance, animation, or assets have been added
 - Phase 26 adds boss pacing foundation only: heavier melee tuning, longer telegraph/recovery, and punish-focused combat readability
 - Phase 27 polishes boss rhythm only: clearer telegraphs, longer recovery, slower pressure cadence, and more reliable punish timing without special attacks or VFX
 
