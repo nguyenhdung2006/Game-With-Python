@@ -83,6 +83,7 @@ modes/
     solo_mode.py
 systems/
     beam.py
+    boss_skill_controller.py
     combat.py
     enemy_spacing.py
     player_feedback.py
@@ -147,6 +148,7 @@ assets/
 - `modes/dungeon_mode.py` wraps the current playable wave-combat loop so the game can route between modes.
 - `modes/solo_mode.py` owns the playable 1v1 arena sandbox without dungeon rewards or room progression.
 - `systems/beam.py` defines the short-lived rectangular Kamehameha prototype hitbox.
+- `systems/boss_skill_controller.py` manages neutral boss skill cooldown, telegraph, active, and recovery states.
 - `systems/combat.py` stores hitbox, damage, and defense resolution helpers.
 - `systems/enemy_spacing.py` keeps multi-enemy spacing and flanking behavior lightweight and reusable.
 - `systems/pressure_indicator.py` draws subtle enemy intent and active-aggressor readability cues.
@@ -188,6 +190,7 @@ assets/
 - Ki Blast as a fast projectile with cooldown, damage multiplier support, lifetime cleanup, and one-hit collision
 - Kamehameha as a short-lived rectangular beam prototype that damages each enemy once per use
 - Solo / Versus supports movement, jump, dash, combo attacks, Ki Blast, Kamehameha, enemy chase/telegraph/attack, and Victory/Defeat overlays
+- Boss skill AI foundation with cooldown spacing, readable telegraph, one-hit placeholder rectangle, and recovery punish window
 - Team Round 3v3 locked / coming-soon screen
 - Ruined battlefield arena drawn with Pygame shapes
 - Player left/right movement
@@ -246,6 +249,7 @@ assets/
 - The Room 3 elite/boss encounter has no post-fight reward and clears the dungeon when defeated
 - Phase 28 adds skill slot and projectile infrastructure only
 - Phase 29 adds user-approved Ki Blast and Kamehameha prototypes with placeholder projectile/beam visuals only; no animation, sprite work, complex VFX, transformations, new skills, reward rarity, inventory, save/load, or boss identity/theme has been added
+- Phase 31 adds boss skill AI architecture with a neutral mechanical placeholder only; no final boss identity, named boss attack, animation, VFX, or assets have been added
 - Phase 26 adds boss pacing foundation only: heavier melee tuning, longer telegraph/recovery, and punish-focused combat readability
 - Phase 27 polishes boss rhythm only: clearer telegraphs, longer recovery, slower pressure cadence, and more reliable punish timing without special attacks or VFX
 
