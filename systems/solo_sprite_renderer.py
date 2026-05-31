@@ -60,9 +60,12 @@ class SoloSpriteRenderer:
         self.boss_frame_index = 0
         self.boss_frame_timer = 0.0
         self.boss_frame_delay = 0.10
-        self.boss_technique_index = 0
-        self.boss_technique_timer = 0.0
-        self.boss_technique_delay = 0.085
+        self.boss_normal_attack_frame_index = 0
+        self.boss_next_normal_attack_frame_index = 0
+        self.boss_skill_technique_index = 0
+        self.boss_skill_technique_timer = 0.0
+        self.boss_skill_technique_delay = 0.085
+        self.previous_boss_state = None
 
     def update(self, player, boss, dt):
         """Tick body and effect animation timers independently from combat."""
@@ -78,14 +81,44 @@ class SoloSpriteRenderer:
             self.boss_frame_timer %= self.boss_frame_delay
             self.boss_frame_index = (self.boss_frame_index + 1) % len(self.boss_frames)
 
-        if self.should_draw_boss_technique(boss):
-            self.boss_technique_timer += dt
-            if self.boss_technique_frames and self.boss_technique_timer >= self.boss_technique_delay:
-                self.boss_technique_timer %= self.boss_technique_delay
-                self.boss_technique_index = (self.boss_technique_index + 1) % len(self.boss_technique_frames)
+        self.update_boss_technique(boss, dt)
+
+    def update_boss_technique(self, boss, dt):
+        """Hold one logical frame per normal attack while preserving skill playback."""
+        normal_attack_visual = self.is_boss_normal_attack_visual(boss)
+        previous_normal_attack_visual = self.is_boss_normal_attack_state(self.previous_boss_state)
+        if normal_attack_visual and not previous_normal_attack_visual:
+            self.select_next_boss_normal_attack_frame()
+
+        if self.is_boss_skill_visual(boss):
+            self.boss_skill_technique_timer += dt
+            if (
+                self.boss_technique_frames
+                and self.boss_skill_technique_timer >= self.boss_skill_technique_delay
+            ):
+                self.boss_skill_technique_timer %= self.boss_skill_technique_delay
+                self.boss_skill_technique_index = (
+                    self.boss_skill_technique_index + 1
+                ) % len(self.boss_technique_frames)
         else:
-            self.boss_technique_index = 0
-            self.boss_technique_timer = 0.0
+            self.boss_skill_technique_index = 0
+            self.boss_skill_technique_timer = 0.0
+
+        self.previous_boss_state = boss.state
+
+    def select_next_boss_normal_attack_frame(self):
+        """Select one loaded frame for this normal attack, then queue the next."""
+        if not self.boss_technique_frames:
+            self.boss_normal_attack_frame_index = 0
+            self.boss_next_normal_attack_frame_index = 0
+            return
+
+        self.boss_normal_attack_frame_index = (
+            self.boss_next_normal_attack_frame_index % len(self.boss_technique_frames)
+        )
+        self.boss_next_normal_attack_frame_index = (
+            self.boss_normal_attack_frame_index + 1
+        ) % len(self.boss_technique_frames)
 
     def update_player_slash(self, player, dt):
         """Map each normal combo hit onto its four matching slash frames."""
@@ -199,7 +232,8 @@ class SoloSpriteRenderer:
         if not self.should_draw_boss_technique(boss) or not self.boss_technique_frames:
             return
 
-        technique = self.boss_technique_frames[self.boss_technique_index % len(self.boss_technique_frames)]
+        technique_index = self.get_boss_technique_index(boss)
+        technique = self.boss_technique_frames[technique_index % len(self.boss_technique_frames)]
         if boss.facing < 0:
             technique = pygame.transform.flip(technique, True, False)
             technique_rect = technique.get_rect(midright=(frame_rect.centerx - 8, frame_rect.centery + 18))
@@ -210,12 +244,25 @@ class SoloSpriteRenderer:
 
     def should_draw_boss_technique(self, boss):
         """Return True for normal attack and Phase 31 skill presentation states."""
-        return boss.state in {
-            ENEMY_STATE_TELEGRAPH,
-            ENEMY_STATE_ATTACK,
-            BOSS_SKILL_TELEGRAPH,
-            BOSS_SKILL_ACTIVE,
-        }
+        return self.is_boss_normal_attack_visual(boss) or self.is_boss_skill_visual(boss)
+
+    def is_boss_normal_attack_visual(self, boss):
+        """Return True during the visual window for one normal boss attack."""
+        return self.is_boss_normal_attack_state(boss.state)
+
+    def is_boss_normal_attack_state(self, state):
+        """Return True for the shared normal telegraph and active states."""
+        return state in {ENEMY_STATE_TELEGRAPH, ENEMY_STATE_ATTACK}
+
+    def is_boss_skill_visual(self, boss):
+        """Return True while the existing placeholder boss skill is presented."""
+        return boss.state in {BOSS_SKILL_TELEGRAPH, BOSS_SKILL_ACTIVE}
+
+    def get_boss_technique_index(self, boss):
+        """Return the held normal frame or the existing skill-animation frame."""
+        if self.is_boss_normal_attack_visual(boss):
+            return self.boss_normal_attack_frame_index
+        return self.boss_skill_technique_index
 
     def has_player_sprite(self):
         """Return True when the shaman prototype frames loaded."""
@@ -228,7 +275,7 @@ class SoloSpriteRenderer:
     def load_numbered_frames(self, directory, pattern, scale):
         """Load sorted PNG frames safely, returning an empty fallback list."""
         try:
-            paths = sorted(directory.glob(pattern), key=self.extract_frame_number)
+            paths = sorted(directory.glob(pattern), key=self.natural_sort_key)
             return [self.load_scaled_image(path, scale) for path in paths]
         except (OSError, pygame.error):
             return []
@@ -240,9 +287,9 @@ class SoloSpriteRenderer:
         height = max(1, round(image.get_height() * scale))
         return pygame.transform.smoothscale(image, (width, height))
 
-    def extract_frame_number(self, path):
-        """Read the first number from a prototype sprite filename."""
-        match = re.search(r"(\d+)", path.stem)
-        if match is None:
-            return 0
-        return int(match.group(1))
+    def natural_sort_key(self, path):
+        """Sort filename numbers naturally while loaded-list indexes stay logical."""
+        return tuple(
+            (1, int(part)) if part.isdigit() else (0, part)
+            for part in re.split(r"(\d+)", path.name.lower())
+        )

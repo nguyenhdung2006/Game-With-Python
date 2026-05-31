@@ -3,6 +3,7 @@
 from pathlib import Path
 import os
 import sys
+from types import SimpleNamespace
 
 
 PROJECT_ROOT = Path(__file__).resolve().parents[1]
@@ -46,7 +47,15 @@ from managers.dungeon_layout import DungeonLayoutManager
 from managers.room_state import ROOM_ACTIVE, ROOM_CLEARED, ROOM_REWARD
 from modes.dungeon_mode import DungeonMode
 from modes.solo_mode import SOLO_ACTIVE, SOLO_VICTORY, SoloMode
-from settings import GROUND_Y, HEIGHT, PLAYER_HEIGHT, WIDTH
+from settings import (
+    ENEMY_STATE_ATTACK,
+    ENEMY_STATE_IDLE,
+    ENEMY_STATE_TELEGRAPH,
+    GROUND_Y,
+    HEIGHT,
+    PLAYER_HEIGHT,
+    WIDTH,
+)
 from systems.beam import Beam
 from systems.boss_skill_controller import (
     BOSS_SKILL_ACTIVE,
@@ -54,11 +63,13 @@ from systems.boss_skill_controller import (
     BOSS_SKILL_RECOVERY,
     BOSS_SKILL_TELEGRAPH,
 )
+from systems.combat import process_enemy_attacks
 from systems.projectile import Projectile
 from systems.projectile_manager import ProjectileManager
 from systems.reward import REWARD_EFFECTS, create_reward_pool
 from systems.reward_manager import RewardManager
 from systems.skill_manager import SkillManager
+from systems.solo_sprite_renderer import SoloSpriteRenderer
 
 
 def check(condition, message):
@@ -320,6 +331,65 @@ def check_projectile_and_beam():
     check(beam_enemy.health == beam_health - collision_beam.damage, "Beam collision failed")
 
 
+def check_solo_boss_technique_playback():
+    """Hold one logical technique frame per normal Solo boss attack."""
+    renderer = SoloSpriteRenderer()
+    renderer.boss_technique_frames = [pygame.Surface((1, 1)) for _ in range(6)]
+    boss_visual = SimpleNamespace(state=ENEMY_STATE_IDLE)
+    observed_frames = []
+
+    for _ in range(7):
+        boss_visual.state = ENEMY_STATE_TELEGRAPH
+        renderer.update_boss_technique(boss_visual, 1.0)
+        observed_frames.append(renderer.get_boss_technique_index(boss_visual))
+
+        boss_visual.state = ENEMY_STATE_ATTACK
+        renderer.update_boss_technique(boss_visual, 1.0)
+        check(
+            renderer.get_boss_technique_index(boss_visual) == observed_frames[-1],
+            "Solo boss normal attack advanced through multiple technique frames",
+        )
+
+        boss_visual.state = ENEMY_STATE_IDLE
+        renderer.update_boss_technique(boss_visual, 0.016)
+
+    check(observed_frames == [0, 1, 2, 3, 4, 5, 0], "Solo boss normal attack frame cycle failed")
+
+    boss_visual.state = BOSS_SKILL_TELEGRAPH
+    renderer.update_boss_technique(boss_visual, renderer.boss_skill_technique_delay)
+    check(renderer.get_boss_technique_index(boss_visual) == 1, "Solo boss skill visual playback changed")
+
+    renderer.boss_technique_frames = []
+    boss_visual.state = ENEMY_STATE_IDLE
+    renderer.update_boss_technique(boss_visual, 0.016)
+    boss_visual.state = ENEMY_STATE_TELEGRAPH
+    renderer.update_boss_technique(boss_visual, 0.016)
+    check(renderer.get_boss_technique_index(boss_visual) == 0, "Missing boss technique frames broke fallback")
+
+    natural_paths = [
+        Path("frame_10_delay-0.1s.png"),
+        Path("frame_3_delay-0.1s.png"),
+        Path("frame_1_delay-0.1s.png"),
+    ]
+    natural_names = [path.name for path in sorted(natural_paths, key=renderer.natural_sort_key)]
+    check(
+        natural_names == [
+            "frame_1_delay-0.1s.png",
+            "frame_3_delay-0.1s.png",
+            "frame_10_delay-0.1s.png",
+        ],
+        "Solo boss technique frames are not naturally sorted",
+    )
+
+    player = create_player(420)
+    boss = EliteEnemy(player.rect.right + 20)
+    boss.facing = -1
+    boss.start_attack()
+    start_health = player.health
+    check(process_enemy_attacks([boss], player), "Solo boss normal attack did not connect")
+    check(player.health < start_health, "Solo boss normal attack did not damage player")
+
+
 def run():
     """Run every standalone smoke section."""
     pygame.init()
@@ -332,6 +402,7 @@ def run():
         ("mode lifecycle", check_modes_and_reward_flow),
         ("boss skill states", check_boss_skill_transitions),
         ("projectile and beam", check_projectile_and_beam),
+        ("solo boss technique playback", check_solo_boss_technique_playback),
     )
     try:
         for label, callback in checks:
