@@ -27,7 +27,8 @@ def draw_room_status(surface, room_manager):
 def draw_room_cleared(surface):
     """Draw the room clear prompt shown between rooms."""
     _draw_center_text(surface, "Room Cleared", HEIGHT // 2 - 28, 54, CLEAR_COLOR)
-    _draw_center_text(surface, "Press Enter to continue", HEIGHT // 2 + 30, 32, WHITE)
+    _draw_center_text(surface, "Reward selection next", HEIGHT // 2 + 26, 30, MUTED)
+    _draw_center_text(surface, "Press Enter to continue", HEIGHT // 2 + 66, 32, WHITE)
 
 
 def draw_dungeon_cleared(surface):

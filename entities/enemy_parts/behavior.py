@@ -105,8 +105,9 @@ def update_entrance(enemy, dt):
         update_spawn_slide(enemy, dt)
         return True
 
-    if enemy.rect.x != round(enemy.spawn_target_x):
+    if enemy.entrance_move_speed > 0 and enemy.rect.x != round(enemy.spawn_target_x):
         update_spawn_slide(enemy, dt)
+        return True
 
     return False
 
@@ -117,6 +118,7 @@ def update_spawn_slide(enemy, dt):
     if abs(delta) < 2:
         enemy.x = float(enemy.spawn_target_x)
         enemy.rect.x = round(enemy.x)
+        enemy.entrance_move_speed = 0
         return
 
     step = enemy.entrance_move_speed * dt
@@ -125,6 +127,8 @@ def update_spawn_slide(enemy, dt):
     else:
         enemy.x = max(enemy.spawn_target_x, enemy.x - step)
     enemy.rect.x = round(enemy.x)
+    if enemy.x == float(enemy.spawn_target_x):
+        enemy.entrance_move_speed = 0
 
 
 def update_knockback(enemy, dt):

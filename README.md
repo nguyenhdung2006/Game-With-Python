@@ -38,6 +38,8 @@ Dungeon / Wave Mode:
 - `I` = Kamehameha
 - `O` = locked skill slot
 - Reward select: `A/D` or `Left/Right` changes reward, `Enter` confirms
+- Room cleared: `Enter` opens reward selection
+- Defeat / Dungeon Cleared: `R` retries the run, `Esc` returns to mode select
 
 Solo / Versus Mode:
 
@@ -46,7 +48,7 @@ Solo / Versus Mode:
 - `I` = Kamehameha
 - `O` = locked skill slot
 - No rewards or room progression
-- `Esc` returns to mode select
+- Victory / Defeat: `R` starts a rematch, `Esc` returns to mode select
 
 ## Project Structure
 
@@ -172,6 +174,7 @@ assets/
 - `systems/effects/` stores camera impact, trails, slash visuals, and defense-related visual effects.
 - `systems/physics.py` stores shared movement and collision helpers.
 - `ui/` stores reusable interface drawing code such as health bars.
+- `ui/completion_overlay.py` draws shared retry and return-to-menu prompts for terminal states.
 - `ui/dungeon_hud.py` draws Dungeon Mode run status, selected rewards, stat modifiers, and clear summary.
 - `ui/mode_select.py` draws the mode select and locked coming-soon screens.
 - `ui/reward_select.py` draws the three-choice mechanical reward selection screen.
@@ -191,6 +194,8 @@ assets/
 - Room reward foundation with three mechanical reward choices after encounter rooms
 - Dungeon HUD and run status polish showing room status, reward count, selected rewards, and mechanical stat modifiers
 - Dungeon clear summary with rooms cleared, selected rewards, and final modifiers
+- Completion flow foundation with Dungeon Defeat, retry, Solo rematch, and shared end-state prompts
+- Room Cleared pacing cleanup that waits for `Enter` before opening reward selection
 - Elite/Boss foundation for Room 3 using a single heavy melee enemy with slower pacing, longer telegraphs, and clearer punish windows
 - Boss readability and pacing polish with slower attack cadence, stronger downtime, and clearer recovery punish windows
 - Goku skill prototype with `U` Ki Blast, `I` Kamehameha, and `O` locked
@@ -242,6 +247,7 @@ assets/
 - Solo attack hitboxes are shorter than their sprite visuals to keep close-range combat fair
 - Enemy defeat shows `Victory`
 - Player defeat shows `Defeat`
+- Victory and Defeat both support `R` rematch without restarting the application
 - No rewards or room progression are added; sprite playback and Combo Burst remain Solo-only prototypes rather than a full animation or skill system
 
 ## Dungeon Flow
@@ -250,8 +256,10 @@ assets/
 - Room 2: encounter
 - Room 3: elite/boss encounter
 - Final state: Dungeon Cleared
-- Encounter rooms open a three-choice reward screen after clear
+- Encounter rooms pause on Room Cleared and wait for `Enter` before opening a three-choice reward screen
 - `Enter` confirms selected rewards before advancing to the next room
+- Player defeat shows a Dungeon Defeat overlay with `R` retry and `Esc` return-to-menu actions
+- Dungeon retry resets room progression, rewards, player state, cooldowns, projectiles, beams, and enemies
 - Dungeon HUD shows current room, room type, reward count, damage multiplier, dash cooldown multiplier, and max HP bonus
 - Dungeon HUD shows Ki Blast, Kamehameha, and Locked slot readiness/cooldowns
 - Dungeon Clear shows selected rewards and final mechanical modifiers
@@ -261,6 +269,7 @@ assets/
 - Phase 29 adds user-approved Ki Blast and Kamehameha prototypes with placeholder projectile/beam visuals only; no animation, sprite work, complex VFX, transformations, new skills, reward rarity, inventory, save/load, or boss identity/theme has been added
 - Phase 31 adds boss skill AI architecture with a neutral mechanical placeholder only; no final boss identity, named boss attack, animation, VFX, or assets have been added
 - Phase 32 adds a Solo-only sprite combat and energy prototype: shaman body frames, slash combo visuals, boss sprite playback, technique frames attached to the preserved Phase 31 skill flow, and `U` Combo Burst. Dungeon visuals and bindings remain unchanged
+- Phase 33 adds completion-flow foundation only: Dungeon Defeat and retry, Solo rematch, readable Room Cleared pacing before reward selection, and consistent retry/menu prompts. No combat, AI, animation, asset, or fantasy expansion has been added
 - Phase 26 adds boss pacing foundation only: heavier melee tuning, longer telegraph/recovery, and punish-focused combat readability
 - Phase 27 polishes boss rhythm only: clearer telegraphs, longer recovery, slower pressure cadence, and more reliable punish timing without special attacks or VFX
 

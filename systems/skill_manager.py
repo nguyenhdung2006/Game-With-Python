@@ -30,6 +30,11 @@ class SkillManager:
         for skill in self.slots:
             skill.update(dt)
 
+    def reset_cooldowns(self):
+        """Clear transient cooldown state between independent combat screens."""
+        for skill in self.slots:
+            skill.current_cooldown = 0.0
+
     def use_slot(self, slot_index, player):
         """Use a 1-based skill slot if it is available."""
         skill = self.get_slot(slot_index)

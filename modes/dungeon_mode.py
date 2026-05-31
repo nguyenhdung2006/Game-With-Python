@@ -14,6 +14,7 @@ from systems.projectile_manager import ProjectileManager
 from systems.reward_manager import RewardManager
 from systems.render_layers import draw_combat_scene
 from systems.skill_manager import SkillManager
+from ui.completion_overlay import draw_completion_overlay
 from ui.dungeon_hud import draw_dungeon_clear_summary, draw_dungeon_hud
 from ui.health_bar import draw_health_bar
 from ui.reward_select import draw_reward_select
@@ -25,6 +26,10 @@ class DungeonMode:
     """Own the current wave-combat loop so main.py can route between screens."""
 
     def __init__(self):
+        self.reset_run()
+
+    def reset_run(self):
+        """Create a clean dungeon run without carrying terminal combat state."""
         self.player = Player(180, GROUND_Y - PLAYER_HEIGHT)
         self.room_manager = RoomManager()
         self.encounter_manager = None
@@ -37,6 +42,12 @@ class DungeonMode:
     def handle_event(self, event):
         """Handle room progression and combat inputs for dungeon mode."""
         if event.type != pygame.KEYDOWN:
+            return
+
+        if event.key == pygame.K_r and (
+            self.room_manager.is_dungeon_defeated() or self.room_manager.is_dungeon_complete()
+        ):
+            self.reset_run()
             return
 
         if self.room_manager.is_reward_active():
@@ -92,6 +103,10 @@ class DungeonMode:
         for enemy_hit_result in enemy_hit_results:
             self.impact.start_hit_impact(enemy_hit_result)
 
+        if self.player.defeated:
+            self.complete_dungeon_defeat()
+            return
+
         if self.encounter_manager.encounter_cleared:
             self.complete_current_encounter_room()
 
@@ -129,6 +144,8 @@ class DungeonMode:
             draw_reward_select(screen, self.reward_manager)
         elif self.room_manager.is_dungeon_complete():
             draw_dungeon_clear_summary(screen, self.room_manager, self.reward_manager, self.player)
+        elif self.room_manager.is_dungeon_defeated():
+            draw_completion_overlay(screen, "Defeat", "Retry Run")
 
     def handle_continue(self):
         """Advance room flow from clear states."""
@@ -150,7 +167,6 @@ class DungeonMode:
 
     def start_reward_selection(self):
         """Move an encounter clear into the reward selection state."""
-        self.room_manager.mark_room_cleared()
         self.room_manager.start_reward()
         if not self.reward_manager.has_options():
             self.reward_manager.generate_options()
@@ -162,7 +178,19 @@ class DungeonMode:
             self.enter_current_room()
             return
 
-        self.start_reward_selection()
+        self.room_manager.mark_room_cleared()
+        self.stop_current_combat()
+
+    def complete_dungeon_defeat(self):
+        """Stop combat and expose retry after the player is defeated."""
+        self.room_manager.mark_dungeon_defeated()
+        self.stop_current_combat()
+
+    def stop_current_combat(self):
+        """Discard transient combat objects before a non-combat flow state."""
+        self.projectile_manager.clear()
+        self.skill_manager.reset_cooldowns()
+        self.encounter_manager = None
 
     def enter_current_room(self):
         """Initialize combat systems for the current room type."""

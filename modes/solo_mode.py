@@ -19,6 +19,7 @@ from systems.projectile_manager import ProjectileManager
 from systems.skill_manager import SkillManager
 from systems.solo_combo_burst import SoloComboBurst
 from systems.solo_sprite_renderer import SoloSpriteRenderer
+from ui.completion_overlay import draw_completion_overlay
 from ui.dungeon_hud import draw_text_panel
 from ui.health_bar import draw_health_bar
 from world.battlefield import draw_arena
@@ -36,6 +37,10 @@ class SoloMode:
     """Playable single-fight arena using the shared combat foundation."""
 
     def __init__(self):
+        self.reset_fight()
+
+    def reset_fight(self):
+        """Create a clean rematch without carrying combat or cooldown state."""
         self.player = Player(180, GROUND_Y - PLAYER_HEIGHT)
         self.enemy = EliteEnemy(WIDTH - 280)
         self.configure_solo_boss()
@@ -55,6 +60,9 @@ class SoloMode:
     def handle_event(self, event):
         """Handle player combat inputs during the active duel."""
         if event.type != pygame.KEYDOWN:
+            return
+        if event.key == pygame.K_r and not self.is_active():
+            self.reset_fight()
             return
         if not self.is_active() or self.impact.is_hitstop_active():
             return
@@ -154,18 +162,7 @@ class SoloMode:
 
     def draw_result(self, screen, label):
         """Draw the end-state overlay without changing the fight underneath."""
-        title_font = pygame.font.Font(None, 72)
-        prompt_font = pygame.font.Font(None, 30)
-        panel = pygame.Rect(WIDTH // 2 - 220, HEIGHT // 2 - 94, 440, 188)
-
-        pygame.draw.rect(screen, (18, 22, 34), panel, border_radius=8)
-        pygame.draw.rect(screen, WHITE, panel, 2, border_radius=8)
-
-        title = title_font.render(label, True, WHITE)
-        screen.blit(title, title.get_rect(center=(WIDTH // 2, panel.top + 66)))
-
-        prompt = prompt_font.render("Esc returns to Mode Select", True, (190, 198, 212))
-        screen.blit(prompt, prompt.get_rect(center=(WIDTH // 2, panel.bottom - 42)))
+        draw_completion_overlay(screen, label, "Rematch")
 
     def update_result_state(self):
         """Move to the correct terminal state once a fighter is defeated."""

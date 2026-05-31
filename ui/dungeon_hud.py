@@ -78,7 +78,7 @@ def draw_dungeon_clear_summary(surface, room_manager, reward_manager, player):
         surface.blit(rendered, (panel_rect.left + 380, stat_y))
         stat_y += 30
 
-    prompt = small_font.render("Esc to return to menu", True, MUTED)
+    prompt = small_font.render("R: Retry Run   Esc: Return to Mode Select", True, MUTED)
     surface.blit(prompt, prompt.get_rect(center=(WIDTH // 2, panel_rect.bottom - 36)))
 
 
