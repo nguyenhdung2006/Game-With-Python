@@ -16,8 +16,9 @@ TEXT_MUTED = (185, 192, 206)
 class SettingsMenu:
     """Expose safe local preferences without applying risky display changes."""
 
-    def __init__(self, settings_store):
+    def __init__(self, settings_store, audio_manager=None):
         self.settings_store = settings_store
+        self.audio_manager = audio_manager
         self.selected_index = 0
 
     def handle_event(self, event):
@@ -27,8 +28,10 @@ class SettingsMenu:
 
         if event.key in (pygame.K_w, pygame.K_UP):
             self.selected_index = (self.selected_index - 1) % len(SETTINGS_MENU_ITEMS)
+            self.play_menu_select()
         elif event.key in (pygame.K_s, pygame.K_DOWN):
             self.selected_index = (self.selected_index + 1) % len(SETTINGS_MENU_ITEMS)
+            self.play_menu_select()
         elif event.key in (pygame.K_a, pygame.K_LEFT):
             self.adjust_selected(-1)
         elif event.key in (pygame.K_d, pygame.K_RIGHT):
@@ -42,14 +45,28 @@ class SettingsMenu:
         key = item["key"]
         if item["kind"] == "toggle":
             self.settings_store.set(key, not self.settings_store.get(key))
+            self.refresh_audio_settings()
             return
         self.settings_store.set(key, self.settings_store.get(key) + direction * item["step"])
+        self.refresh_audio_settings()
 
     def toggle_selected(self):
         """Toggle the selected boolean item on Enter."""
         item = SETTINGS_MENU_ITEMS[self.selected_index]
         if item["kind"] == "toggle":
             self.settings_store.set(item["key"], not self.settings_store.get(item["key"]))
+            self.refresh_audio_settings()
+
+    def refresh_audio_settings(self):
+        """Apply changed volume preferences and play one menu hook."""
+        if self.audio_manager is not None:
+            self.audio_manager.refresh_volumes()
+        self.play_menu_select()
+
+    def play_menu_select(self):
+        """Play one optional settings-navigation hook."""
+        if self.audio_manager is not None:
+            self.audio_manager.play_sfx("menu_select")
 
     def draw(self, surface):
         """Draw current values and compact keyboard instructions."""

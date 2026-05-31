@@ -16,6 +16,7 @@ from settings import (
     ENEMY_STATE_TELEGRAPH,
     WIDTH,
 )
+from systems.audio_manager import play_audio_event
 from systems.physics import clamp_x_to_screen, move_toward_zero
 
 
@@ -265,6 +266,7 @@ def take_damage(enemy, amount, knockback_x=0):
         enemy.defeated = True
         enemy.state = ENEMY_STATE_DEFEATED
 
+    play_audio_event(enemy, "enemy_hit")
     return True
 
 

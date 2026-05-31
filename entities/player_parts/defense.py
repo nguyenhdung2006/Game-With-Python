@@ -18,6 +18,7 @@ from settings import (
     PLAYER_PARRY_WINDOW_DURATION,
     PLAYER_COUNTER_WINDOW_DURATION,
 )
+from systems.audio_manager import play_audio_event
 
 
 def take_damage(player, amount):
@@ -36,6 +37,7 @@ def take_damage(player, amount):
     if player.health == 0:
         player.defeated = True
 
+    play_audio_event(player, "player_hit")
     return True
 
 

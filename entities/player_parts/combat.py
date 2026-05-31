@@ -1,6 +1,7 @@
 """Player attack, combo, and counterattack helpers."""
 
 from settings import COUNTER_ATTACK, LIGHT_ATTACK_COMBO, PLAYER_ATTACK_BUFFER_DURATION
+from systems.audio_manager import play_audio_event
 from systems.combat import can_use_action, create_attack_hitbox, get_combo_attack_data, update_cooldown
 
 
@@ -68,6 +69,7 @@ def begin_combo_attack(player, combo_step):
     player.attack_timer = player.attack_duration
     player.attack_cooldown_timer = player.attack_cooldown
     player.has_hit_this_attack = False
+    play_audio_event(player, "player_attack")
 
 
 def begin_counter_attack(player):
@@ -93,6 +95,7 @@ def begin_counter_attack(player):
     player.attack_timer = player.attack_duration
     player.attack_cooldown_timer = player.attack_cooldown
     player.has_hit_this_attack = False
+    play_audio_event(player, "player_attack")
 
 
 def _apply_attack_data(player, attack_data):

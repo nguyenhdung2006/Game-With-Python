@@ -59,8 +59,9 @@ SOLO_DEFEAT = "DEFEAT"
 class SoloMode:
     """Playable single-fight arena using the shared combat foundation."""
 
-    def __init__(self, preferences=None):
+    def __init__(self, preferences=None, audio_manager=None):
         self.preferences = preferences if preferences is not None else {}
+        self.audio_manager = audio_manager
         self.setup_player_hp = SOLO_SETUP_PLAYER_HP_MIN
         self.setup_boss_hp = SOLO_SETUP_BOSS_HP_MIN
         self.setup_selected_slider = 0
@@ -70,9 +71,11 @@ class SoloMode:
     def reset_fight(self, show_setup=False):
         """Create a clean rematch without carrying combat or cooldown state."""
         self.player = Player(SOLO_PLAYER_SPAWN_X, GROUND_Y - PLAYER_HEIGHT)
+        self.player.audio_manager = self.audio_manager
         self.player.max_health = self.setup_player_hp
         self.player.health = self.player.max_health
         self.enemy = EliteEnemy(WIDTH - SOLO_ENEMY_RIGHT_OFFSET)
+        self.enemy.audio_manager = self.audio_manager
         self.configure_solo_boss()
         self.impact = CombatImpact(self.preferences)
         self.projectile_manager = ProjectileManager()
@@ -231,8 +234,12 @@ class SoloMode:
     def update_result_state(self):
         """Move to the correct terminal state once a fighter is defeated."""
         if self.player.defeated:
+            if self.result_state != SOLO_DEFEAT:
+                self.play_sfx("defeat")
             self.result_state = SOLO_DEFEAT
         elif self.enemy.defeated:
+            if self.result_state != SOLO_VICTORY:
+                self.play_sfx("victory")
             self.result_state = SOLO_VICTORY
 
     def is_active(self):
@@ -242,6 +249,11 @@ class SoloMode:
     def is_setup(self):
         """Return True while Solo is waiting for pre-fight HP confirmation."""
         return self.result_state == SOLO_SETUP
+
+    def play_sfx(self, name):
+        """Play one optional Solo event hook."""
+        if self.audio_manager is not None:
+            self.audio_manager.play_sfx(name)
 
     def can_pause(self):
         """Allow pause only while the Solo duel is actively running."""

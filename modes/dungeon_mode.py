@@ -27,14 +27,16 @@ from world.dungeon_room import draw_dungeon_room
 class DungeonMode:
     """Own the current wave-combat loop so main.py can route between screens."""
 
-    def __init__(self, preferences=None):
+    def __init__(self, preferences=None, audio_manager=None):
         self.preferences = preferences if preferences is not None else {}
+        self.audio_manager = audio_manager
         self.reset_run()
 
     def reset_run(self):
         """Create a clean dungeon run without carrying terminal combat state."""
         self.room_manager = RoomManager()
         self.player = Player(*self.room_manager.current_layout().player_spawn)
+        self.player.audio_manager = self.audio_manager
         self.encounter_manager = None
         self.impact = CombatImpact(self.preferences)
         self.projectile_manager = ProjectileManager()
@@ -188,6 +190,7 @@ class DungeonMode:
             applied_reward = self.reward_manager.apply_selected(self.player)
             if applied_reward is None:
                 return
+            self.play_sfx("reward_select")
             self.room_manager.advance_room()
             self.enter_current_room()
 
@@ -204,6 +207,7 @@ class DungeonMode:
         if self.room_manager.current_room_type() == ROOM_BOSS_ENCOUNTER:
             self.room_manager.advance_room()
             self.enter_current_room()
+            self.play_sfx("victory")
             return
 
         self.room_manager.mark_room_cleared()
@@ -212,6 +216,7 @@ class DungeonMode:
     def complete_dungeon_defeat(self):
         """Stop combat and expose retry after the player is defeated."""
         self.room_manager.mark_dungeon_defeated()
+        self.play_sfx("defeat")
         self.stop_current_combat()
 
     def stop_current_combat(self):
@@ -228,9 +233,13 @@ class DungeonMode:
         room_layout = self.room_manager.current_layout()
 
         if self.room_manager.current_room_type() == ROOM_ENCOUNTER:
-            self.encounter_manager = EncounterManager(room_layout=room_layout)
+            self.encounter_manager = EncounterManager(room_layout=room_layout, audio_manager=self.audio_manager)
         elif self.room_manager.current_room_type() == ROOM_BOSS_ENCOUNTER:
-            self.encounter_manager = EncounterManager(BOSS_ROOM_PROFILES, room_layout=room_layout)
+            self.encounter_manager = EncounterManager(
+                BOSS_ROOM_PROFILES,
+                room_layout=room_layout,
+                audio_manager=self.audio_manager,
+            )
         else:
             self.encounter_manager = None
 
@@ -257,6 +266,11 @@ class DungeonMode:
             and self.room_manager.current_room_type() in {ROOM_ENCOUNTER, ROOM_BOSS_ENCOUNTER}
             and self.encounter_manager is not None
         )
+
+    def play_sfx(self, name):
+        """Play one optional Dungeon event hook."""
+        if self.audio_manager is not None:
+            self.audio_manager.play_sfx(name)
 
     def can_pause(self):
         """Allow pause throughout a live run, including clear and reward pacing."""

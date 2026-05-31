@@ -4,6 +4,7 @@ import pygame
 
 from config.boss_config import SOLO_BOSS_COMBO_CONFIG
 from settings import ENEMY_STATE_CHASE, ENEMY_STATE_IDLE, GROUND_Y
+from systems.audio_manager import play_audio_event
 from systems.boss_skill_controller import (
     ACTIVE_COLOR,
     BOSS_SKILL_ACTIVE,
@@ -159,6 +160,7 @@ class SoloBossComboController:
             self.last_skill_id = skill_id
             self.repeat_count = 1
         boss.state = BOSS_SKILL_TELEGRAPH
+        play_audio_event(boss, "boss_skill")
 
     def update_telegraph(self, boss, dt):
         """Open the first active combo frame after the warning."""

@@ -4,6 +4,7 @@ import pygame
 
 from config.boss_config import BOSS_SKILL_CONFIG
 from settings import ENEMY_STATE_CHASE, ENEMY_STATE_IDLE, GROUND_Y
+from systems.audio_manager import play_audio_event
 from systems.combat import apply_knockback
 
 
@@ -86,6 +87,7 @@ class BossSkillController:
         self.cooldown_timer = self.cooldown
         self.has_hit_this_use = False
         boss.state = BOSS_SKILL_TELEGRAPH
+        play_audio_event(boss, "boss_skill")
 
     def update_telegraph(self, boss, dt):
         """Advance from warning into the short active hitbox."""

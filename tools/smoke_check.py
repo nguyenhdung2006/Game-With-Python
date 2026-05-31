@@ -5,6 +5,7 @@ import json
 import os
 import sys
 from types import SimpleNamespace
+from unittest.mock import patch
 
 
 PROJECT_ROOT = Path(__file__).resolve().parents[1]
@@ -60,6 +61,7 @@ from settings import (
     WIDTH,
 )
 from systems.beam import Beam
+from systems.audio_manager import AudioManager
 from systems.effects import CombatImpact
 from systems.boss_skill_controller import (
     BOSS_SKILL_ACTIVE,
@@ -474,6 +476,90 @@ def check_settings_foundation():
     DungeonMode(preferences).draw(screen, pygame.Surface((WIDTH, HEIGHT)))
 
 
+def check_audio_hooks_foundation():
+    """No-op missing audio safely and emit one-shot gameplay placeholder hooks."""
+    class RecordingAudio:
+        def __init__(self):
+            self.sfx_events = []
+            self.music_events = []
+            self.refresh_count = 0
+
+        def play_sfx(self, name):
+            self.sfx_events.append(name)
+            return False
+
+        def play_music(self, name, loops=-1):
+            self.music_events.append((name, loops))
+            return False
+
+        def refresh_volumes(self):
+            self.refresh_count += 1
+
+    preferences = {"master_volume": 0.5, "sfx_volume": 0.4, "music_volume": 0.6}
+    audio = AudioManager(preferences, PROJECT_ROOT / "data" / "missing-audio")
+    check(audio.sfx_volume() == 0.2, "Audio manager SFX volume did not apply master volume")
+    check(audio.music_volume() == 0.3, "Audio manager music volume did not apply master volume")
+    check(not audio.play_sfx("missing"), "Missing SFX asset did not no-op")
+    check(not audio.play_music("missing"), "Missing music asset did not no-op")
+
+    with (
+        patch.object(pygame.mixer, "get_init", return_value=None),
+        patch.object(pygame.mixer, "init", side_effect=pygame.error("no audio device")),
+    ):
+        unavailable_audio = AudioManager(preferences, PROJECT_ROOT / "data" / "missing-audio")
+    check(not unavailable_audio.enabled, "Unavailable audio device did not disable playback safely")
+    check(not unavailable_audio.play_sfx("missing"), "Disabled audio manager did not no-op")
+
+    recorder = RecordingAudio()
+    player = create_player()
+    player.audio_manager = recorder
+    player.begin_combo_attack(1)
+    check(recorder.sfx_events == ["player_attack"], "Player attack hook did not fire exactly once")
+
+    victim = create_player()
+    victim.audio_manager = recorder
+    check(victim.take_damage(1), "Player hit setup did not apply damage")
+    check(recorder.sfx_events[-1] == "player_hit", "Player hit hook did not fire")
+
+    enemy = BasicEnemy(420)
+    enemy.audio_manager = recorder
+    check(enemy.take_damage(1), "Enemy hit setup did not apply damage")
+    check(recorder.sfx_events[-1] == "enemy_hit", "Enemy hit hook did not fire")
+
+    boss = EliteEnemy(520)
+    boss.audio_manager = recorder
+    boss.skill_controller.start_telegraph(boss)
+    check(recorder.sfx_events[-1] == "boss_skill", "Dungeon boss skill hook did not fire")
+
+    solo = SoloMode(audio_manager=recorder)
+    solo.handle_event(pygame.event.Event(pygame.KEYDOWN, key=pygame.K_RETURN))
+    solo.enemy.defeated = True
+    solo.update_result_state()
+    solo.update_result_state()
+    check(recorder.sfx_events.count("victory") == 1, "Solo victory hook repeated or did not fire")
+
+    defeated_solo = SoloMode(audio_manager=recorder)
+    defeated_solo.handle_event(pygame.event.Event(pygame.KEYDOWN, key=pygame.K_RETURN))
+    defeated_solo.player.defeated = True
+    defeated_solo.update_result_state()
+    defeated_solo.update_result_state()
+    check(recorder.sfx_events.count("defeat") == 1, "Solo defeat hook repeated or did not fire")
+
+    dungeon = DungeonMode(audio_manager=recorder)
+    dungeon.complete_current_encounter_room()
+    dungeon.handle_event(pygame.event.Event(pygame.KEYDOWN, key=pygame.K_RETURN))
+    dungeon.handle_event(pygame.event.Event(pygame.KEYDOWN, key=pygame.K_RETURN))
+    check(recorder.sfx_events[-1] == "reward_select", "Dungeon reward hook did not fire")
+
+    dungeon.complete_dungeon_defeat()
+    check(recorder.sfx_events[-1] == "defeat", "Dungeon defeat hook did not fire")
+
+    with patch.object(SettingsStore, "save", return_value=True):
+        settings_menu = SettingsMenu(SimpleNamespace(get=lambda key: 1.0, set=lambda key, value: value), recorder)
+        settings_menu.handle_event(pygame.event.Event(pygame.KEYDOWN, key=pygame.K_DOWN))
+    check(recorder.sfx_events[-1] == "menu_select", "Menu select hook did not fire")
+
+
 def check_boss_skill_transitions():
     """Force the neutral boss skill through telegraph, active, and recovery."""
     player = create_player(420)
@@ -728,6 +814,7 @@ def run():
         ("mode lifecycle", check_modes_and_reward_flow),
         ("pause and controls QoL", check_pause_and_controls_qol),
         ("save and settings foundation", check_settings_foundation),
+        ("audio hooks foundation", check_audio_hooks_foundation),
         ("boss skill states", check_boss_skill_transitions),
         ("projectile and beam", check_projectile_and_beam),
         ("solo boss technique playback", check_solo_boss_technique_playback),

@@ -8,6 +8,7 @@ from settings import ENEMY_STATE_IDLE, GROUND_Y
 
 def initialize_enemy_state(enemy, x, y, config):
     """Populate a BaseEnemy instance from one archetype config."""
+    enemy.audio_manager = None
     enemy.config = config
     enemy.label = config["label"]
     enemy.width = config["width"]
