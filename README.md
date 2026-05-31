@@ -42,6 +42,9 @@ Dungeon / Wave Mode:
 Solo / Versus Mode:
 
 - Same movement, defense, combo, and skill controls as Dungeon / Wave Mode
+- `U` = Combo Burst prototype (costs Solo energy)
+- `I` = Kamehameha
+- `O` = locked skill slot
 - No rewards or room progression
 - `Esc` returns to mode select
 
@@ -96,6 +99,8 @@ systems/
     reaction_feedback.py
     skill.py
     skill_manager.py
+    solo_combo_burst.py
+    solo_sprite_renderer.py
     sprite_loader.py
     physics.py
     effects/
@@ -161,6 +166,8 @@ assets/
 - `systems/reaction_feedback.py` draws small enemy vulnerability, recovery, and stagger readability effects.
 - `systems/skill.py` defines neutral skill slot primitives with cooldown and resource-cost fields.
 - `systems/skill_manager.py` owns the three player skill slots and routes Ki Blast, Kamehameha, and the locked slot.
+- `systems/solo_combo_burst.py` sequences the Solo-only three-hit Combo Burst using existing normal attack setup.
+- `systems/solo_sprite_renderer.py` loads and draws Solo-only shaman, slash, boss, and boss-technique prototype frames with safe fallbacks.
 - `systems/sprite_loader.py` provides safe cached sprite loading with placeholder fallback.
 - `systems/effects/` stores camera impact, trails, slash visuals, and defense-related visual effects.
 - `systems/physics.py` stores shared movement and collision helpers.
@@ -189,8 +196,9 @@ assets/
 - Goku skill prototype with `U` Ki Blast, `I` Kamehameha, and `O` locked
 - Ki Blast as a fast projectile with cooldown, damage multiplier support, lifetime cleanup, and one-hit collision
 - Kamehameha as a short-lived rectangular beam prototype that damages each enemy once per use
-- Solo / Versus supports movement, jump, dash, combo attacks, Ki Blast, Kamehameha, enemy chase/telegraph/attack, and Victory/Defeat overlays
+- Solo / Versus supports movement, jump, dash, combo attacks, Solo Combo Burst, Kamehameha, enemy chase/telegraph/attack, and Victory/Defeat overlays
 - Boss skill AI foundation with cooldown spacing, readable telegraph, one-hit placeholder rectangle, and recovery punish window
+- Solo sprite combat prototype with shaman player frames, close-range slash visuals, boss sprite playback, boss technique frames, energy bar, and `U` Combo Burst
 - Team Round 3v3 locked / coming-soon screen
 - Ruined battlefield arena drawn with Pygame shapes
 - Player left/right movement
@@ -226,13 +234,15 @@ assets/
 
 - Press `1` from mode select to start a 1v1 arena fight
 - The arena spawns the player and one duel enemy
-- The player can use existing movement, combo, guard/dodge, Ki Blast, and Kamehameha controls
-- The enemy uses the existing chase, telegraph, attack, hurt, and defeat behavior
+- The player can use existing movement, combo, guard/dodge, and Kamehameha controls
+- In Solo, `U` is overridden by the energy-driven three-hit Combo Burst prototype; Dungeon keeps `U` Ki Blast
+- The Solo boss uses the existing chase, telegraph, attack, hurt, defeat, and Phase 31 boss-skill behavior
 - Player and enemy health bars are shown
-- Skill cooldown HUD is shown
+- Player energy and skill HUD are shown
+- Solo attack hitboxes are shorter than their sprite visuals to keep close-range combat fair
 - Enemy defeat shows `Victory`
 - Player defeat shows `Defeat`
-- No rewards, room progression, new assets, animation, or new skills are added
+- No rewards or room progression are added; sprite playback and Combo Burst remain Solo-only prototypes rather than a full animation or skill system
 
 ## Dungeon Flow
 
@@ -250,6 +260,7 @@ assets/
 - Phase 28 adds skill slot and projectile infrastructure only
 - Phase 29 adds user-approved Ki Blast and Kamehameha prototypes with placeholder projectile/beam visuals only; no animation, sprite work, complex VFX, transformations, new skills, reward rarity, inventory, save/load, or boss identity/theme has been added
 - Phase 31 adds boss skill AI architecture with a neutral mechanical placeholder only; no final boss identity, named boss attack, animation, VFX, or assets have been added
+- Phase 32 adds a Solo-only sprite combat and energy prototype: shaman body frames, slash combo visuals, boss sprite playback, technique frames attached to the preserved Phase 31 skill flow, and `U` Combo Burst. Dungeon visuals and bindings remain unchanged
 - Phase 26 adds boss pacing foundation only: heavier melee tuning, longer telegraph/recovery, and punish-focused combat readability
 - Phase 27 polishes boss rhythm only: clearer telegraphs, longer recovery, slower pressure cadence, and more reliable punish timing without special attacks or VFX
 
