@@ -37,6 +37,13 @@ Mode select:
 - `3` = Team Round 3v3 locked screen
 - `Esc` = quit on mode select, return to mode select from modes
 
+Playable modes:
+
+- `P` = pause / resume
+- `H` = show / hide the mode-relevant controls overlay
+- While paused: `R` restarts the current Solo fight or Dungeon run
+- While paused: `Esc` returns to mode select
+
 Dungeon / Wave Mode:
 
 - `A` = move left
@@ -141,6 +148,8 @@ ui/
     dungeon_hud.py
     health_bar.py
     mode_select.py
+    pause_overlay.py
+    controls_overlay.py
     reward_select.py
     room_banner.py
     solo_setup.py
@@ -209,6 +218,8 @@ assets/
 - `tools/balance_audit.py` prints the current prototype tuning snapshot and conservative warning diagnostics.
 - `ui/` stores reusable interface drawing code such as health bars.
 - `ui/completion_overlay.py` draws shared retry and return-to-menu prompts for terminal states.
+- `ui/pause_overlay.py` draws the shared dimmed pause panel and restart/menu actions.
+- `ui/controls_overlay.py` draws modal Solo and Dungeon control references without adding asset dependencies.
 - `ui/dungeon_hud.py` draws Dungeon Mode run status, selected rewards, stat modifiers, and clear summary.
 - `ui/mode_select.py` draws the mode select and locked coming-soon screens.
 - `ui/reward_select.py` draws the three-choice mechanical reward selection screen.
@@ -231,6 +242,7 @@ assets/
 - Dungeon HUD and run status polish showing room status, reward count, selected rewards, and mechanical stat modifiers
 - Dungeon clear summary with rooms cleared, selected rewards, and final modifiers
 - Completion flow foundation with Dungeon Defeat, retry, Solo rematch, and shared end-state prompts
+- Pause and controls QoL foundation for Solo and Dungeon with frozen gameplay timers, modal input safety, and mode-relevant help
 - Room Cleared pacing cleanup that waits for `Enter` before opening reward selection
 - Gameplay config foundation that moves prototype tuning into focused Python modules without adding content
 - Dungeon layout foundation with fixed START, ENCOUNTER, ELITE/BOSS, and CLEAR placeholder layouts
@@ -295,6 +307,7 @@ assets/
 - Enemy defeat shows `Victory`
 - Player defeat shows `Defeat`
 - Victory and Defeat both support `R` rematch without restarting the application
+- `P` pauses the live duel, `R` restarts while paused, and `H` opens a modal Solo control reference
 - No rewards or room progression are added; sprite playback and Combo Burst remain Solo-only prototypes rather than a full animation or skill system
 
 ## Dungeon Flow
@@ -309,6 +322,7 @@ assets/
 - `Enter` confirms selected rewards before advancing to the next room
 - Player defeat shows a Dungeon Defeat overlay with `R` retry and `Esc` return-to-menu actions
 - Dungeon retry resets room progression, rewards, player state, cooldowns, projectiles, beams, and enemies
+- `P` pauses live Dungeon flow, `R` retries while paused, and `H` opens a modal Dungeon control reference
 - Dungeon HUD shows current room, room type, reward count, damage multiplier, dash cooldown multiplier, and max HP bonus
 - Dungeon HUD shows Ki Blast, Kamehameha, and Locked slot readiness/cooldowns
 - Dungeon Clear shows selected rewards and final mechanical modifiers
@@ -327,6 +341,7 @@ assets/
 - Phase 37 adds lightweight standalone regression checks and a prototype balance audit report only. No gameplay content, skills, rebalance, animation, or assets have been added
 - Phase 38 caps the immediate mechanical heal reward so the balance audit is clean without changing the current Dungeon run feel. No new content or broad rebalance has been added
 - Phase 39 polishes Solo boss combo combat only: weighted anti-spam decisions, readable per-tier tempo, Final group pause and lockout, major-skill punish windows, and stun / skill-lock feedback. Dungeon behavior remains stable
+- Phase 40 adds pause and controls QoL only: Solo and Dungeon can freeze live gameplay safely, restart from pause, and open mode-relevant control help. No combat tuning, skills, animation, or assets have been added
 - Phase 26 adds boss pacing foundation only: heavier melee tuning, longer telegraph/recovery, and punish-focused combat readability
 - Phase 27 polishes boss rhythm only: clearer telegraphs, longer recovery, slower pressure cadence, and more reliable punish timing without special attacks or VFX
 

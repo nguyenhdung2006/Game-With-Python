@@ -15,8 +15,10 @@ from systems.reward_manager import RewardManager
 from systems.render_layers import draw_combat_scene
 from systems.skill_manager import SkillManager
 from ui.completion_overlay import draw_completion_overlay
+from ui.controls_overlay import draw_controls_overlay
 from ui.dungeon_hud import draw_dungeon_clear_summary, draw_dungeon_hud
 from ui.health_bar import draw_health_bar
+from ui.pause_overlay import draw_pause_overlay
 from ui.reward_select import draw_reward_select
 from ui.room_banner import draw_room_cleared
 from world.dungeon_room import draw_dungeon_room
@@ -37,11 +39,29 @@ class DungeonMode:
         self.projectile_manager = ProjectileManager()
         self.skill_manager = SkillManager(self.projectile_manager)
         self.reward_manager = RewardManager()
+        self.paused = False
+        self.controls_visible = False
         self.enter_current_room()
 
     def handle_event(self, event):
         """Handle room progression and combat inputs for dungeon mode."""
         if event.type != pygame.KEYDOWN:
+            return
+
+        if event.key == pygame.K_h:
+            self.controls_visible = not self.controls_visible
+            return
+
+        if self.controls_visible:
+            return
+
+        if event.key == pygame.K_p and self.can_pause():
+            self.paused = not self.paused
+            return
+
+        if self.paused:
+            if event.key == pygame.K_r:
+                self.reset_run()
             return
 
         if event.key == pygame.K_r and (
@@ -82,6 +102,9 @@ class DungeonMode:
 
     def update(self, keys, dt):
         """Update the active dungeon room."""
+        if self.is_gameplay_frozen():
+            return
+
         self.impact.update(dt)
         if not self.is_active_encounter_room():
             return
@@ -146,6 +169,8 @@ class DungeonMode:
             draw_dungeon_clear_summary(screen, self.room_manager, self.reward_manager, self.player)
         elif self.room_manager.is_dungeon_defeated():
             draw_completion_overlay(screen, "Defeat", "Retry Run")
+
+        self.draw_qol_overlays(screen)
 
     def handle_continue(self):
         """Advance room flow from clear states."""
@@ -231,6 +256,24 @@ class DungeonMode:
             and self.room_manager.current_room_type() in {ROOM_ENCOUNTER, ROOM_BOSS_ENCOUNTER}
             and self.encounter_manager is not None
         )
+
+    def can_pause(self):
+        """Allow pause throughout a live run, including clear and reward pacing."""
+        return not (
+            self.room_manager.is_dungeon_complete()
+            or self.room_manager.is_dungeon_defeated()
+        )
+
+    def is_gameplay_frozen(self):
+        """Freeze all gameplay timers while a modal QoL overlay is open."""
+        return self.paused or self.controls_visible
+
+    def draw_qol_overlays(self, screen):
+        """Draw pause first so the controls panel can sit above it when requested."""
+        if self.paused:
+            draw_pause_overlay(screen, "Retry Run")
+        if self.controls_visible:
+            draw_controls_overlay(screen, "dungeon")
 
     def draw_combat_ui(self, screen):
         """Draw persistent player and encounter UI for active combat rooms."""

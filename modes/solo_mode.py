@@ -42,8 +42,10 @@ from systems.solo_boss_combo_controller import SoloBossComboController
 from systems.solo_combo_burst import SoloComboBurst
 from systems.solo_sprite_renderer import SoloSpriteRenderer
 from ui.completion_overlay import draw_completion_overlay
+from ui.controls_overlay import draw_controls_overlay
 from ui.dungeon_hud import draw_text_panel
 from ui.health_bar import draw_health_bar
+from ui.pause_overlay import draw_pause_overlay
 from ui.solo_setup import draw_solo_setup, slider_index_at, value_from_slider_x
 from world.battlefield import draw_arena
 
@@ -80,10 +82,26 @@ class SoloMode:
         self.energy = SOLO_START_ENERGY
         self.dealt_hit_energy_gain = SOLO_DEALT_HIT_ENERGY_GAIN
         self.hurt_energy_gain = SOLO_HURT_ENERGY_GAIN
+        self.paused = False
+        self.controls_visible = False
         self.result_state = SOLO_SETUP if show_setup else SOLO_ACTIVE
 
     def handle_event(self, event):
         """Handle player combat inputs during the active duel."""
+        if event.type == pygame.KEYDOWN:
+            if event.key == pygame.K_h:
+                self.controls_visible = not self.controls_visible
+                return
+            if self.controls_visible:
+                return
+            if event.key == pygame.K_p and self.can_pause():
+                self.paused = not self.paused
+                return
+            if self.paused:
+                if event.key == pygame.K_r:
+                    self.reset_fight()
+                return
+
         if self.is_setup():
             self.handle_setup_event(event)
             return
@@ -116,6 +134,9 @@ class SoloMode:
 
     def update(self, keys, dt):
         """Update the 1v1 fight."""
+        if self.is_gameplay_frozen():
+            return
+
         self.impact.update(dt)
         if not self.is_active() or self.impact.is_hitstop_active():
             return
@@ -154,6 +175,7 @@ class SoloMode:
                 self.setup_selected_slider,
                 self.setup_slider_specs(),
             )
+            self.draw_qol_overlays(screen)
             return
 
         draw_arena(scene_surface)
@@ -169,6 +191,8 @@ class SoloMode:
             self.draw_result(screen, "Victory")
         elif self.result_state == SOLO_DEFEAT:
             self.draw_result(screen, "Defeat")
+
+        self.draw_qol_overlays(screen)
 
     def draw_ui(self, screen):
         """Draw player/enemy health and skill readiness."""
@@ -217,6 +241,21 @@ class SoloMode:
     def is_setup(self):
         """Return True while Solo is waiting for pre-fight HP confirmation."""
         return self.result_state == SOLO_SETUP
+
+    def can_pause(self):
+        """Allow pause only while the Solo duel is actively running."""
+        return self.is_active()
+
+    def is_gameplay_frozen(self):
+        """Freeze all gameplay timers while a modal QoL overlay is open."""
+        return self.paused or self.controls_visible
+
+    def draw_qol_overlays(self, screen):
+        """Draw pause first so the controls panel can sit above it when requested."""
+        if self.paused:
+            draw_pause_overlay(screen, "Restart Fight")
+        if self.controls_visible:
+            draw_controls_overlay(screen, "solo")
 
     def configure_solo_boss(self):
         """Tune the Solo sprite-test boss without changing Dungeon balance."""

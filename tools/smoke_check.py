@@ -316,6 +316,103 @@ def check_modes_and_reward_flow():
     check(dungeon.is_active_encounter_room(), "Dungeon retry did not restart combat")
 
 
+def check_pause_and_controls_qol():
+    """Freeze gameplay behind pause/help overlays and preserve flow inputs."""
+    screen = pygame.Surface((WIDTH, HEIGHT))
+    scene_surface = pygame.Surface((WIDTH, HEIGHT))
+    keys = pygame.key.get_pressed()
+
+    solo = SoloMode()
+    solo.handle_event(pygame.event.Event(pygame.KEYDOWN, key=pygame.K_h))
+    check(solo.controls_visible, "Solo setup controls overlay did not open")
+    solo.draw(screen, scene_surface)
+    solo.handle_event(pygame.event.Event(pygame.KEYDOWN, key=pygame.K_h))
+    solo.handle_event(pygame.event.Event(pygame.KEYDOWN, key=pygame.K_p))
+    check(not solo.paused, "Solo setup screen entered pause unexpectedly")
+    solo.handle_event(pygame.event.Event(pygame.KEYDOWN, key=pygame.K_RETURN))
+
+    solo_skill = solo.skill_manager.get_slot(1)
+    solo_skill.current_cooldown = 1.0
+    solo_projectile = solo.projectile_manager.spawn(Projectile(100, 100, 1, 200, 5, 1.0))
+    solo_beam = solo.projectile_manager.spawn_beam(Beam(100, 180, 1, 220, 24, 8, 1.0))
+    solo_enemy_x = solo.enemy.x
+    solo.handle_event(pygame.event.Event(pygame.KEYDOWN, key=pygame.K_p))
+    check(solo.paused, "Solo pause did not open")
+    solo.handle_event(pygame.event.Event(pygame.KEYDOWN, key=pygame.K_j))
+    solo.update(keys, 0.25)
+    check(not solo.player.is_attacking, "Solo pause allowed a combat input")
+    check(solo_skill.current_cooldown == 1.0, "Solo pause ticked a skill cooldown")
+    check(solo_projectile.x == 100, "Solo pause moved a projectile")
+    check(solo_projectile.lifetime == 1.0, "Solo pause ticked a projectile lifetime")
+    check(solo_beam.duration == 1.0, "Solo pause ticked a beam duration")
+    check(solo.enemy.x == solo_enemy_x, "Solo pause moved the enemy")
+    solo.draw(screen, scene_surface)
+
+    solo.handle_event(pygame.event.Event(pygame.KEYDOWN, key=pygame.K_h))
+    check(solo.controls_visible, "Solo controls overlay did not open while paused")
+    solo.draw(screen, scene_surface)
+    solo.handle_event(pygame.event.Event(pygame.KEYDOWN, key=pygame.K_h))
+    solo.handle_event(pygame.event.Event(pygame.KEYDOWN, key=pygame.K_r))
+    check(solo.is_active(), "Solo paused restart did not start an active fight")
+    check(not solo.paused, "Solo paused restart kept stale pause state")
+    check(not solo.projectile_manager.projectiles, "Solo paused restart kept stale projectiles")
+
+    solo_skill = solo.skill_manager.get_slot(1)
+    solo_skill.current_cooldown = 1.0
+    solo.handle_event(pygame.event.Event(pygame.KEYDOWN, key=pygame.K_h))
+    solo.handle_event(pygame.event.Event(pygame.KEYDOWN, key=pygame.K_j))
+    solo.update(keys, 0.25)
+    check(not solo.player.is_attacking, "Solo controls overlay allowed a combat input")
+    check(solo_skill.current_cooldown == 1.0, "Solo controls overlay ticked a skill cooldown")
+    solo.handle_event(pygame.event.Event(pygame.KEYDOWN, key=pygame.K_h))
+
+    dungeon = DungeonMode()
+    dungeon_skill = dungeon.skill_manager.get_slot(1)
+    dungeon_skill.current_cooldown = 1.0
+    dungeon_projectile = dungeon.projectile_manager.spawn(Projectile(100, 100, 1, 200, 5, 1.0))
+    dungeon_beam = dungeon.projectile_manager.spawn_beam(Beam(100, 180, 1, 220, 24, 8, 1.0))
+    dungeon.encounter_manager.update_wave_progress(dungeon.encounter_manager.wave_delay_timer, dungeon.player)
+    dungeon_enemy = dungeon.encounter_manager.get_enemies()[0]
+    dungeon_enemy_x = dungeon_enemy.x
+    dungeon.handle_event(pygame.event.Event(pygame.KEYDOWN, key=pygame.K_p))
+    check(dungeon.paused, "Dungeon pause did not open")
+    dungeon.handle_event(pygame.event.Event(pygame.KEYDOWN, key=pygame.K_j))
+    dungeon.update(keys, 0.25)
+    check(not dungeon.player.is_attacking, "Dungeon pause allowed a combat input")
+    check(dungeon_skill.current_cooldown == 1.0, "Dungeon pause ticked a skill cooldown")
+    check(dungeon_projectile.x == 100, "Dungeon pause moved a projectile")
+    check(dungeon_projectile.lifetime == 1.0, "Dungeon pause ticked a projectile lifetime")
+    check(dungeon_beam.duration == 1.0, "Dungeon pause ticked a beam duration")
+    check(dungeon_enemy.x == dungeon_enemy_x, "Dungeon pause moved an enemy")
+    dungeon.draw(screen, scene_surface)
+
+    dungeon.handle_event(pygame.event.Event(pygame.KEYDOWN, key=pygame.K_h))
+    check(dungeon.controls_visible, "Dungeon controls overlay did not open while paused")
+    dungeon.draw(screen, scene_surface)
+    dungeon.handle_event(pygame.event.Event(pygame.KEYDOWN, key=pygame.K_h))
+    dungeon.handle_event(pygame.event.Event(pygame.KEYDOWN, key=pygame.K_r))
+    check(dungeon.is_active_encounter_room(), "Dungeon paused retry did not restart the run")
+    check(not dungeon.paused, "Dungeon paused retry kept stale pause state")
+    check(not dungeon.projectile_manager.projectiles, "Dungeon paused retry kept stale projectiles")
+
+    dungeon.complete_current_encounter_room()
+    dungeon.handle_event(pygame.event.Event(pygame.KEYDOWN, key=pygame.K_RETURN))
+    check(dungeon.room_manager.flow_state == ROOM_REWARD, "Dungeon reward setup failed during QoL check")
+    dungeon.handle_event(pygame.event.Event(pygame.KEYDOWN, key=pygame.K_p))
+    dungeon.handle_event(pygame.event.Event(pygame.KEYDOWN, key=pygame.K_d))
+    dungeon.handle_event(pygame.event.Event(pygame.KEYDOWN, key=pygame.K_RETURN))
+    check(dungeon.room_manager.flow_state == ROOM_REWARD, "Dungeon pause allowed reward confirmation")
+    check(dungeon.reward_manager.selected_index == 0, "Dungeon pause allowed reward navigation")
+    dungeon.handle_event(pygame.event.Event(pygame.KEYDOWN, key=pygame.K_p))
+    dungeon.handle_event(pygame.event.Event(pygame.KEYDOWN, key=pygame.K_h))
+    dungeon.handle_event(pygame.event.Event(pygame.KEYDOWN, key=pygame.K_RETURN))
+    check(dungeon.room_manager.flow_state == ROOM_REWARD, "Dungeon controls overlay allowed reward confirmation")
+    dungeon.draw(screen, scene_surface)
+    dungeon.handle_event(pygame.event.Event(pygame.KEYDOWN, key=pygame.K_h))
+    dungeon.handle_event(pygame.event.Event(pygame.KEYDOWN, key=pygame.K_RETURN))
+    check(dungeon.room_manager.flow_state == ROOM_ACTIVE, "Dungeon reward confirmation broke after QoL overlays")
+
+
 def check_boss_skill_transitions():
     """Force the neutral boss skill through telegraph, active, and recovery."""
     player = create_player(420)
@@ -568,6 +665,7 @@ def run():
         ("dungeon layouts", check_layout_definitions),
         ("reward runtime", check_reward_runtime),
         ("mode lifecycle", check_modes_and_reward_flow),
+        ("pause and controls QoL", check_pause_and_controls_qol),
         ("boss skill states", check_boss_skill_transitions),
         ("projectile and beam", check_projectile_and_beam),
         ("solo boss technique playback", check_solo_boss_technique_playback),
