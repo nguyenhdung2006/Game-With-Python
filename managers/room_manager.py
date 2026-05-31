@@ -2,14 +2,13 @@
 
 from dataclasses import dataclass
 
+from config.mode_config import DUNGEON_ROOM_TYPES
 from managers.room_state import (
     ROOM_ACTIVE,
-    ROOM_BOSS_ENCOUNTER,
     ROOM_CLEARED,
     ROOM_COMPLETE,
     ROOM_DEFEAT,
     ROOM_DUNGEON_CLEAR,
-    ROOM_ENCOUNTER,
     ROOM_REWARD,
 )
 
@@ -25,11 +24,7 @@ class RoomManager:
     """Track fixed dungeon room flow without owning combat or rendering."""
 
     def __init__(self):
-        self.rooms = [
-            DungeonRoom(ROOM_ENCOUNTER),
-            DungeonRoom(ROOM_ENCOUNTER),
-            DungeonRoom(ROOM_BOSS_ENCOUNTER),
-        ]
+        self.rooms = [DungeonRoom(room_type) for room_type in DUNGEON_ROOM_TYPES]
         self.current_room_index = 0
         self.flow_state = ROOM_ACTIVE
 

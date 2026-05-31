@@ -2,6 +2,20 @@
 
 import pygame
 
+from config.boss_config import SOLO_BOSS_CONFIG
+from config.mode_config import (
+    SOLO_ATTACK_ENERGY_GAIN,
+    SOLO_COMBO_BURST_ENERGY_COST,
+    SOLO_ENEMY_RIGHT_OFFSET,
+    SOLO_ENERGY_BG,
+    SOLO_ENERGY_COLOR,
+    SOLO_FINISHER_ENERGY_GAIN,
+    SOLO_HURT_ENERGY_GAIN,
+    SOLO_MAX_ENERGY,
+    SOLO_PLAYER_ATTACK_RANGES,
+    SOLO_PLAYER_SPAWN_X,
+    SOLO_START_ENERGY,
+)
 from entities.elite_enemy import EliteEnemy
 from entities.player import Player
 from settings import (
@@ -28,9 +42,6 @@ from world.battlefield import draw_arena
 SOLO_ACTIVE = "ACTIVE"
 SOLO_VICTORY = "VICTORY"
 SOLO_DEFEAT = "DEFEAT"
-SOLO_PLAYER_ATTACK_RANGES = {1: 54, 2: 60, 3: 70}
-ENERGY_COLOR = (110, 195, 255)
-ENERGY_BG = (25, 38, 56)
 
 
 class SoloMode:
@@ -41,20 +52,20 @@ class SoloMode:
 
     def reset_fight(self):
         """Create a clean rematch without carrying combat or cooldown state."""
-        self.player = Player(180, GROUND_Y - PLAYER_HEIGHT)
-        self.enemy = EliteEnemy(WIDTH - 280)
+        self.player = Player(SOLO_PLAYER_SPAWN_X, GROUND_Y - PLAYER_HEIGHT)
+        self.enemy = EliteEnemy(WIDTH - SOLO_ENEMY_RIGHT_OFFSET)
         self.configure_solo_boss()
         self.impact = CombatImpact()
         self.projectile_manager = ProjectileManager()
         self.skill_manager = SkillManager(self.projectile_manager)
-        self.combo_burst = SoloComboBurst(energy_cost=40)
+        self.combo_burst = SoloComboBurst(energy_cost=SOLO_COMBO_BURST_ENERGY_COST)
         self.sprite_renderer = SoloSpriteRenderer()
         self.boss_skill_name = "Heavy Slash"
-        self.max_energy = 100
-        self.energy = 50
-        self.attack_energy_gain = 8
-        self.finisher_energy_gain = 12
-        self.hurt_energy_gain = 3
+        self.max_energy = SOLO_MAX_ENERGY
+        self.energy = SOLO_START_ENERGY
+        self.attack_energy_gain = SOLO_ATTACK_ENERGY_GAIN
+        self.finisher_energy_gain = SOLO_FINISHER_ENERGY_GAIN
+        self.hurt_energy_gain = SOLO_HURT_ENERGY_GAIN
         self.result_state = SOLO_ACTIVE
 
     def handle_event(self, event):
@@ -177,14 +188,14 @@ class SoloMode:
 
     def configure_solo_boss(self):
         """Tune the Solo sprite-test boss without changing Dungeon balance."""
-        self.enemy.label = "SOLO BOSS"
-        self.enemy.max_health = 260
+        self.enemy.label = SOLO_BOSS_CONFIG["label"]
+        self.enemy.max_health = SOLO_BOSS_CONFIG["max_health"]
         self.enemy.health = self.enemy.max_health
-        self.enemy.attack_range = 74
-        self.enemy.attack_start_distance = 94
-        self.enemy.skill_controller.skill_range = 150
-        self.enemy.skill_controller.skill_height = 38
-        self.enemy.skill_controller.damage = 18
+        self.enemy.attack_range = SOLO_BOSS_CONFIG["attack_range"]
+        self.enemy.attack_start_distance = SOLO_BOSS_CONFIG["attack_start_distance"]
+        self.enemy.skill_controller.skill_range = SOLO_BOSS_CONFIG["skill_range"]
+        self.enemy.skill_controller.skill_height = SOLO_BOSS_CONFIG["skill_height"]
+        self.enemy.skill_controller.damage = SOLO_BOSS_CONFIG["skill_damage"]
 
     def tune_player_attack_range(self):
         """Keep Solo gameplay hitboxes shorter than slash sprite visuals."""
@@ -214,8 +225,8 @@ class SoloMode:
         height = 16
         fill_width = round(width * (self.energy / self.max_energy))
 
-        pygame.draw.rect(screen, ENERGY_BG, (x, y, width, height))
-        pygame.draw.rect(screen, ENERGY_COLOR, (x, y, fill_width, height))
+        pygame.draw.rect(screen, SOLO_ENERGY_BG, (x, y, width, height))
+        pygame.draw.rect(screen, SOLO_ENERGY_COLOR, (x, y, fill_width, height))
         pygame.draw.rect(screen, WHITE, (x, y, width, height), 2)
 
         font = pygame.font.Font(None, 24)

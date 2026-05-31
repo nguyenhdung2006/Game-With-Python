@@ -1,7 +1,7 @@
 """Elite melee enemy archetype for deliberate boss-room combat."""
 
+from config.boss_config import ELITE_ENEMY_CONFIG
 from entities.base_enemy import BaseEnemy
-from settings import ELITE_ENEMY_CONFIG
 from systems.boss_skill_controller import BossSkillController
 
 

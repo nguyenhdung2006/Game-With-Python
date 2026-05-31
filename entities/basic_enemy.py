@@ -1,7 +1,7 @@
 """Balanced melee enemy archetype."""
 
+from config.enemy_config import BASIC_ENEMY_CONFIG
 from entities.base_enemy import BaseEnemy
-from settings import BASIC_ENEMY_CONFIG
 
 
 class BasicEnemy(BaseEnemy):

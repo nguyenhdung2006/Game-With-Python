@@ -2,6 +2,7 @@
 
 import pygame
 
+from config.boss_config import BOSS_SKILL_CONFIG
 from settings import ENEMY_STATE_CHASE, ENEMY_STATE_IDLE, GROUND_Y
 from systems.combat import apply_knockback
 
@@ -21,16 +22,16 @@ class BossSkillController:
     def __init__(self):
         self.state = BOSS_SKILL_READY
         self.state_timer = 0.0
-        self.cooldown = 6.5
-        self.cooldown_timer = 3.5
-        self.decision_delay_timer = 2.0
-        self.telegraph_duration = 0.82
-        self.active_duration = 0.18
-        self.recovery_duration = 0.82
-        self.skill_range = 220
-        self.skill_height = 42
-        self.damage = 20
-        self.knockback = 320
+        self.cooldown = BOSS_SKILL_CONFIG["cooldown"]
+        self.cooldown_timer = BOSS_SKILL_CONFIG["initial_cooldown"]
+        self.decision_delay_timer = BOSS_SKILL_CONFIG["initial_decision_delay"]
+        self.telegraph_duration = BOSS_SKILL_CONFIG["telegraph_duration"]
+        self.active_duration = BOSS_SKILL_CONFIG["active_duration"]
+        self.recovery_duration = BOSS_SKILL_CONFIG["recovery_duration"]
+        self.skill_range = BOSS_SKILL_CONFIG["skill_range"]
+        self.skill_height = BOSS_SKILL_CONFIG["skill_height"]
+        self.damage = BOSS_SKILL_CONFIG["damage"]
+        self.knockback = BOSS_SKILL_CONFIG["knockback"]
         self.has_hit_this_use = False
 
     def update(self, boss, player, dt):
@@ -76,7 +77,7 @@ class BossSkillController:
             return False
 
         distance = abs(player.rect.centerx - boss.rect.centerx)
-        return distance <= self.skill_range + 70
+        return distance <= self.skill_range + BOSS_SKILL_CONFIG["range_tolerance"]
 
     def start_telegraph(self, boss):
         """Open the avoidable warning window before the placeholder skill."""
@@ -119,14 +120,17 @@ class BossSkillController:
         self.state_timer = max(0.0, self.state_timer - dt)
         if self.state_timer == 0:
             self.state = BOSS_SKILL_READY
-            self.decision_delay_timer = 1.25
+            self.decision_delay_timer = BOSS_SKILL_CONFIG["post_skill_decision_delay"]
             boss.state = ENEMY_STATE_IDLE
 
     def cancel(self):
         """Clear an in-progress placeholder skill after interruption."""
         self.state = BOSS_SKILL_READY
         self.state_timer = 0.0
-        self.decision_delay_timer = max(self.decision_delay_timer, 1.0)
+        self.decision_delay_timer = max(
+            self.decision_delay_timer,
+            BOSS_SKILL_CONFIG["interrupt_decision_delay"],
+        )
         self.has_hit_this_use = False
 
     def is_controlling(self):

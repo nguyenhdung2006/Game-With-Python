@@ -3,10 +3,14 @@
 from dataclasses import dataclass
 from typing import Callable
 
-
-MAX_DAMAGE_MULTIPLIER = 1.6
-MIN_DASH_COOLDOWN_MULTIPLIER = 0.55
-MIN_DASH_COOLDOWN = 0.25
+from config.reward_config import (
+    ATTACK_DAMAGE_UP_MULTIPLIER,
+    DASH_COOLDOWN_DOWN_MULTIPLIER,
+    MAX_DAMAGE_MULTIPLIER,
+    MAX_HP_UP_BONUS,
+    MIN_DASH_COOLDOWN,
+    MIN_DASH_COOLDOWN_MULTIPLIER,
+)
 
 
 @dataclass(frozen=True)
@@ -25,19 +29,19 @@ def create_reward_pool():
         Reward(
             "max_hp_up",
             "Max HP Up",
-            "+10 max HP. Heal 10 HP now.",
+            f"+{MAX_HP_UP_BONUS} max HP. Heal {MAX_HP_UP_BONUS} HP now.",
             apply_max_hp_up,
         ),
         Reward(
             "attack_damage_up",
             "Attack Damage Up",
-            "+10% player attack damage.",
+            f"+{round((ATTACK_DAMAGE_UP_MULTIPLIER - 1) * 100)}% player attack damage.",
             apply_attack_damage_up,
         ),
         Reward(
             "dash_cooldown_down",
             "Dash Cooldown Down",
-            "-10% dash cooldown.",
+            f"-{round((1 - DASH_COOLDOWN_DOWN_MULTIPLIER) * 100)}% dash cooldown.",
             apply_dash_cooldown_down,
         ),
     ]
@@ -45,7 +49,7 @@ def create_reward_pool():
 
 def apply_max_hp_up(player):
     """Increase max HP slightly and heal the same amount."""
-    bonus = 10
+    bonus = MAX_HP_UP_BONUS
     player.max_health_bonus += bonus
     player.max_health += bonus
     player.health = min(player.max_health, player.health + bonus)
@@ -53,14 +57,17 @@ def apply_max_hp_up(player):
 
 def apply_attack_damage_up(player):
     """Increase outgoing player attack damage with a conservative cap."""
-    player.damage_multiplier = min(MAX_DAMAGE_MULTIPLIER, player.damage_multiplier * 1.10)
+    player.damage_multiplier = min(
+        MAX_DAMAGE_MULTIPLIER,
+        player.damage_multiplier * ATTACK_DAMAGE_UP_MULTIPLIER,
+    )
 
 
 def apply_dash_cooldown_down(player):
     """Reduce dash cooldown with a minimum clamp."""
     player.dash_cooldown_multiplier = max(
         MIN_DASH_COOLDOWN_MULTIPLIER,
-        player.dash_cooldown_multiplier * 0.90,
+        player.dash_cooldown_multiplier * DASH_COOLDOWN_DOWN_MULTIPLIER,
     )
     player.dash_cooldown = max(
         MIN_DASH_COOLDOWN,

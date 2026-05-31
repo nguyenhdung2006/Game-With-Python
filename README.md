@@ -56,6 +56,13 @@ Solo / Versus Mode:
 project_root/
 main.py
 settings.py
+config/
+    player_config.py
+    enemy_config.py
+    boss_config.py
+    skill_config.py
+    reward_config.py
+    mode_config.py
 entities/
     player.py
     player_parts/
@@ -135,7 +142,8 @@ assets/
 ## Folder Responsibilities
 
 - `main.py` starts Pygame, creates objects, runs the game loop, and calls update/draw methods.
-- `settings.py` stores shared constants such as screen size, colors, physics values, dash values, and combat values.
+- `settings.py` stores runtime geometry/colors and re-exports legacy tuning constants for compatibility.
+- `config/` stores lightweight Python tuning modules for player, enemy, boss, skill, reward, Solo, and Dungeon values.
 - `entities/` stores game objects such as the player, enemies, future bosses, and projectiles.
 - `entities/player_parts/` keeps Player combat, defense, movement, setup, and rendering concerns in smaller modules.
 - `entities/player_parts/reaction.py` tracks player-side whiff, landing, guard stress, and payoff feedback timers.
@@ -196,6 +204,7 @@ assets/
 - Dungeon clear summary with rooms cleared, selected rewards, and final modifiers
 - Completion flow foundation with Dungeon Defeat, retry, Solo rematch, and shared end-state prompts
 - Room Cleared pacing cleanup that waits for `Enter` before opening reward selection
+- Gameplay config foundation that moves prototype tuning into focused Python modules without adding content
 - Elite/Boss foundation for Room 3 using a single heavy melee enemy with slower pacing, longer telegraphs, and clearer punish windows
 - Boss readability and pacing polish with slower attack cadence, stronger downtime, and clearer recovery punish windows
 - Goku skill prototype with `U` Ki Blast, `I` Kamehameha, and `O` locked
@@ -270,6 +279,7 @@ assets/
 - Phase 31 adds boss skill AI architecture with a neutral mechanical placeholder only; no final boss identity, named boss attack, animation, VFX, or assets have been added
 - Phase 32 adds a Solo-only sprite combat and energy prototype: shaman body frames, slash combo visuals, boss sprite playback, technique frames attached to the preserved Phase 31 skill flow, and `U` Combo Burst. Dungeon visuals and bindings remain unchanged
 - Phase 33 adds completion-flow foundation only: Dungeon Defeat and retry, Solo rematch, readable Room Cleared pacing before reward selection, and consistent retry/menu prompts. No combat, AI, animation, asset, or fantasy expansion has been added
+- Phase 34 adds a lightweight gameplay config foundation: player, enemy, boss, skill, reward, Solo, and Dungeon prototype tuning now live in focused Python modules. Existing behavior is preserved; no new gameplay content has been added
 - Phase 26 adds boss pacing foundation only: heavier melee tuning, longer telegraph/recovery, and punish-focused combat readability
 - Phase 27 polishes boss rhythm only: clearer telegraphs, longer recovery, slower pressure cadence, and more reliable punish timing without special attacks or VFX
 

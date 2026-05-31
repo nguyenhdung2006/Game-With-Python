@@ -1,7 +1,7 @@
 """Fast melee enemy archetype."""
 
+from config.enemy_config import FAST_ENEMY_CONFIG
 from entities.base_enemy import BaseEnemy
-from settings import FAST_ENEMY_CONFIG
 
 
 class FastEnemy(BaseEnemy):

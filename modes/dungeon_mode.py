@@ -2,6 +2,7 @@
 
 import pygame
 
+from config.mode_config import DUNGEON_PLAYER_SPAWN_X
 from entities.player import Player
 from managers.encounter_manager import EncounterManager
 from managers.encounter_profiles import BOSS_ROOM_PROFILES
@@ -30,7 +31,7 @@ class DungeonMode:
 
     def reset_run(self):
         """Create a clean dungeon run without carrying terminal combat state."""
-        self.player = Player(180, GROUND_Y - PLAYER_HEIGHT)
+        self.player = Player(DUNGEON_PLAYER_SPAWN_X, GROUND_Y - PLAYER_HEIGHT)
         self.room_manager = RoomManager()
         self.encounter_manager = None
         self.impact = CombatImpact()

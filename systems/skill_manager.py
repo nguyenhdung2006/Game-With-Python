@@ -1,5 +1,6 @@
 """Player skill slot routing and cooldown tracking."""
 
+from config.skill_config import KAMEHAMEHA_CONFIG, KI_BLAST_CONFIG
 from systems.skill import Skill
 
 
@@ -13,13 +14,13 @@ class SkillManager:
             Skill(
                 "ki_blast",
                 "Ki Blast",
-                cooldown=0.45,
+                cooldown=KI_BLAST_CONFIG["cooldown"],
                 use_callback=self.use_ki_blast,
             ),
             Skill(
                 "kamehameha",
                 "Kamehameha",
-                cooldown=5.0,
+                cooldown=KAMEHAMEHA_CONFIG["cooldown"],
                 use_callback=self.use_kamehameha,
             ),
             Skill("locked", "Locked", unlocked=False),
@@ -71,7 +72,7 @@ class SkillManager:
         if player is None or not self.can_use_player_skill(player):
             return False
 
-        damage = round(10 * getattr(player, "damage_multiplier", 1.0))
+        damage = round(KI_BLAST_CONFIG["damage"] * getattr(player, "damage_multiplier", 1.0))
         self.projectile_manager.spawn_ki_blast(player, damage)
         return True
 
@@ -81,7 +82,7 @@ class SkillManager:
         if player is None or not self.can_use_player_skill(player, require_grounded=True):
             return False
 
-        damage = round(34 * getattr(player, "damage_multiplier", 1.0))
+        damage = round(KAMEHAMEHA_CONFIG["damage"] * getattr(player, "damage_multiplier", 1.0))
         self.projectile_manager.spawn_kamehameha(player, damage)
         return True
 

@@ -1,15 +1,17 @@
 """Solo-only automatic three-hit combo prototype."""
 
+from config.mode_config import SOLO_COMBO_BURST_ENERGY_COST, SOLO_COMBO_BURST_GAP_DURATION
+
 
 class SoloComboBurst:
     """Sequence the existing normal combo attacks without changing combat core."""
 
-    def __init__(self, energy_cost=40):
+    def __init__(self, energy_cost=SOLO_COMBO_BURST_ENERGY_COST):
         self.energy_cost = energy_cost
         self.active = False
         self.next_combo_step = 0
         self.gap_timer = 0.0
-        self.gap_duration = 0.045
+        self.gap_duration = SOLO_COMBO_BURST_GAP_DURATION
 
     def can_start(self, player, energy):
         """Return True when the player can safely begin the burst."""

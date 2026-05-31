@@ -1,5 +1,6 @@
 """Projectile ownership, updating, drawing, and enemy collision."""
 
+from config.skill_config import KAMEHAMEHA_CONFIG, KI_BLAST_CONFIG
 from systems.beam import Beam
 from systems.projectile import Projectile
 
@@ -30,22 +31,22 @@ class ProjectileManager:
         """Create the user-approved fast Ki Blast projectile."""
         direction = getattr(player, "facing", 1)
         if direction >= 0:
-            x = player.rect.right + 8
+            x = player.rect.right + KI_BLAST_CONFIG["forward_offset"]
         else:
-            x = player.rect.left - 26
+            x = player.rect.left - KI_BLAST_CONFIG["reverse_offset"]
 
-        y = player.rect.centery - 5
+        y = player.rect.centery - KI_BLAST_CONFIG["vertical_offset"]
         return self.spawn(
             Projectile(
                 x=x,
                 y=y,
                 direction=direction,
-                speed=760,
+                speed=KI_BLAST_CONFIG["speed"],
                 damage=damage,
-                lifetime=0.70,
-                width=20,
-                height=12,
-                knockback=190,
+                lifetime=KI_BLAST_CONFIG["lifetime"],
+                width=KI_BLAST_CONFIG["width"],
+                height=KI_BLAST_CONFIG["height"],
+                knockback=KI_BLAST_CONFIG["knockback"],
             )
         )
 
@@ -53,20 +54,20 @@ class ProjectileManager:
         """Create the user-approved beam prototype."""
         direction = getattr(player, "facing", 1)
         if direction >= 0:
-            x = player.rect.right + 6
+            x = player.rect.right + KAMEHAMEHA_CONFIG["origin_offset"]
         else:
-            x = player.rect.left - 6
+            x = player.rect.left - KAMEHAMEHA_CONFIG["origin_offset"]
 
         return self.spawn_beam(
             Beam(
                 x=x,
                 y=player.rect.centery,
                 direction=direction,
-                beam_range=520,
-                height=46,
+                beam_range=KAMEHAMEHA_CONFIG["range"],
+                height=KAMEHAMEHA_CONFIG["height"],
                 damage=damage,
-                duration=0.22,
-                knockback=430,
+                duration=KAMEHAMEHA_CONFIG["duration"],
+                knockback=KAMEHAMEHA_CONFIG["knockback"],
             )
         )
 
