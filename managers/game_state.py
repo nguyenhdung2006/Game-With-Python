@@ -5,6 +5,7 @@ MODE_SELECT = "MODE_SELECT"
 DUNGEON_MODE = "DUNGEON_MODE"
 SOLO_MODE = "SOLO_MODE"
 TEAM_MODE_LOCKED = "TEAM_MODE_LOCKED"
+SETTINGS_MODE = "SETTINGS_MODE"
 
 
 class GameState:
@@ -25,6 +26,9 @@ class GameState:
     def enter_team_mode_locked(self):
         self.current = TEAM_MODE_LOCKED
 
+    def enter_settings(self):
+        self.current = SETTINGS_MODE
+
     def is_mode_select(self):
         return self.current == MODE_SELECT
 
@@ -33,3 +37,6 @@ class GameState:
 
     def is_placeholder_screen(self):
         return self.current == TEAM_MODE_LOCKED
+
+    def is_settings(self):
+        return self.current == SETTINGS_MODE

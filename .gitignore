@@ -25,6 +25,7 @@ htmlcov/
 # Pygame/runtime logs and local files
 *.log
 *.tmp
+data/settings.json
 
 # Editor and OS files
 .vscode/

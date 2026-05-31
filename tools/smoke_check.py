@@ -1,6 +1,7 @@
 """Lightweight standalone regression checks for gameplay foundations."""
 
 from pathlib import Path
+import json
 import os
 import sys
 from types import SimpleNamespace
@@ -45,6 +46,7 @@ from entities.basic_enemy import BasicEnemy
 from entities.elite_enemy import EliteEnemy
 from entities.player import Player
 from managers.dungeon_layout import DungeonLayoutManager
+from managers.game_state import GameState
 from managers.room_state import ROOM_ACTIVE, ROOM_CLEARED, ROOM_REWARD
 from modes.dungeon_mode import DungeonMode
 from modes.solo_mode import SOLO_ACTIVE, SOLO_SETUP, SOLO_VICTORY, SoloMode
@@ -58,6 +60,7 @@ from settings import (
     WIDTH,
 )
 from systems.beam import Beam
+from systems.effects import CombatImpact
 from systems.boss_skill_controller import (
     BOSS_SKILL_ACTIVE,
     BOSS_SKILL_READY,
@@ -69,11 +72,13 @@ from systems.projectile import Projectile
 from systems.projectile_manager import ProjectileManager
 from systems.reward import REWARD_EFFECTS, create_reward_pool
 from systems.reward_manager import RewardManager
+from systems.settings_store import SettingsStore
 from systems.skill_manager import SkillManager
 from systems.solo_boss_combo_controller import SoloBossComboController
 from systems.solo_combo_burst import SoloComboBurst
 from systems.solo_sprite_renderer import SoloSpriteRenderer
 from ui.solo_setup import SLIDER_LEFT, SLIDER_WIDTH, SLIDER_Y
+from ui.settings_menu import SettingsMenu
 
 
 def check(condition, message):
@@ -413,6 +418,62 @@ def check_pause_and_controls_qol():
     check(dungeon.room_manager.flow_state == ROOM_ACTIVE, "Dungeon reward confirmation broke after QoL overlays")
 
 
+def check_settings_foundation():
+    """Persist local preferences, recover corrupt JSON, and apply safe shake settings."""
+    screen = pygame.Surface((WIDTH, HEIGHT))
+    settings_path = PROJECT_ROOT / "data" / "settings-smoke.tmp"
+    try:
+        try:
+            settings_path.unlink(missing_ok=True)
+        except OSError:
+            pass
+        store = SettingsStore(settings_path)
+        check(settings_path.exists(), "Missing settings file was not created safely")
+        check(store.get("master_volume") == 1.0, "Settings defaults failed to load")
+
+        store.set("master_volume", 0.5)
+        check(SettingsStore(settings_path).get("master_volume") == 0.5, "Settings value did not persist")
+
+        menu = SettingsMenu(store)
+        menu.draw(screen)
+        menu.handle_event(pygame.event.Event(pygame.KEYDOWN, key=pygame.K_RIGHT))
+        check(store.get("master_volume") == 0.6, "Settings menu numeric adjustment failed")
+        menu.selected_index = 3
+        menu.handle_event(pygame.event.Event(pygame.KEYDOWN, key=pygame.K_RETURN))
+        check(not store.get("screen_shake_enabled"), "Settings menu toggle failed")
+
+        settings_path.write_text("{invalid json", encoding="utf-8")
+        recovered_store = SettingsStore(settings_path)
+        check(recovered_store.get("master_volume") == 1.0, "Corrupt settings did not restore defaults")
+        with settings_path.open("r", encoding="utf-8") as settings_file:
+            check(isinstance(json.load(settings_file), dict), "Corrupt settings fallback did not write valid JSON")
+    finally:
+        try:
+            settings_path.unlink(missing_ok=True)
+        except OSError:
+            pass
+
+    game_state = GameState()
+    game_state.enter_settings()
+    check(game_state.is_settings(), "Settings routing did not open")
+    game_state.enter_mode_select()
+    check(game_state.is_mode_select(), "Settings routing did not return to mode select")
+
+    attack_data = {"hitstop": 0.1, "shake_duration": 0.2, "shake_strength": 6}
+    disabled_impact = CombatImpact({"screen_shake_enabled": False, "camera_shake_strength": 1.0})
+    disabled_impact.start_hit_impact(attack_data)
+    check(disabled_impact.is_hitstop_active(), "Disabling screen shake incorrectly disabled hitstop")
+    check(disabled_impact.camera_shake_timer == 0, "Disabled screen shake still started a timer")
+
+    reduced_impact = CombatImpact({"screen_shake_enabled": True, "camera_shake_strength": 0.5})
+    reduced_impact.start_hit_impact(attack_data)
+    check(reduced_impact.camera_shake_strength == 3, "Camera shake strength multiplier was not applied")
+
+    preferences = {"show_controls_hint": False}
+    SoloMode(preferences).draw(screen, pygame.Surface((WIDTH, HEIGHT)))
+    DungeonMode(preferences).draw(screen, pygame.Surface((WIDTH, HEIGHT)))
+
+
 def check_boss_skill_transitions():
     """Force the neutral boss skill through telegraph, active, and recovery."""
     player = create_player(420)
@@ -666,6 +727,7 @@ def run():
         ("reward runtime", check_reward_runtime),
         ("mode lifecycle", check_modes_and_reward_flow),
         ("pause and controls QoL", check_pause_and_controls_qol),
+        ("save and settings foundation", check_settings_foundation),
         ("boss skill states", check_boss_skill_transitions),
         ("projectile and beam", check_projectile_and_beam),
         ("solo boss technique playback", check_solo_boss_technique_playback),

@@ -35,6 +35,7 @@ Mode select:
 - `1` = Solo / Versus
 - `2` = Dungeon / Wave Mode
 - `3` = Team Round 3v3 locked screen
+- `4` = Settings
 - `Esc` = quit on mode select, return to mode select from modes
 
 Playable modes:
@@ -84,6 +85,7 @@ config/
     reward_config.py
     mode_config.py
     dungeon_layout_config.py
+    default_settings.py
 entities/
     player.py
     player_parts/
@@ -130,6 +132,7 @@ systems/
     reaction_feedback.py
     skill.py
     skill_manager.py
+    settings_store.py
     solo_combo_burst.py
     solo_boss_combo_controller.py
     solo_sprite_renderer.py
@@ -150,6 +153,7 @@ ui/
     mode_select.py
     pause_overlay.py
     controls_overlay.py
+    settings_menu.py
     reward_select.py
     room_banner.py
     solo_setup.py
@@ -175,6 +179,7 @@ assets/
 - `settings.py` stores runtime geometry/colors and re-exports legacy tuning constants for compatibility.
 - `config/` stores lightweight Python tuning modules for player, enemy, boss, skill, reward, Solo, and Dungeon values.
 - `config/dungeon_layout_config.py` stores fixed placeholder room bounds, player spawns, enemy spawn anchors, and exits.
+- `config/default_settings.py` stores safe local preference defaults and lightweight settings-menu metadata.
 - `entities/` stores game objects such as the player, enemies, future bosses, and projectiles.
 - `entities/player_parts/` keeps Player combat, defense, movement, setup, and rendering concerns in smaller modules.
 - `entities/player_parts/reaction.py` tracks player-side whiff, landing, guard stress, and payoff feedback timers.
@@ -208,6 +213,7 @@ assets/
 - `systems/reaction_feedback.py` draws small enemy vulnerability, recovery, and stagger readability effects.
 - `systems/skill.py` defines neutral skill slot primitives with cooldown and resource-cost fields.
 - `systems/skill_manager.py` owns the three player skill slots and routes Ki Blast, Kamehameha, and the locked slot.
+- `systems/settings_store.py` loads, validates, and writes local JSON preferences without saving progression or run state.
 - `systems/solo_combo_burst.py` sequences the Solo-only three-hit Combo Burst using existing normal attack setup.
 - `systems/solo_boss_combo_controller.py` owns the Solo-only boss energy meter and user-approved multi-hit frame sequences.
 - `systems/solo_sprite_renderer.py` loads and draws Solo-only shaman, slash, boss, and boss-technique prototype frames with safe fallbacks.
@@ -220,6 +226,7 @@ assets/
 - `ui/completion_overlay.py` draws shared retry and return-to-menu prompts for terminal states.
 - `ui/pause_overlay.py` draws the shared dimmed pause panel and restart/menu actions.
 - `ui/controls_overlay.py` draws modal Solo and Dungeon control references without adding asset dependencies.
+- `ui/settings_menu.py` draws the keyboard-driven local preferences screen opened from Mode Select.
 - `ui/dungeon_hud.py` draws Dungeon Mode run status, selected rewards, stat modifiers, and clear summary.
 - `ui/mode_select.py` draws the mode select and locked coming-soon screens.
 - `ui/reward_select.py` draws the three-choice mechanical reward selection screen.
@@ -243,6 +250,7 @@ assets/
 - Dungeon clear summary with rooms cleared, selected rewards, and final modifiers
 - Completion flow foundation with Dungeon Defeat, retry, Solo rematch, and shared end-state prompts
 - Pause and controls QoL foundation for Solo and Dungeon with frozen gameplay timers, modal input safety, and mode-relevant help
+- Local settings foundation with safe JSON defaults, a Mode Select settings screen, optional controls hints, and camera-shake preferences
 - Room Cleared pacing cleanup that waits for `Enter` before opening reward selection
 - Gameplay config foundation that moves prototype tuning into focused Python modules without adding content
 - Dungeon layout foundation with fixed START, ENCOUNTER, ELITE/BOSS, and CLEAR placeholder layouts
@@ -292,6 +300,17 @@ assets/
 - Solo / Versus: playable 1v1 arena sandbox
 - Dungeon / Wave Mode: playable fixed room flow
 - Team Round 3v3: locked / coming soon
+- Settings: local player preferences
+
+## Local Settings
+
+- Press `4` from Mode Select to open Settings
+- `Up/Down` selects a preference, `Left/Right` adjusts values, and `Enter` toggles boolean options
+- `Esc` returns to Mode Select
+- Preferences are stored locally in `data/settings.json`
+- Volume values and fullscreen preference are persisted placeholders for later audio/display integration
+- Screen-shake enable/strength and the compact controls hint apply safely now
+- Missing or corrupt JSON falls back to defaults; progression and active run state are not saved
 
 ## Solo / Versus Flow
 
@@ -342,6 +361,7 @@ assets/
 - Phase 38 caps the immediate mechanical heal reward so the balance audit is clean without changing the current Dungeon run feel. No new content or broad rebalance has been added
 - Phase 39 polishes Solo boss combo combat only: weighted anti-spam decisions, readable per-tier tempo, Final group pause and lockout, major-skill punish windows, and stun / skill-lock feedback. Dungeon behavior remains stable
 - Phase 40 adds pause and controls QoL only: Solo and Dungeon can freeze live gameplay safely, restart from pause, and open mode-relevant control help. No combat tuning, skills, animation, or assets have been added
+- Phase 41 adds a lightweight local settings foundation only: safe JSON defaults, a Mode Select settings screen, persisted audio/display placeholders, camera-shake preferences, and an optional controls hint. No progression save, run-state save, combat content, animation, or assets have been added
 - Phase 26 adds boss pacing foundation only: heavier melee tuning, longer telegraph/recovery, and punish-focused combat readability
 - Phase 27 polishes boss rhythm only: clearer telegraphs, longer recovery, slower pressure cadence, and more reliable punish timing without special attacks or VFX
 

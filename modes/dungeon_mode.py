@@ -15,7 +15,7 @@ from systems.reward_manager import RewardManager
 from systems.render_layers import draw_combat_scene
 from systems.skill_manager import SkillManager
 from ui.completion_overlay import draw_completion_overlay
-from ui.controls_overlay import draw_controls_overlay
+from ui.controls_overlay import draw_controls_hint, draw_controls_overlay
 from ui.dungeon_hud import draw_dungeon_clear_summary, draw_dungeon_hud
 from ui.health_bar import draw_health_bar
 from ui.pause_overlay import draw_pause_overlay
@@ -27,7 +27,8 @@ from world.dungeon_room import draw_dungeon_room
 class DungeonMode:
     """Own the current wave-combat loop so main.py can route between screens."""
 
-    def __init__(self):
+    def __init__(self, preferences=None):
+        self.preferences = preferences if preferences is not None else {}
         self.reset_run()
 
     def reset_run(self):
@@ -35,7 +36,7 @@ class DungeonMode:
         self.room_manager = RoomManager()
         self.player = Player(*self.room_manager.current_layout().player_spawn)
         self.encounter_manager = None
-        self.impact = CombatImpact()
+        self.impact = CombatImpact(self.preferences)
         self.projectile_manager = ProjectileManager()
         self.skill_manager = SkillManager(self.projectile_manager)
         self.reward_manager = RewardManager()
@@ -221,7 +222,7 @@ class DungeonMode:
 
     def enter_current_room(self):
         """Initialize combat systems for the current room type."""
-        self.impact = CombatImpact()
+        self.impact = CombatImpact(self.preferences)
         self.projectile_manager.clear()
         self.place_player_at_current_layout_spawn()
         room_layout = self.room_manager.current_layout()
@@ -270,6 +271,8 @@ class DungeonMode:
 
     def draw_qol_overlays(self, screen):
         """Draw pause first so the controls panel can sit above it when requested."""
+        if self.preferences.get("show_controls_hint", True) and not self.is_gameplay_frozen():
+            draw_controls_hint(screen)
         if self.paused:
             draw_pause_overlay(screen, "Retry Run")
         if self.controls_visible:

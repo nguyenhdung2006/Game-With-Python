@@ -42,7 +42,7 @@ from systems.solo_boss_combo_controller import SoloBossComboController
 from systems.solo_combo_burst import SoloComboBurst
 from systems.solo_sprite_renderer import SoloSpriteRenderer
 from ui.completion_overlay import draw_completion_overlay
-from ui.controls_overlay import draw_controls_overlay
+from ui.controls_overlay import draw_controls_hint, draw_controls_overlay
 from ui.dungeon_hud import draw_text_panel
 from ui.health_bar import draw_health_bar
 from ui.pause_overlay import draw_pause_overlay
@@ -59,7 +59,8 @@ SOLO_DEFEAT = "DEFEAT"
 class SoloMode:
     """Playable single-fight arena using the shared combat foundation."""
 
-    def __init__(self):
+    def __init__(self, preferences=None):
+        self.preferences = preferences if preferences is not None else {}
         self.setup_player_hp = SOLO_SETUP_PLAYER_HP_MIN
         self.setup_boss_hp = SOLO_SETUP_BOSS_HP_MIN
         self.setup_selected_slider = 0
@@ -73,7 +74,7 @@ class SoloMode:
         self.player.health = self.player.max_health
         self.enemy = EliteEnemy(WIDTH - SOLO_ENEMY_RIGHT_OFFSET)
         self.configure_solo_boss()
-        self.impact = CombatImpact()
+        self.impact = CombatImpact(self.preferences)
         self.projectile_manager = ProjectileManager()
         self.skill_manager = SkillManager(self.projectile_manager)
         self.combo_burst = SoloComboBurst(energy_cost=SOLO_COMBO_BURST_ENERGY_COST)
@@ -252,6 +253,8 @@ class SoloMode:
 
     def draw_qol_overlays(self, screen):
         """Draw pause first so the controls panel can sit above it when requested."""
+        if self.preferences.get("show_controls_hint", True) and not self.is_gameplay_frozen():
+            draw_controls_hint(screen)
         if self.paused:
             draw_pause_overlay(screen, "Restart Fight")
         if self.controls_visible:

@@ -2,6 +2,8 @@
 
 import random
 
+from config.default_settings import DEFAULT_SETTINGS
+
 
 class CombatImpact:
     """Tracks hitstop and camera shake after successful hits.
@@ -10,7 +12,8 @@ class CombatImpact:
     Camera shake offsets the rendered arena for a few frames to sell impact.
     """
 
-    def __init__(self):
+    def __init__(self, preferences=None):
+        self.preferences = preferences if preferences is not None else DEFAULT_SETTINGS
         self.hitstop_timer = 0
         self.camera_shake_timer = 0
         self.camera_shake_strength = 0
@@ -18,8 +21,15 @@ class CombatImpact:
     def start_hit_impact(self, attack_data):
         """Start hitstop and shake using the current attack's feel values."""
         self.hitstop_timer = max(self.hitstop_timer, attack_data["hitstop"])
+        if not self.preferences.get("screen_shake_enabled", True):
+            return
+
+        strength_multiplier = self.preferences.get("camera_shake_strength", 1.0)
         self.camera_shake_timer = max(self.camera_shake_timer, attack_data["shake_duration"])
-        self.camera_shake_strength = max(self.camera_shake_strength, attack_data["shake_strength"])
+        self.camera_shake_strength = max(
+            self.camera_shake_strength,
+            round(attack_data["shake_strength"] * strength_multiplier),
+        )
 
     def update(self, dt):
         """Count down impact timers with delta time."""

@@ -23,13 +23,14 @@ def draw_mode_select(surface):
         ("1", "Solo / Versus", "Playable 1v1 arena sandbox", True),
         ("2", "Dungeon / Wave Mode", "Playable combat vertical slice", True),
         ("3", "Team Round 3v3", "Coming soon", False),
+        ("4", "Settings", "Local preferences", True),
     ]
 
     start_y = 255
     for index, option in enumerate(options):
         _draw_mode_option(surface, start_y + index * 92, *option)
 
-    _draw_center_text(surface, "Press 1 / 2 / 3 to choose. Esc quits.", HEIGHT - 72, 28, TEXT_MUTED)
+    _draw_center_text(surface, "Press 1 / 2 / 3 / 4 to choose. Esc quits.", HEIGHT - 50, 28, TEXT_MUTED)
 
 
 def draw_team_locked(surface):

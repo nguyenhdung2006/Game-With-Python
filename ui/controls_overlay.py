@@ -97,3 +97,10 @@ def draw_controls_overlay(surface, mode_name):
             color = ACCENT if line.isupper() else MUTED
             rendered = text_font.render(line, True, color)
             surface.blit(rendered, (x, panel.top + 104 + line_index * 32))
+
+
+def draw_controls_hint(surface):
+    """Draw the optional compact reminder for pause and controls help."""
+    font = pygame.font.Font(None, 24)
+    rendered = font.render("P: Pause   H: Controls", True, MUTED)
+    surface.blit(rendered, (WIDTH - rendered.get_width() - 18, HEIGHT - rendered.get_height() - 14))
