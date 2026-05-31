@@ -36,6 +36,7 @@ from settings import (
 )
 from systems.combat import process_enemy_attacks, process_player_attacks
 from systems.effects import CombatImpact
+from systems.input_manager import InputManager
 from systems.projectile_manager import ProjectileManager
 from systems.skill_manager import SkillManager
 from systems.solo_boss_combo_controller import SoloBossComboController
@@ -59,9 +60,10 @@ SOLO_DEFEAT = "DEFEAT"
 class SoloMode:
     """Playable single-fight arena using the shared combat foundation."""
 
-    def __init__(self, preferences=None, audio_manager=None):
+    def __init__(self, preferences=None, audio_manager=None, input_manager=None):
         self.preferences = preferences if preferences is not None else {}
         self.audio_manager = audio_manager
+        self.input_manager = input_manager if input_manager is not None else InputManager(self.preferences)
         self.setup_player_hp = SOLO_SETUP_PLAYER_HP_MIN
         self.setup_boss_hp = SOLO_SETUP_BOSS_HP_MIN
         self.setup_selected_slider = 0
@@ -72,6 +74,7 @@ class SoloMode:
         """Create a clean rematch without carrying combat or cooldown state."""
         self.player = Player(SOLO_PLAYER_SPAWN_X, GROUND_Y - PLAYER_HEIGHT)
         self.player.audio_manager = self.audio_manager
+        self.player.input_manager = self.input_manager
         self.player.max_health = self.setup_player_hp
         self.player.health = self.player.max_health
         self.enemy = EliteEnemy(WIDTH - SOLO_ENEMY_RIGHT_OFFSET)
@@ -79,7 +82,7 @@ class SoloMode:
         self.configure_solo_boss()
         self.impact = CombatImpact(self.preferences)
         self.projectile_manager = ProjectileManager()
-        self.skill_manager = SkillManager(self.projectile_manager)
+        self.skill_manager = SkillManager(self.projectile_manager, self.input_manager)
         self.combo_burst = SoloComboBurst(energy_cost=SOLO_COMBO_BURST_ENERGY_COST)
         self.sprite_renderer = SoloSpriteRenderer()
         self.max_energy = SOLO_MAX_ENERGY
@@ -93,16 +96,16 @@ class SoloMode:
     def handle_event(self, event):
         """Handle player combat inputs during the active duel."""
         if event.type == pygame.KEYDOWN:
-            if event.key == pygame.K_h:
+            if self.input_manager.event_matches("help", event):
                 self.controls_visible = not self.controls_visible
                 return
             if self.controls_visible:
                 return
-            if event.key == pygame.K_p and self.can_pause():
+            if self.input_manager.event_matches("pause", event) and self.can_pause():
                 self.paused = not self.paused
                 return
             if self.paused:
-                if event.key == pygame.K_r:
+                if self.input_manager.event_matches("retry", event):
                     self.reset_fight()
                 return
 
@@ -111,29 +114,29 @@ class SoloMode:
             return
         if event.type != pygame.KEYDOWN:
             return
-        if event.key == pygame.K_r and not self.is_active():
+        if self.input_manager.event_matches("retry", event) and not self.is_active():
             self.reset_fight()
             return
         if not self.is_active() or self.impact.is_hitstop_active():
             return
 
-        if event.key == pygame.K_w:
+        if self.input_manager.event_matches("jump", event):
             self.player.jump()
-        elif event.key == pygame.K_LSHIFT:
+        elif self.input_manager.event_matches("dash", event):
             self.player.start_dash()
-        elif event.key == pygame.K_u:
+        elif self.input_manager.event_matches("skill_1", event):
             self.energy, _ = self.combo_burst.start(self.player, self.energy)
-        elif event.key == pygame.K_i:
+        elif self.input_manager.event_matches("skill_2", event):
             self.try_use_kamehameha()
-        elif event.key == pygame.K_o:
+        elif self.input_manager.event_matches("skill_3", event):
             self.skill_manager.use_slot(3, self.player)
-        elif event.key == pygame.K_k:
+        elif self.input_manager.event_matches("guard", event):
             self.player.start_guard()
-        elif event.key == pygame.K_l:
+        elif self.input_manager.event_matches("dodge", event):
             dodge_result = self.player.start_dodge()
             if dodge_result:
                 self.impact.start_hit_impact(dodge_result)
-        elif event.key == pygame.K_j and not self.combo_burst.active:
+        elif self.input_manager.event_matches("attack", event) and not self.combo_burst.active:
             self.player.start_light_attack()
 
     def update(self, keys, dt):
@@ -229,7 +232,7 @@ class SoloMode:
 
     def draw_result(self, screen, label):
         """Draw the end-state overlay without changing the fight underneath."""
-        draw_completion_overlay(screen, label, "Rematch")
+        draw_completion_overlay(screen, label, "Rematch", self.input_manager)
 
     def update_result_state(self):
         """Move to the correct terminal state once a fighter is defeated."""
@@ -266,11 +269,11 @@ class SoloMode:
     def draw_qol_overlays(self, screen):
         """Draw pause first so the controls panel can sit above it when requested."""
         if self.preferences.get("show_controls_hint", True) and not self.is_gameplay_frozen():
-            draw_controls_hint(screen)
+            draw_controls_hint(screen, self.input_manager)
         if self.paused:
-            draw_pause_overlay(screen, "Restart Fight")
+            draw_pause_overlay(screen, "Restart Fight", self.input_manager)
         if self.controls_visible:
-            draw_controls_overlay(screen, "solo")
+            draw_controls_overlay(screen, "solo", self.input_manager)
 
     def configure_solo_boss(self):
         """Tune the Solo sprite-test boss without changing Dungeon balance."""
@@ -377,9 +380,9 @@ class SoloMode:
         kamehameha = self.skill_manager.get_slot(2)
         return [
             "Skills:",
-            f"U: Combo Burst {self.combo_burst.status_text(self.energy)}",
-            f"I: Kamehameha {kamehameha.status_text()} Cost {SOLO_KAMEHAMEHA_ENERGY_COST}",
-            "O: Locked",
+            f"{self.input_manager.get_binding_label('skill_1')}: Combo Burst {self.combo_burst.status_text(self.energy)}",
+            f"{self.input_manager.get_binding_label('skill_2')}: Kamehameha {kamehameha.status_text()} Cost {SOLO_KAMEHAMEHA_ENERGY_COST}",
+            f"{self.input_manager.get_binding_label('skill_3')}: Locked",
         ]
 
     def setup_slider_specs(self):
@@ -396,11 +399,11 @@ class SoloMode:
                 self.setup_selected_slider = (self.setup_selected_slider - 1) % 2
             elif event.key in (pygame.K_s, pygame.K_DOWN):
                 self.setup_selected_slider = (self.setup_selected_slider + 1) % 2
-            elif event.key in (pygame.K_a, pygame.K_LEFT):
+            elif self.input_manager.event_matches("move_left", event) or event.key == pygame.K_LEFT:
                 self.adjust_setup_slider(-1)
-            elif event.key in (pygame.K_d, pygame.K_RIGHT):
+            elif self.input_manager.event_matches("move_right", event) or event.key == pygame.K_RIGHT:
                 self.adjust_setup_slider(1)
-            elif event.key == pygame.K_RETURN:
+            elif self.input_manager.event_matches("confirm", event):
                 self.reset_fight()
         elif event.type == pygame.MOUSEBUTTONDOWN and event.button == 1:
             slider_index = slider_index_at(event.pos)

@@ -6,6 +6,7 @@ from modes.dungeon_mode import DungeonMode
 from modes.solo_mode import SoloMode
 from settings import FPS, HEIGHT, WIDTH
 from systems.audio_manager import AudioManager
+from systems.input_manager import InputManager
 from systems.settings_store import SettingsStore
 from ui.mode_select import draw_mode_select, draw_team_locked
 from ui.settings_menu import SettingsMenu
@@ -15,14 +16,15 @@ def main():
     pygame.init()
 
     screen = pygame.display.set_mode((WIDTH, HEIGHT))
-    pygame.display.set_caption("Anime Stickman Combat - Phase 42")
+    pygame.display.set_caption("Anime Stickman Combat - Phase 43")
     clock = pygame.time.Clock()
     scene_surface = pygame.Surface((WIDTH, HEIGHT))
 
     game_state = GameState()
     settings_store = SettingsStore()
     audio_manager = AudioManager(settings_store.settings)
-    settings_menu = SettingsMenu(settings_store, audio_manager)
+    input_manager = InputManager(settings_store.settings)
+    settings_menu = SettingsMenu(settings_store, audio_manager, input_manager)
     audio_manager.play_music("menu")
     dungeon_mode = None
     solo_mode = None
@@ -37,45 +39,45 @@ def main():
                 running = False
             elif event.type == pygame.KEYDOWN:
                 if game_state.is_mode_select():
-                    if event.key == pygame.K_ESCAPE:
+                    if input_manager.event_matches("back", event):
                         running = False
-                    elif event.key == pygame.K_1:
+                    elif input_manager.event_matches("select_solo", event):
                         audio_manager.play_sfx("menu_select")
                         audio_manager.play_music("solo")
-                        solo_mode = SoloMode(settings_store.settings, audio_manager)
+                        solo_mode = SoloMode(settings_store.settings, audio_manager, input_manager)
                         game_state.enter_solo_mode()
-                    elif event.key == pygame.K_2:
+                    elif input_manager.event_matches("select_dungeon", event):
                         audio_manager.play_sfx("menu_select")
                         audio_manager.play_music("dungeon")
-                        dungeon_mode = DungeonMode(settings_store.settings, audio_manager)
+                        dungeon_mode = DungeonMode(settings_store.settings, audio_manager, input_manager)
                         game_state.enter_dungeon_mode()
-                    elif event.key == pygame.K_3:
+                    elif input_manager.event_matches("select_team", event):
                         audio_manager.play_sfx("menu_select")
                         game_state.enter_team_mode_locked()
-                    elif event.key == pygame.K_4:
+                    elif input_manager.event_matches("select_settings", event):
                         audio_manager.play_sfx("menu_select")
                         game_state.enter_settings()
                 elif game_state.current == SOLO_MODE:
-                    if event.key == pygame.K_ESCAPE:
+                    if input_manager.event_matches("back", event):
                         solo_mode = None
                         audio_manager.play_music("menu")
                         game_state.enter_mode_select()
                     elif solo_mode is not None:
                         solo_mode.handle_event(event)
                 elif game_state.is_dungeon_mode():
-                    if event.key == pygame.K_ESCAPE:
+                    if input_manager.event_matches("back", event):
                         dungeon_mode = None
                         audio_manager.play_music("menu")
                         game_state.enter_mode_select()
                     elif dungeon_mode is not None:
                         dungeon_mode.handle_event(event)
                 elif game_state.is_settings():
-                    if event.key == pygame.K_ESCAPE:
+                    if input_manager.event_matches("back", event):
                         audio_manager.play_music("menu")
                         game_state.enter_mode_select()
                     else:
                         settings_menu.handle_event(event)
-                elif game_state.is_placeholder_screen() and event.key == pygame.K_ESCAPE:
+                elif game_state.is_placeholder_screen() and input_manager.event_matches("back", event):
                     audio_manager.play_music("menu")
                     game_state.enter_mode_select()
             elif game_state.current == SOLO_MODE and solo_mode is not None:
@@ -93,7 +95,7 @@ def main():
         elif game_state.current == SETTINGS_MODE:
             settings_menu.draw(screen)
         elif game_state.current == MODE_SELECT:
-            draw_mode_select(screen)
+            draw_mode_select(screen, input_manager)
 
         pygame.display.flip()
 

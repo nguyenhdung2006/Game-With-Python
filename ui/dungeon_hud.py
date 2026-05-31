@@ -32,7 +32,7 @@ def draw_dungeon_hud(surface, room_manager, reward_manager, player, skill_manage
         draw_text_panel(surface, reward_lines, WIDTH - 292, 176, 268)
 
 
-def draw_dungeon_clear_summary(surface, room_manager, reward_manager, player):
+def draw_dungeon_clear_summary(surface, room_manager, reward_manager, player, input_manager=None):
     """Draw final dungeon clear summary with run rewards and stat modifiers."""
     title_font = pygame.font.Font(None, 58)
     text_font = pygame.font.Font(None, 30)
@@ -78,7 +78,9 @@ def draw_dungeon_clear_summary(surface, room_manager, reward_manager, player):
         surface.blit(rendered, (panel_rect.left + 380, stat_y))
         stat_y += 30
 
-    prompt = small_font.render("R: Retry Run   Esc: Return to Mode Select", True, MUTED)
+    retry = binding_label(input_manager, "retry", "R")
+    back = binding_label(input_manager, "back", "Esc")
+    prompt = small_font.render(f"{retry}: Retry Run   {back}: Return to Mode Select", True, MUTED)
     surface.blit(prompt, prompt.get_rect(center=(WIDTH // 2, panel_rect.bottom - 36)))
 
 
@@ -147,3 +149,10 @@ def draw_text_panel(surface, lines, x, y, width):
         rendered = font.render(line, True, color)
         surface.blit(rendered, (x + 14, text_y))
         text_y += line_height
+
+
+def binding_label(input_manager, action, fallback):
+    """Return a configured input label with a safe legacy fallback."""
+    if input_manager is None:
+        return fallback
+    return input_manager.get_binding_label(action)

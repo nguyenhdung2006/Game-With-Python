@@ -7,8 +7,9 @@ from systems.skill import Skill
 class SkillManager:
     """Own the three user-approved player skill slots."""
 
-    def __init__(self, projectile_manager):
+    def __init__(self, projectile_manager, input_manager=None):
         self.projectile_manager = projectile_manager
+        self.input_manager = input_manager
         self.input_labels = ("U", "I", "O")
         self.slots = [
             Skill(
@@ -61,13 +62,19 @@ class SkillManager:
             statuses.append(
                 {
                     "slot": index,
-                    "input": self.input_labels[index - 1],
+                    "input": self.get_input_label(index),
                     "display_name": skill.display_name,
                     "status": skill.status_text(),
                     "unlocked": skill.unlocked,
                 }
             )
         return statuses
+
+    def get_input_label(self, slot_index):
+        """Return one configured skill binding label with legacy fallback."""
+        if self.input_manager is None:
+            return self.input_labels[slot_index - 1]
+        return self.input_manager.get_binding_label(f"skill_{slot_index}")
 
     def use_ki_blast(self, context):
         """Fire the user-approved fast projectile skill."""

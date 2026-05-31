@@ -16,9 +16,10 @@ TEXT_MUTED = (185, 192, 206)
 class SettingsMenu:
     """Expose safe local preferences without applying risky display changes."""
 
-    def __init__(self, settings_store, audio_manager=None):
+    def __init__(self, settings_store, audio_manager=None, input_manager=None):
         self.settings_store = settings_store
         self.audio_manager = audio_manager
+        self.input_manager = input_manager
         self.selected_index = 0
 
     def handle_event(self, event):
@@ -32,12 +33,23 @@ class SettingsMenu:
         elif event.key in (pygame.K_s, pygame.K_DOWN):
             self.selected_index = (self.selected_index + 1) % len(SETTINGS_MENU_ITEMS)
             self.play_menu_select()
-        elif event.key in (pygame.K_a, pygame.K_LEFT):
+        elif self.matches_action("move_left", event) or event.key == pygame.K_LEFT:
             self.adjust_selected(-1)
-        elif event.key in (pygame.K_d, pygame.K_RIGHT):
+        elif self.matches_action("move_right", event) or event.key == pygame.K_RIGHT:
             self.adjust_selected(1)
-        elif event.key == pygame.K_RETURN:
+        elif self.matches_action("confirm", event):
             self.toggle_selected()
+
+    def matches_action(self, action, event):
+        """Use configured input when available with legacy defaults otherwise."""
+        if self.input_manager is not None:
+            return self.input_manager.event_matches(action, event)
+        fallback_keys = {
+            "move_left": pygame.K_a,
+            "move_right": pygame.K_d,
+            "confirm": pygame.K_RETURN,
+        }
+        return event.key == fallback_keys[action]
 
     def adjust_selected(self, direction):
         """Change a number or toggle value with left/right input."""
@@ -78,8 +90,10 @@ class SettingsMenu:
         for index, item in enumerate(SETTINGS_MENU_ITEMS):
             self.draw_item(surface, start_y + index * 58, item, index == self.selected_index)
 
-        draw_center_text(surface, "Up/Down select   Left/Right adjust   Enter toggle", HEIGHT - 62, 26, TEXT_MUTED)
-        draw_center_text(surface, "Esc returns to Mode Select", HEIGHT - 32, 24, TEXT_MUTED)
+        confirm = binding_label(self.input_manager, "confirm", "Enter")
+        back = binding_label(self.input_manager, "back", "Esc")
+        draw_center_text(surface, f"Up/Down select   Left/Right adjust   {confirm} toggle", HEIGHT - 62, 26, TEXT_MUTED)
+        draw_center_text(surface, f"{back} returns to Mode Select", HEIGHT - 32, 24, TEXT_MUTED)
 
     def draw_item(self, surface, y, item, selected):
         """Draw one selected or idle preference row."""
@@ -108,3 +122,10 @@ def draw_center_text(surface, text, center_y, size, color):
     font = pygame.font.Font(None, size)
     rendered = font.render(text, True, color)
     surface.blit(rendered, rendered.get_rect(center=(WIDTH // 2, center_y)))
+
+
+def binding_label(input_manager, action, fallback):
+    """Return a configured input label with a safe legacy fallback."""
+    if input_manager is None:
+        return fallback
+    return input_manager.get_binding_label(action)

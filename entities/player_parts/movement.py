@@ -46,24 +46,32 @@ def handle_input(player, keys, dt):
         if player.dash_timer <= 0:
             player.is_dashing = False
     elif player.is_blocking or player.is_parrying:
-        if keys[pygame.K_a]:
+        if is_action_pressed(player, "move_left", keys, pygame.K_a):
             player.x -= get_current_move_speed(player) * dt
             player.last_move_direction = -1
-        if keys[pygame.K_d]:
+        if is_action_pressed(player, "move_right", keys, pygame.K_d):
             player.x += get_current_move_speed(player) * dt
             player.last_move_direction = 1
         player.facing = player.block_direction
-    elif keys[pygame.K_a]:
+    elif is_action_pressed(player, "move_left", keys, pygame.K_a):
         player.x -= get_current_move_speed(player) * dt
         player.facing = -1
         player.last_move_direction = -1
-    elif keys[pygame.K_d]:
+    elif is_action_pressed(player, "move_right", keys, pygame.K_d):
         player.x += get_current_move_speed(player) * dt
         player.facing = 1
         player.last_move_direction = 1
 
     player.x = clamp_x_to_screen(player.x, player.width, WIDTH)
     player.rect.x = round(player.x)
+
+
+def is_action_pressed(player, action, keys, fallback_key):
+    """Read held input through the optional binding layer."""
+    input_manager = getattr(player, "input_manager", None)
+    if input_manager is not None:
+        return input_manager.is_pressed(action, keys)
+    return bool(keys[fallback_key])
 
 
 def get_current_move_speed(player):

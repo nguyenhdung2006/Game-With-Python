@@ -86,6 +86,7 @@ config/
     mode_config.py
     dungeon_layout_config.py
     default_settings.py
+    input_config.py
 entities/
     player.py
     player_parts/
@@ -134,6 +135,7 @@ systems/
     skill_manager.py
     settings_store.py
     audio_manager.py
+    input_manager.py
     solo_combo_burst.py
     solo_boss_combo_controller.py
     solo_sprite_renderer.py
@@ -184,6 +186,7 @@ assets/
 - `config/` stores lightweight Python tuning modules for player, enemy, boss, skill, reward, Solo, and Dungeon values.
 - `config/dungeon_layout_config.py` stores fixed placeholder room bounds, player spawns, enemy spawn anchors, and exits.
 - `config/default_settings.py` stores safe local preference defaults and lightweight settings-menu metadata.
+- `config/input_config.py` stores JSON-safe default action bindings while preserving the current keyboard layout.
 - `entities/` stores game objects such as the player, enemies, future bosses, and projectiles.
 - `entities/player_parts/` keeps Player combat, defense, movement, setup, and rendering concerns in smaller modules.
 - `entities/player_parts/reaction.py` tracks player-side whiff, landing, guard stress, and payoff feedback timers.
@@ -219,6 +222,7 @@ assets/
 - `systems/skill_manager.py` owns the three player skill slots and routes Ki Blast, Kamehameha, and the locked slot.
 - `systems/settings_store.py` loads, validates, and writes local JSON preferences without saving progression or run state.
 - `systems/audio_manager.py` initializes optional Pygame audio safely, applies stored volume preferences, and no-ops when devices or files are unavailable.
+- `systems/input_manager.py` resolves configurable keyboard actions, held-state checks, press events, and UI binding labels.
 - `systems/solo_combo_burst.py` sequences the Solo-only three-hit Combo Burst using existing normal attack setup.
 - `systems/solo_boss_combo_controller.py` owns the Solo-only boss energy meter and user-approved multi-hit frame sequences.
 - `systems/solo_sprite_renderer.py` loads and draws Solo-only shaman, slash, boss, and boss-technique prototype frames with safe fallbacks.
@@ -257,6 +261,7 @@ assets/
 - Pause and controls QoL foundation for Solo and Dungeon with frozen gameplay timers, modal input safety, and mode-relevant help
 - Local settings foundation with safe JSON defaults, a Mode Select settings screen, optional controls hints, and camera-shake preferences
 - Audio hooks foundation with optional mixer initialization, settings-driven volume levels, and event-based placeholders without bundled audio assets
+- Input binding foundation with persisted JSON-safe action mappings, shared input helpers, and binding-aware controls UI
 - Room Cleared pacing cleanup that waits for `Enter` before opening reward selection
 - Gameplay config foundation that moves prototype tuning into focused Python modules without adding content
 - Dungeon layout foundation with fixed START, ENCOUNTER, ELITE/BOSS, and CLEAR placeholder layouts
@@ -318,6 +323,7 @@ assets/
 - Master, SFX, and music volume values are connected to the optional audio manager
 - Screen-shake enable/strength and the compact controls hint apply safely now
 - Missing or corrupt JSON falls back to defaults; progression and active run state are not saved
+- Key bindings are stored safely for future remapping, but Phase 43 intentionally does not add a remapping UI
 
 ## Solo / Versus Flow
 
@@ -370,6 +376,7 @@ assets/
 - Phase 40 adds pause and controls QoL only: Solo and Dungeon can freeze live gameplay safely, restart from pause, and open mode-relevant control help. No combat tuning, skills, animation, or assets have been added
 - Phase 41 adds a lightweight local settings foundation only: safe JSON defaults, a Mode Select settings screen, persisted audio/display placeholders, camera-shake preferences, and an optional controls hint. No progression save, run-state save, combat content, animation, or assets have been added
 - Phase 42 adds optional audio infrastructure only: safe mixer initialization, settings-driven volumes, empty audio folders, and one-shot hooks for attacks, hits, boss skills, rewards, end states, and menu selection. No copyrighted or bundled audio assets have been added
+- Phase 43 adds input-binding infrastructure only: default action mappings, persisted binding structure, shared press/held helpers, incremental Solo/Dungeon routing, and binding-aware UI labels. Default controls remain unchanged; no remapping screen or gameplay content has been added
 - Phase 26 adds boss pacing foundation only: heavier melee tuning, longer telegraph/recovery, and punish-focused combat readability
 - Phase 27 polishes boss rhythm only: clearer telegraphs, longer recovery, slower pressure cadence, and more reliable punish timing without special attacks or VFX
 

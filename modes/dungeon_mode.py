@@ -10,6 +10,7 @@ from managers.room_state import ROOM_BOSS_ENCOUNTER, ROOM_ENCOUNTER
 from settings import HEALTH_PLAYER
 from systems.combat import process_enemy_attacks, process_player_attacks
 from systems.effects import CombatImpact
+from systems.input_manager import InputManager
 from systems.projectile_manager import ProjectileManager
 from systems.reward_manager import RewardManager
 from systems.render_layers import draw_combat_scene
@@ -27,9 +28,10 @@ from world.dungeon_room import draw_dungeon_room
 class DungeonMode:
     """Own the current wave-combat loop so main.py can route between screens."""
 
-    def __init__(self, preferences=None, audio_manager=None):
+    def __init__(self, preferences=None, audio_manager=None, input_manager=None):
         self.preferences = preferences if preferences is not None else {}
         self.audio_manager = audio_manager
+        self.input_manager = input_manager if input_manager is not None else InputManager(self.preferences)
         self.reset_run()
 
     def reset_run(self):
@@ -37,10 +39,11 @@ class DungeonMode:
         self.room_manager = RoomManager()
         self.player = Player(*self.room_manager.current_layout().player_spawn)
         self.player.audio_manager = self.audio_manager
+        self.player.input_manager = self.input_manager
         self.encounter_manager = None
         self.impact = CombatImpact(self.preferences)
         self.projectile_manager = ProjectileManager()
-        self.skill_manager = SkillManager(self.projectile_manager)
+        self.skill_manager = SkillManager(self.projectile_manager, self.input_manager)
         self.reward_manager = RewardManager()
         self.paused = False
         self.controls_visible = False
@@ -51,56 +54,56 @@ class DungeonMode:
         if event.type != pygame.KEYDOWN:
             return
 
-        if event.key == pygame.K_h:
+        if self.input_manager.event_matches("help", event):
             self.controls_visible = not self.controls_visible
             return
 
         if self.controls_visible:
             return
 
-        if event.key == pygame.K_p and self.can_pause():
+        if self.input_manager.event_matches("pause", event) and self.can_pause():
             self.paused = not self.paused
             return
 
         if self.paused:
-            if event.key == pygame.K_r:
+            if self.input_manager.event_matches("retry", event):
                 self.reset_run()
             return
 
-        if event.key == pygame.K_r and (
+        if self.input_manager.event_matches("retry", event) and (
             self.room_manager.is_dungeon_defeated() or self.room_manager.is_dungeon_complete()
         ):
             self.reset_run()
             return
 
         if self.room_manager.is_reward_active():
-            self.handle_reward_input(event.key)
+            self.handle_reward_input(event)
             return
 
-        if event.key == pygame.K_RETURN:
+        if self.input_manager.event_matches("confirm", event):
             self.handle_continue()
             return
 
         if not self.is_active_encounter_room() or self.impact.is_hitstop_active():
             return
 
-        if event.key == pygame.K_w:
+        if self.input_manager.event_matches("jump", event):
             self.player.jump()
-        elif event.key == pygame.K_LSHIFT:
+        elif self.input_manager.event_matches("dash", event):
             self.player.start_dash()
-        elif event.key == pygame.K_u:
+        elif self.input_manager.event_matches("skill_1", event):
             self.skill_manager.use_slot(1, self.player)
-        elif event.key == pygame.K_i:
+        elif self.input_manager.event_matches("skill_2", event):
             self.skill_manager.use_slot(2, self.player)
-        elif event.key == pygame.K_o:
+        elif self.input_manager.event_matches("skill_3", event):
             self.skill_manager.use_slot(3, self.player)
-        elif event.key == pygame.K_k:
+        elif self.input_manager.event_matches("guard", event):
             self.player.start_guard()
-        elif event.key == pygame.K_l:
+        elif self.input_manager.event_matches("dodge", event):
             dodge_result = self.player.start_dodge()
             if dodge_result:
                 self.impact.start_hit_impact(dodge_result)
-        elif event.key == pygame.K_j:
+        elif self.input_manager.event_matches("attack", event):
             self.player.start_light_attack()
 
     def update(self, keys, dt):
@@ -165,13 +168,19 @@ class DungeonMode:
             )
 
         if self.room_manager.is_room_cleared():
-            draw_room_cleared(screen)
+            draw_room_cleared(screen, self.input_manager)
         elif self.room_manager.is_reward_active():
-            draw_reward_select(screen, self.reward_manager)
+            draw_reward_select(screen, self.reward_manager, self.input_manager)
         elif self.room_manager.is_dungeon_complete():
-            draw_dungeon_clear_summary(screen, self.room_manager, self.reward_manager, self.player)
+            draw_dungeon_clear_summary(
+                screen,
+                self.room_manager,
+                self.reward_manager,
+                self.player,
+                self.input_manager,
+            )
         elif self.room_manager.is_dungeon_defeated():
-            draw_completion_overlay(screen, "Defeat", "Retry Run")
+            draw_completion_overlay(screen, "Defeat", "Retry Run", self.input_manager)
 
         self.draw_qol_overlays(screen)
 
@@ -180,13 +189,13 @@ class DungeonMode:
         if self.room_manager.is_room_cleared():
             self.start_reward_selection()
 
-    def handle_reward_input(self, key):
+    def handle_reward_input(self, event):
         """Navigate and confirm room reward selection."""
-        if key in (pygame.K_a, pygame.K_LEFT):
+        if self.input_manager.event_matches("move_left", event) or event.key == pygame.K_LEFT:
             self.reward_manager.select_previous()
-        elif key in (pygame.K_d, pygame.K_RIGHT):
+        elif self.input_manager.event_matches("move_right", event) or event.key == pygame.K_RIGHT:
             self.reward_manager.select_next()
-        elif key == pygame.K_RETURN:
+        elif self.input_manager.event_matches("confirm", event):
             applied_reward = self.reward_manager.apply_selected(self.player)
             if applied_reward is None:
                 return
@@ -286,11 +295,11 @@ class DungeonMode:
     def draw_qol_overlays(self, screen):
         """Draw pause first so the controls panel can sit above it when requested."""
         if self.preferences.get("show_controls_hint", True) and not self.is_gameplay_frozen():
-            draw_controls_hint(screen)
+            draw_controls_hint(screen, self.input_manager)
         if self.paused:
-            draw_pause_overlay(screen, "Retry Run")
+            draw_pause_overlay(screen, "Retry Run", self.input_manager)
         if self.controls_visible:
-            draw_controls_overlay(screen, "dungeon")
+            draw_controls_overlay(screen, "dungeon", self.input_manager)
 
     def draw_combat_ui(self, screen):
         """Draw persistent player and encounter UI for active combat rooms."""

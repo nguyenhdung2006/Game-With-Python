@@ -12,7 +12,7 @@ MUTED = (190, 198, 212)
 CATEGORY = (255, 220, 150)
 
 
-def draw_reward_select(surface, reward_manager):
+def draw_reward_select(surface, reward_manager, input_manager=None):
     """Draw three reward options and confirmation instructions."""
     _draw_center_text(surface, "Room Cleared", 142, 50, ACCENT)
     _draw_center_text(surface, "Choose 1 Reward", 196, 38, WHITE)
@@ -34,7 +34,10 @@ def draw_reward_select(surface, reward_manager):
         selected = index == reward_manager.selected_index
         draw_reward_card(surface, rect, reward, reward_manager.stack_count(reward.reward_id), selected)
 
-    _draw_center_text(surface, "A/D or Left/Right to choose. Enter confirms.", HEIGHT - 92, 28, MUTED)
+    left = binding_label(input_manager, "move_left", "A")
+    right = binding_label(input_manager, "move_right", "D")
+    confirm = binding_label(input_manager, "confirm", "Enter")
+    _draw_center_text(surface, f"{left}/{right} or Left/Right to choose. {confirm} confirms.", HEIGHT - 92, 28, MUTED)
 
 
 def draw_reward_card(surface, rect, reward, stack_count, selected):
@@ -71,3 +74,10 @@ def _draw_center_text(surface, text, center_y, size, color):
     text_surface = font.render(text, True, color)
     text_rect = text_surface.get_rect(center=(WIDTH // 2, center_y))
     surface.blit(text_surface, text_rect)
+
+
+def binding_label(input_manager, action, fallback):
+    """Return a configured input label with a safe legacy fallback."""
+    if input_manager is None:
+        return fallback
+    return input_manager.get_binding_label(action)

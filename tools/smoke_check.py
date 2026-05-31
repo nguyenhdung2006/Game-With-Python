@@ -1,6 +1,7 @@
 """Lightweight standalone regression checks for gameplay foundations."""
 
 from pathlib import Path
+from collections import defaultdict
 import json
 import os
 import sys
@@ -28,6 +29,7 @@ from config.dungeon_layout_config import (
     LAYOUT_START,
 )
 from config.enemy_config import BASIC_ENEMY_CONFIG, FAST_ENEMY_CONFIG
+from config.input_config import DEFAULT_KEY_BINDINGS
 from config.player_config import DASH_COOLDOWN, DASH_SPEED, PLAYER_MAX_HEALTH, PLAYER_SPEED
 from config.reward_config import (
     MAX_COMBO_FINISHER_DAMAGE_MULTIPLIER,
@@ -63,6 +65,7 @@ from settings import (
 from systems.beam import Beam
 from systems.audio_manager import AudioManager
 from systems.effects import CombatImpact
+from systems.input_manager import InputManager
 from systems.boss_skill_controller import (
     BOSS_SKILL_ACTIVE,
     BOSS_SKILL_READY,
@@ -560,6 +563,93 @@ def check_audio_hooks_foundation():
     check(recorder.sfx_events[-1] == "menu_select", "Menu select hook did not fire")
 
 
+def check_input_binding_foundation():
+    """Load default actions, persist safe overrides, and route custom controls."""
+    required_actions = {
+        "move_left",
+        "move_right",
+        "jump",
+        "dash",
+        "attack",
+        "skill_1",
+        "skill_2",
+        "skill_3",
+        "pause",
+        "help",
+        "confirm",
+        "back",
+        "retry",
+    }
+    check(required_actions <= DEFAULT_KEY_BINDINGS.keys(), "Required default input actions are missing")
+
+    defaults = InputManager()
+    check(defaults.get_binding_label("move_left") == "A", "Default move-left label changed")
+    check(defaults.get_binding_label("dash") == "Shift", "Default dash label changed")
+    check(
+        defaults.was_pressed("confirm", [pygame.event.Event(pygame.KEYDOWN, key=pygame.K_RETURN)]),
+        "InputManager did not detect a default press event",
+    )
+
+    settings_path = PROJECT_ROOT / "data" / "input-smoke.tmp"
+    try:
+        try:
+            settings_path.unlink(missing_ok=True)
+        except OSError:
+            pass
+        store = SettingsStore(settings_path)
+        store.set(
+            "key_bindings",
+            {
+                "move_left": "left",
+                "attack": "x",
+                "pause": "space",
+                "help": "f1",
+                "confirm": "e",
+                "retry": "t",
+                "skill_1": "q",
+            },
+        )
+        reloaded_store = SettingsStore(settings_path)
+        bindings = reloaded_store.get("key_bindings")
+        check(bindings["attack"] == "x", "Input binding override did not persist")
+        check(bindings["skill_2"] == "i", "Missing binding did not preserve its default")
+        manager = InputManager(reloaded_store.settings)
+    finally:
+        try:
+            settings_path.unlink(missing_ok=True)
+        except OSError:
+            pass
+
+    check(manager.get_binding_label("attack") == "X", "Custom attack label did not load")
+    check(manager.get_binding_label("pause") == "SPACE", "Custom pause label did not load")
+    check(
+        manager.event_matches("attack", pygame.event.Event(pygame.KEYDOWN, key=pygame.K_x)),
+        "Custom attack event did not route",
+    )
+    held_keys = defaultdict(bool, {pygame.K_LEFT: True})
+    check(manager.is_pressed("move_left", held_keys), "Custom held movement binding did not route")
+
+    invalid = InputManager({"key_bindings": {"attack": "not-a-real-key"}})
+    check(invalid.get_binding_label("attack") == "J", "Invalid binding did not fall back safely")
+
+    solo = SoloMode(input_manager=manager)
+    solo.handle_event(pygame.event.Event(pygame.KEYDOWN, key=pygame.K_e))
+    check(solo.is_active(), "Custom Solo confirm binding did not start the fight")
+    solo.handle_event(pygame.event.Event(pygame.KEYDOWN, key=pygame.K_x))
+    check(solo.player.is_attacking, "Custom Solo attack binding did not start an attack")
+    solo.handle_event(pygame.event.Event(pygame.KEYDOWN, key=pygame.K_SPACE))
+    check(solo.paused, "Custom Solo pause binding did not open pause")
+    solo.handle_event(pygame.event.Event(pygame.KEYDOWN, key=pygame.K_t))
+    check(solo.is_active() and not solo.paused, "Custom Solo retry binding did not restart from pause")
+
+    dungeon = DungeonMode(input_manager=manager)
+    dungeon.handle_event(pygame.event.Event(pygame.KEYDOWN, key=pygame.K_F1))
+    check(dungeon.controls_visible, "Custom Dungeon help binding did not open controls")
+    dungeon.handle_event(pygame.event.Event(pygame.KEYDOWN, key=pygame.K_F1))
+    dungeon.handle_event(pygame.event.Event(pygame.KEYDOWN, key=pygame.K_SPACE))
+    check(dungeon.paused, "Custom Dungeon pause binding did not open pause")
+
+
 def check_boss_skill_transitions():
     """Force the neutral boss skill through telegraph, active, and recovery."""
     player = create_player(420)
@@ -815,6 +905,7 @@ def run():
         ("pause and controls QoL", check_pause_and_controls_qol),
         ("save and settings foundation", check_settings_foundation),
         ("audio hooks foundation", check_audio_hooks_foundation),
+        ("input binding foundation", check_input_binding_foundation),
         ("boss skill states", check_boss_skill_transitions),
         ("projectile and beam", check_projectile_and_beam),
         ("solo boss technique playback", check_solo_boss_technique_playback),

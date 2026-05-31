@@ -1,5 +1,7 @@
 """Safe local preference defaults for the prototype settings foundation."""
 
+from config.input_config import DEFAULT_KEY_BINDINGS
+
 
 DEFAULT_SETTINGS = {
     "master_volume": 1.0,
@@ -9,6 +11,7 @@ DEFAULT_SETTINGS = {
     "camera_shake_strength": 1.0,
     "show_controls_hint": True,
     "fullscreen_enabled": False,
+    "key_bindings": DEFAULT_KEY_BINDINGS.copy(),
 }
 
 # Volume settings are stored for future audio integration. Fullscreen is a

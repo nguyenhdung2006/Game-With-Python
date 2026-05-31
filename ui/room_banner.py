@@ -12,10 +12,10 @@ MUTED = (190, 198, 212)
 PANEL = (18, 22, 34)
 
 
-def draw_room_status(surface, room_manager):
+def draw_room_status(surface, room_manager, input_manager=None):
     """Draw the current room number and type during dungeon play."""
     if room_manager.is_dungeon_complete():
-        draw_dungeon_cleared(surface)
+        draw_dungeon_cleared(surface, input_manager)
         return
 
     room_type = room_manager.current_room_type()
@@ -24,17 +24,19 @@ def draw_room_status(surface, room_manager):
     _draw_panel_text(surface, text, 112, 32, ACCENT)
 
 
-def draw_room_cleared(surface):
+def draw_room_cleared(surface, input_manager=None):
     """Draw the room clear prompt shown between rooms."""
     _draw_center_text(surface, "Room Cleared", HEIGHT // 2 - 28, 54, CLEAR_COLOR)
     _draw_center_text(surface, "Reward selection next", HEIGHT // 2 + 26, 30, MUTED)
-    _draw_center_text(surface, "Press Enter to continue", HEIGHT // 2 + 66, 32, WHITE)
+    confirm = binding_label(input_manager, "confirm", "Enter")
+    _draw_center_text(surface, f"Press {confirm} to continue", HEIGHT // 2 + 66, 32, WHITE)
 
 
-def draw_dungeon_cleared(surface):
+def draw_dungeon_cleared(surface, input_manager=None):
     """Draw final dungeon clear state."""
     _draw_center_text(surface, "Dungeon Cleared", HEIGHT // 2 - 18, 58, CLEAR_COLOR)
-    _draw_center_text(surface, "Esc returns to Mode Select", HEIGHT // 2 + 42, 30, MUTED)
+    back = binding_label(input_manager, "back", "Esc")
+    _draw_center_text(surface, f"{back} returns to Mode Select", HEIGHT // 2 + 42, 30, MUTED)
 
 
 def format_room_type(room_type):
@@ -64,3 +66,10 @@ def _draw_center_text(surface, text, center_y, size, color):
     text_surface = font.render(text, True, color)
     text_rect = text_surface.get_rect(center=(WIDTH // 2, center_y))
     surface.blit(text_surface, text_rect)
+
+
+def binding_label(input_manager, action, fallback):
+    """Return a configured input label with a safe legacy fallback."""
+    if input_manager is None:
+        return fallback
+    return input_manager.get_binding_label(action)

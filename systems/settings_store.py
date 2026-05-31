@@ -1,9 +1,11 @@
 """Fault-tolerant local JSON persistence for player preferences only."""
 
 import json
+from copy import deepcopy
 from pathlib import Path
 
 from config.default_settings import DEFAULT_SETTINGS
+from systems.input_manager import normalize_key_bindings
 
 
 PROJECT_ROOT = Path(__file__).resolve().parents[1]
@@ -15,7 +17,7 @@ class SettingsStore:
 
     def __init__(self, path=None):
         self.path = Path(path) if path is not None else DEFAULT_SETTINGS_PATH
-        self.settings = DEFAULT_SETTINGS.copy()
+        self.settings = deepcopy(DEFAULT_SETTINGS)
         self.load()
 
     def load(self):
@@ -29,7 +31,7 @@ class SettingsStore:
             self.reset_to_defaults()
             return self.settings
 
-        normalized = DEFAULT_SETTINGS.copy()
+        normalized = deepcopy(DEFAULT_SETTINGS)
         for key in DEFAULT_SETTINGS:
             if key in loaded_settings:
                 normalized[key] = normalize_setting(key, loaded_settings[key])
@@ -52,7 +54,7 @@ class SettingsStore:
     def reset_to_defaults(self):
         """Replace preferences with defaults and attempt to persist them."""
         self.settings.clear()
-        self.settings.update(DEFAULT_SETTINGS)
+        self.settings.update(deepcopy(DEFAULT_SETTINGS))
         self.save()
         return self.settings
 
@@ -72,6 +74,8 @@ class SettingsStore:
 def normalize_setting(key, value):
     """Coerce known preference values into conservative safe ranges."""
     default = DEFAULT_SETTINGS[key]
+    if key == "key_bindings":
+        return normalize_key_bindings(value)
     if isinstance(default, bool):
         return value if isinstance(value, bool) else default
 

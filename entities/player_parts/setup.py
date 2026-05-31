@@ -48,6 +48,7 @@ def initialize_player_state(player, x, y):
 def initialize_core_state(player, x, y):
     """Set the basic body, movement, and shared state fields."""
     player.audio_manager = None
+    player.input_manager = None
     player.width = PLAYER_WIDTH
     player.height = PLAYER_HEIGHT
     player.speed = PLAYER_SPEED

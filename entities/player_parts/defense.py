@@ -137,7 +137,7 @@ def update_block_state(player, keys):
         )
     )
 
-    if keys[pygame.K_k] and can_block:
+    if is_guard_pressed(player, keys) and can_block:
         if not player.is_blocking and not player.is_parrying:
             player.block_direction = player.facing
         player.is_blocking = player.parry_window_timer <= 0
@@ -146,6 +146,14 @@ def update_block_state(player, keys):
         player.is_blocking = False
         player.is_parrying = False
         player.parry_window_timer = 0
+
+
+def is_guard_pressed(player, keys):
+    """Read held guard input through the optional binding layer."""
+    input_manager = getattr(player, "input_manager", None)
+    if input_manager is not None:
+        return input_manager.is_pressed("guard", keys)
+    return bool(keys[pygame.K_k])
 
 
 def can_block_attack_from(player, attacker_direction):

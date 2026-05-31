@@ -13,24 +13,25 @@ LOCKED = (165, 170, 184)
 TEXT_MUTED = (185, 192, 206)
 
 
-def draw_mode_select(surface):
+def draw_mode_select(surface, input_manager=None):
     """Draw the launch menu for choosing the current game mode."""
     surface.fill(MENU_BG)
     _draw_center_text(surface, "ANIME COMBAT PROJECT", 118, 64, ACCENT)
     _draw_center_text(surface, "Select Mode", 185, 42, WHITE)
 
     options = [
-        ("1", "Solo / Versus", "Playable 1v1 arena sandbox", True),
-        ("2", "Dungeon / Wave Mode", "Playable combat vertical slice", True),
-        ("3", "Team Round 3v3", "Coming soon", False),
-        ("4", "Settings", "Local preferences", True),
+        (binding_label(input_manager, "select_solo", "1"), "Solo / Versus", "Playable 1v1 arena sandbox", True),
+        (binding_label(input_manager, "select_dungeon", "2"), "Dungeon / Wave Mode", "Playable combat vertical slice", True),
+        (binding_label(input_manager, "select_team", "3"), "Team Round 3v3", "Coming soon", False),
+        (binding_label(input_manager, "select_settings", "4"), "Settings", "Local preferences", True),
     ]
 
     start_y = 255
     for index, option in enumerate(options):
         _draw_mode_option(surface, start_y + index * 92, *option)
 
-    _draw_center_text(surface, "Press 1 / 2 / 3 / 4 to choose. Esc quits.", HEIGHT - 50, 28, TEXT_MUTED)
+    back = binding_label(input_manager, "back", "Esc")
+    _draw_center_text(surface, f"Press a mode key to choose. {back} quits.", HEIGHT - 50, 28, TEXT_MUTED)
 
 
 def draw_team_locked(surface):
@@ -78,3 +79,10 @@ def _draw_center_text(surface, text, center_y, size, color):
     text_surface = font.render(text, True, color)
     text_rect = text_surface.get_rect(center=(WIDTH // 2, center_y))
     surface.blit(text_surface, text_rect)
+
+
+def binding_label(input_manager, action, fallback):
+    """Return a configured input label with a safe legacy fallback."""
+    if input_manager is None:
+        return fallback
+    return input_manager.get_binding_label(action)
