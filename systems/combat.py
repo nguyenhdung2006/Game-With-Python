@@ -69,6 +69,8 @@ def process_player_attack(player, enemy):
 
     if attack_hitbox.colliderect(enemy.rect):
         damage = round(player.attack_damage * getattr(player, "damage_multiplier", 1.0))
+        if not getattr(player, "is_counter_attacking", False) and player.combo_step >= len(LIGHT_ATTACK_COMBO):
+            damage = round(damage * getattr(player, "combo_finisher_damage_multiplier", 1.0))
         damage_applied = apply_damage(enemy, damage)
         if damage_applied and hasattr(enemy, "register_attack_reaction"):
             enemy.register_attack_reaction(player)

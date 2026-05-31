@@ -25,7 +25,8 @@ def take_damage(player, amount):
     if not can_take_damage(player):
         return False
 
-    player.health = max(0, player.health - amount)
+    adjusted_damage = max(1, round(amount * getattr(player, "damage_taken_multiplier", 1.0)))
+    player.health = max(0, player.health - adjusted_damage)
     interrupt_actions_for_damage(player)
     player.hurt_timer = PLAYER_HURT_DURATION
     player.hurt_flash_timer = PLAYER_HURT_FLASH_DURATION
@@ -201,7 +202,10 @@ def block_hit(player, amount, attacker_direction):
     if player.defeated:
         return None
 
-    blocked_damage = max(1, round(amount * player.block_damage_reduction))
+    blocked_damage = max(
+        1,
+        round(amount * getattr(player, "damage_taken_multiplier", 1.0) * player.block_damage_reduction),
+    )
     player.health = max(0, player.health - blocked_damage)
     player.block_flash_timer = player.block_flash_duration
     player.knockback_velocity_x = attacker_direction * player.block_pushback

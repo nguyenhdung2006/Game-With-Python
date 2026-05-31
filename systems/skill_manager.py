@@ -42,7 +42,10 @@ class SkillManager:
         if skill is None:
             return False
 
-        return skill.use({"player": player})
+        used = skill.use({"player": player})
+        if used:
+            skill.current_cooldown *= getattr(player, "skill_cooldown_multiplier", 1.0)
+        return used
 
     def get_slot(self, slot_index):
         """Return a 1-based slot entry, or None for invalid indexes."""
@@ -72,7 +75,11 @@ class SkillManager:
         if player is None or not self.can_use_player_skill(player):
             return False
 
-        damage = round(KI_BLAST_CONFIG["damage"] * getattr(player, "damage_multiplier", 1.0))
+        damage = round(
+            KI_BLAST_CONFIG["damage"]
+            * getattr(player, "damage_multiplier", 1.0)
+            * getattr(player, "skill_damage_multiplier", 1.0)
+        )
         self.projectile_manager.spawn_ki_blast(player, damage)
         return True
 
@@ -82,7 +89,11 @@ class SkillManager:
         if player is None or not self.can_use_player_skill(player, require_grounded=True):
             return False
 
-        damage = round(KAMEHAMEHA_CONFIG["damage"] * getattr(player, "damage_multiplier", 1.0))
+        damage = round(
+            KAMEHAMEHA_CONFIG["damage"]
+            * getattr(player, "damage_multiplier", 1.0)
+            * getattr(player, "skill_damage_multiplier", 1.0)
+        )
         self.projectile_manager.spawn_kamehameha(player, damage)
         return True
 

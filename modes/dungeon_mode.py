@@ -173,6 +173,8 @@ class DungeonMode:
 
     def complete_current_encounter_room(self):
         """Resolve normal and boss room clears without changing combat rules."""
+        self.reward_manager.apply_room_clear_effects(self.player)
+
         if self.room_manager.current_room_type() == ROOM_BOSS_ENCOUNTER:
             self.room_manager.advance_room()
             self.enter_current_room()

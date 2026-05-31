@@ -175,8 +175,8 @@ assets/
 - `systems/player_feedback.py` draws subtle player recovery, unsafe, guard-stress, and payoff readability cues.
 - `systems/projectile.py` defines the projectile primitive used by Ki Blast.
 - `systems/projectile_manager.py` owns projectile and beam updates, drawing, lifetime cleanup, and enemy collision.
-- `systems/reward.py` defines purely mechanical room rewards and their stat effects.
-- `systems/reward_manager.py` owns reward option selection, navigation, application, and chosen reward tracking.
+- `systems/reward.py` maps config-driven mechanical room rewards onto small clamped stat effects.
+- `systems/reward_manager.py` owns unique reward options, navigation, stack caps, utility healing, and chosen reward tracking.
 - `systems/render_layers.py` keeps combat-space render ordering explicit.
 - `systems/reaction_feedback.py` draws small enemy vulnerability, recovery, and stagger readability effects.
 - `systems/skill.py` defines neutral skill slot primitives with cooldown and resource-cost fields.
@@ -213,6 +213,8 @@ assets/
 - Gameplay config foundation that moves prototype tuning into focused Python modules without adding content
 - Dungeon layout foundation with fixed START, ENCOUNTER, ELITE/BOSS, and CLEAR placeholder layouts
 - Dungeon room bounds, player spawn points, enemy spawn anchors, room labels, wall markers, and clear-state exit markers
+- Expanded mechanical reward pool with offense, defense, mobility, resource, and utility categories
+- Reward stack caps and clamps for damage, cooldowns, damage reduction, dash distance, and move speed
 - Elite/Boss foundation for Room 3 using a single heavy melee enemy with slower pacing, longer telegraphs, and clearer punish windows
 - Boss readability and pacing polish with slower attack cadence, stronger downtime, and clearer recovery punish windows
 - Goku skill prototype with `U` Ki Blast, `I` Kamehameha, and `O` locked
@@ -283,6 +285,8 @@ assets/
 - Dungeon HUD shows Ki Blast, Kamehameha, and Locked slot readiness/cooldowns
 - Dungeon Clear shows selected rewards and final mechanical modifiers
 - Rewards are mechanical only and appear after Room 1 and Room 2 encounter clears
+- Reward selection still offers three unique choices with category, description, and stack-cap labels
+- Expanded rewards remain neutral mechanical buffs only; no fantasy rewards or named powers are added
 - The Room 3 elite/boss encounter has no post-fight reward and clears the dungeon when defeated
 - Phase 28 adds skill slot and projectile infrastructure only
 - Phase 29 adds user-approved Ki Blast and Kamehameha prototypes with placeholder projectile/beam visuals only; no animation, sprite work, complex VFX, transformations, new skills, reward rarity, inventory, save/load, or boss identity/theme has been added
@@ -291,6 +295,7 @@ assets/
 - Phase 33 adds completion-flow foundation only: Dungeon Defeat and retry, Solo rematch, readable Room Cleared pacing before reward selection, and consistent retry/menu prompts. No combat, AI, animation, asset, or fantasy expansion has been added
 - Phase 34 adds a lightweight gameplay config foundation: player, enemy, boss, skill, reward, Solo, and Dungeon prototype tuning now live in focused Python modules. Existing behavior is preserved; no new gameplay content has been added
 - Phase 35 adds fixed Dungeon layout foundation only: START, ENCOUNTER, ELITE/BOSS, and CLEAR layouts now provide spawn anchors, placeholder bounds, walls, labels, and clear-state exits. No final art, procedural generation, lore, or new gameplay content has been added
+- Phase 36 expands the config-driven mechanical reward foundation with offense, defense, mobility, resource, and utility categories plus safe stack caps and clamps. No fantasy rewards, skills, animation, or assets have been added
 - Phase 26 adds boss pacing foundation only: heavier melee tuning, longer telegraph/recovery, and punish-focused combat readability
 - Phase 27 polishes boss rhythm only: clearer telegraphs, longer recovery, slower pressure cadence, and more reliable punish timing without special attacks or VFX
 

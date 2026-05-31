@@ -9,6 +9,7 @@ CARD = (30, 35, 50)
 CARD_SELECTED = (48, 58, 82)
 ACCENT = (130, 220, 255)
 MUTED = (190, 198, 212)
+CATEGORY = (255, 220, 150)
 
 
 def draw_reward_select(surface, reward_manager):
@@ -22,7 +23,7 @@ def draw_reward_select(surface, reward_manager):
         return
 
     card_width = 300
-    card_height = 150
+    card_height = 174
     gap = 26
     total_width = card_width * len(options) + gap * (len(options) - 1)
     start_x = WIDTH // 2 - total_width // 2
@@ -31,12 +32,12 @@ def draw_reward_select(surface, reward_manager):
     for index, reward in enumerate(options):
         rect = pygame.Rect(start_x + index * (card_width + gap), y, card_width, card_height)
         selected = index == reward_manager.selected_index
-        draw_reward_card(surface, rect, reward, selected)
+        draw_reward_card(surface, rect, reward, reward_manager.stack_count(reward.reward_id), selected)
 
     _draw_center_text(surface, "A/D or Left/Right to choose. Enter confirms.", HEIGHT - 92, 28, MUTED)
 
 
-def draw_reward_card(surface, rect, reward, selected):
+def draw_reward_card(surface, rect, reward, stack_count, selected):
     """Draw one reward option card."""
     color = CARD_SELECTED if selected else CARD
     border = ACCENT if selected else MUTED
@@ -45,12 +46,24 @@ def draw_reward_card(surface, rect, reward, selected):
 
     title_font = pygame.font.Font(None, 34)
     desc_font = pygame.font.Font(None, 25)
+    detail_font = pygame.font.Font(None, 23)
 
     title_surface = title_font.render(reward.display_name, True, WHITE)
     desc_surface = desc_font.render(reward.description, True, MUTED)
+    stack_label = format_stack_label(stack_count, reward.max_stacks)
+    detail_surface = detail_font.render(f"{reward.category.upper()}  |  {stack_label}", True, CATEGORY)
 
-    surface.blit(title_surface, title_surface.get_rect(center=(rect.centerx, rect.top + 46)))
-    surface.blit(desc_surface, desc_surface.get_rect(center=(rect.centerx, rect.top + 94)))
+    surface.blit(title_surface, title_surface.get_rect(center=(rect.centerx, rect.top + 42)))
+    surface.blit(detail_surface, detail_surface.get_rect(center=(rect.centerx, rect.top + 82)))
+    surface.blit(desc_surface, desc_surface.get_rect(center=(rect.centerx, rect.top + 126)))
+
+
+def format_stack_label(stack_count, max_stacks):
+    """Return the next stack number and configured cap for one reward."""
+    next_stack = stack_count + 1
+    if max_stacks is None:
+        return f"Stack {next_stack}"
+    return f"Stack {next_stack} / {max_stacks}"
 
 
 def _draw_center_text(surface, text, center_y, size, color):

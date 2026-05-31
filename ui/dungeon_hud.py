@@ -84,11 +84,29 @@ def draw_dungeon_clear_summary(surface, room_manager, reward_manager, player):
 
 def get_stat_lines(player):
     """Return safe mechanical stat modifier display lines."""
-    return [
+    lines = [
         f"Damage: x{getattr(player, 'damage_multiplier', 1.0):.2f}",
         f"Dash CD: x{getattr(player, 'dash_cooldown_multiplier', 1.0):.2f}",
         f"Max HP Bonus: +{getattr(player, 'max_health_bonus', 0)}",
     ]
+    optional_modifiers = [
+        ("Skill Damage", "skill_damage_multiplier", "x", 1.0),
+        ("Finisher", "combo_finisher_damage_multiplier", "x", 1.0),
+        ("Damage Taken", "damage_taken_multiplier", "x", 1.0),
+        ("Dash Distance", "dash_speed_multiplier", "x", 1.0),
+        ("Move Speed", "move_speed_multiplier", "x", 1.0),
+        ("Skill CD", "skill_cooldown_multiplier", "x", 1.0),
+        ("Room Clear Heal", "room_clear_heal", "+", 0),
+    ]
+    for label, field_name, prefix, default in optional_modifiers:
+        value = getattr(player, field_name, default)
+        if value == default:
+            continue
+        if isinstance(value, float):
+            lines.append(f"{label}: {prefix}{value:.2f}")
+        else:
+            lines.append(f"{label}: {prefix}{value}")
+    return lines
 
 
 def get_skill_lines(skill_manager):
