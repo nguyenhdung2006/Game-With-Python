@@ -2,13 +2,12 @@
 
 import pygame
 
-from config.mode_config import DUNGEON_PLAYER_SPAWN_X
 from entities.player import Player
 from managers.encounter_manager import EncounterManager
 from managers.encounter_profiles import BOSS_ROOM_PROFILES
 from managers.room_manager import RoomManager
 from managers.room_state import ROOM_BOSS_ENCOUNTER, ROOM_ENCOUNTER
-from settings import GROUND_Y, HEALTH_PLAYER, PLAYER_HEIGHT
+from settings import HEALTH_PLAYER
 from systems.combat import process_enemy_attacks, process_player_attacks
 from systems.effects import CombatImpact
 from systems.projectile_manager import ProjectileManager
@@ -20,7 +19,7 @@ from ui.dungeon_hud import draw_dungeon_clear_summary, draw_dungeon_hud
 from ui.health_bar import draw_health_bar
 from ui.reward_select import draw_reward_select
 from ui.room_banner import draw_room_cleared
-from world.battlefield import draw_arena
+from world.dungeon_room import draw_dungeon_room
 
 
 class DungeonMode:
@@ -31,8 +30,8 @@ class DungeonMode:
 
     def reset_run(self):
         """Create a clean dungeon run without carrying terminal combat state."""
-        self.player = Player(DUNGEON_PLAYER_SPAWN_X, GROUND_Y - PLAYER_HEIGHT)
         self.room_manager = RoomManager()
+        self.player = Player(*self.room_manager.current_layout().player_spawn)
         self.encounter_manager = None
         self.impact = CombatImpact()
         self.projectile_manager = ProjectileManager()
@@ -118,11 +117,11 @@ class DungeonMode:
                 scene_surface,
                 self.player,
                 self.encounter_manager,
-                draw_arena,
+                self.draw_room_world,
                 self.projectile_manager,
             )
         else:
-            draw_arena(scene_surface)
+            self.draw_room_world(scene_surface)
 
         screen.fill((0, 0, 0))
         screen.blit(scene_surface, self.impact.get_camera_offset())
@@ -197,13 +196,31 @@ class DungeonMode:
         """Initialize combat systems for the current room type."""
         self.impact = CombatImpact()
         self.projectile_manager.clear()
+        self.place_player_at_current_layout_spawn()
+        room_layout = self.room_manager.current_layout()
 
         if self.room_manager.current_room_type() == ROOM_ENCOUNTER:
-            self.encounter_manager = EncounterManager()
+            self.encounter_manager = EncounterManager(room_layout=room_layout)
         elif self.room_manager.current_room_type() == ROOM_BOSS_ENCOUNTER:
-            self.encounter_manager = EncounterManager(BOSS_ROOM_PROFILES)
+            self.encounter_manager = EncounterManager(BOSS_ROOM_PROFILES, room_layout=room_layout)
         else:
             self.encounter_manager = None
+
+    def place_player_at_current_layout_spawn(self):
+        """Move the existing run player onto the current layout spawn point."""
+        spawn_x, spawn_y = self.room_manager.current_layout().player_spawn
+        self.player.x = float(spawn_x)
+        self.player.y = float(spawn_y)
+        self.player.rect.topleft = (spawn_x, spawn_y)
+        self.player.velocity_y = 0
+        self.player.knockback_velocity_x = 0
+        self.player.grounded = True
+        self.player.dash_trail = []
+
+    def draw_room_world(self, surface):
+        """Draw the current fixed room layout with a clear-state exit marker."""
+        show_exit = self.room_manager.is_room_cleared() or self.room_manager.is_reward_active()
+        draw_dungeon_room(surface, self.room_manager.current_layout(), show_exit=show_exit)
 
     def is_active_encounter_room(self):
         """Return True only while an encounter room is actively running."""

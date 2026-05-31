@@ -4,9 +4,15 @@ This manager owns wave definitions, active enemies, and progression, while a
 small director helper owns pacing and pressure presentation.
 """
 
+from config.dungeon_layout_config import (
+    DEFAULT_ENEMY_SPAWN_LEFT_START,
+    DEFAULT_ENEMY_SPAWN_RIGHT_MARGIN,
+    DEFAULT_ENEMY_SPAWN_RIGHT_START,
+    DEFAULT_ENEMY_SPAWN_SPACING,
+)
 from managers.encounter_director import EncounterDirector
 from managers.encounter_profiles import WAVE_PROFILES
-from settings import ENCOUNTER_WAVE_DELAY, ENEMY_STATE_TELEGRAPH, HEALTH_ENEMY, WIDTH
+from settings import ENCOUNTER_WAVE_DELAY, ENEMY_STATE_TELEGRAPH, GROUND_Y, HEALTH_ENEMY, WIDTH
 from systems.enemy_spacing import apply_enemy_spacing
 from ui.health_bar import draw_health_bar
 
@@ -14,8 +20,9 @@ from ui.health_bar import draw_health_bar
 class EncounterManager:
     """Spawn hardcoded waves and track when the encounter is cleared."""
 
-    def __init__(self, wave_definitions=None):
+    def __init__(self, wave_definitions=None, room_layout=None):
         self.wave_definitions = WAVE_PROFILES if wave_definitions is None else wave_definitions
+        self.room_layout = room_layout
         self.active_enemies = []
         self.current_wave_index = -1
         self.wave_delay_timer = ENCOUNTER_WAVE_DELAY
@@ -78,10 +85,12 @@ class EncounterManager:
         enemy_classes = wave_profile["enemies"]
         spawn_positions = self.get_spawn_positions(len(enemy_classes), player)
         self.active_enemies = []
-        spawn_from_right = player.rect.centerx < WIDTH // 2
+        spawn_from_right = spawn_positions[0][0] >= player.rect.centerx
 
         for index, enemy_class in enumerate(enemy_classes):
-            enemy = enemy_class(spawn_positions[index])
+            spawn_x, spawn_floor_y = spawn_positions[index]
+            enemy = enemy_class(spawn_x)
+            enemy.rect.bottom = spawn_floor_y
             self.configure_enemy_entrance(
                 enemy,
                 index,
@@ -95,13 +104,28 @@ class EncounterManager:
         self.director.start_wave(wave_index + 1, wave_profile)
 
     def get_spawn_positions(self, count, player):
-        """Choose side-based spawn positions away from the player."""
-        if player.rect.centerx < WIDTH // 2:
-            positions = self.build_side_spawn_positions(count, 760, 170, WIDTH - 90)
-        else:
-            positions = self.build_side_spawn_positions(count, 160, 170, WIDTH - 90)
+        """Choose configured room anchors away from the player."""
+        if self.room_layout is not None:
+            positions = self.room_layout.enemy_spawn_points_for_player(player.rect.centerx)
+            if len(positions) >= count:
+                return positions[:count]
 
-        return positions[:count]
+        if player.rect.centerx < WIDTH // 2:
+            positions = self.build_side_spawn_positions(
+                count,
+                DEFAULT_ENEMY_SPAWN_RIGHT_START,
+                DEFAULT_ENEMY_SPAWN_SPACING,
+                WIDTH - DEFAULT_ENEMY_SPAWN_RIGHT_MARGIN,
+            )
+        else:
+            positions = self.build_side_spawn_positions(
+                count,
+                DEFAULT_ENEMY_SPAWN_LEFT_START,
+                DEFAULT_ENEMY_SPAWN_SPACING,
+                WIDTH - DEFAULT_ENEMY_SPAWN_RIGHT_MARGIN,
+            )
+
+        return tuple((x, GROUND_Y) for x in positions[:count])
 
     def build_side_spawn_positions(self, count, start_x, spacing, max_x):
         """Return enough clamped spawn positions for larger future waves."""
@@ -118,11 +142,18 @@ class EncounterManager:
         enemy.entrance_move_speed = wave_profile["entrance_move_speed"]
 
         offset = wave_profile["entrance_offset"] + (index * 12)
+        left_bound, right_bound = self.get_arena_bounds()
         if spawn_from_right:
-            enemy.x = min(WIDTH - enemy.width, enemy.spawn_target_x + offset)
+            enemy.x = min(right_bound - enemy.width, enemy.spawn_target_x + offset)
         else:
-            enemy.x = max(0, enemy.spawn_target_x - offset)
+            enemy.x = max(left_bound, enemy.spawn_target_x - offset)
         enemy.rect.x = round(enemy.x)
+
+    def get_arena_bounds(self):
+        """Return room-specific bounds with a full-screen fallback."""
+        if self.room_layout is None:
+            return 0, WIDTH
+        return self.room_layout.arena_bounds
 
     def get_current_wave_profile(self):
         """Return the active wave's spacing/pacing profile."""

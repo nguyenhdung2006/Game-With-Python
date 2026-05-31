@@ -2,7 +2,7 @@
 
 from dataclasses import dataclass
 
-from config.mode_config import DUNGEON_ROOM_TYPES
+from managers.dungeon_layout import DungeonLayoutManager
 from managers.room_state import (
     ROOM_ACTIVE,
     ROOM_CLEARED,
@@ -18,13 +18,18 @@ class DungeonRoom:
     """One fixed room entry in the current dungeon sequence."""
 
     room_type: str
+    layout_id: str
 
 
 class RoomManager:
     """Track fixed dungeon room flow without owning combat or rendering."""
 
     def __init__(self):
-        self.rooms = [DungeonRoom(room_type) for room_type in DUNGEON_ROOM_TYPES]
+        self.layout_manager = DungeonLayoutManager()
+        self.rooms = [
+            DungeonRoom(layout.room_type, layout.layout_id)
+            for layout in self.layout_manager.room_layouts
+        ]
         self.current_room_index = 0
         self.flow_state = ROOM_ACTIVE
 
@@ -40,6 +45,12 @@ class RoomManager:
         if room is None:
             return ROOM_DUNGEON_CLEAR
         return room.room_type
+
+    def current_layout(self):
+        """Return the active fixed layout or the terminal clear layout."""
+        if self.is_dungeon_complete():
+            return self.layout_manager.clear_layout
+        return self.layout_manager.layout_for_room_index(self.current_room_index)
 
     def room_number(self):
         """Return the 1-based room number for UI."""

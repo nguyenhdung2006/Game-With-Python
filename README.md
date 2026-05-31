@@ -63,6 +63,7 @@ config/
     skill_config.py
     reward_config.py
     mode_config.py
+    dungeon_layout_config.py
 entities/
     player.py
     player_parts/
@@ -90,6 +91,7 @@ managers/
     game_state.py
     room_manager.py
     room_state.py
+    dungeon_layout.py
 modes/
     dungeon_mode.py
     solo_mode.py
@@ -127,6 +129,7 @@ ui/
     wave_banner.py
 world/
     battlefield.py
+    dungeon_room.py
 assets/
     SPRITE_PIPELINE.md
     sprites/
@@ -144,6 +147,7 @@ assets/
 - `main.py` starts Pygame, creates objects, runs the game loop, and calls update/draw methods.
 - `settings.py` stores runtime geometry/colors and re-exports legacy tuning constants for compatibility.
 - `config/` stores lightweight Python tuning modules for player, enemy, boss, skill, reward, Solo, and Dungeon values.
+- `config/dungeon_layout_config.py` stores fixed placeholder room bounds, player spawns, enemy spawn anchors, and exits.
 - `entities/` stores game objects such as the player, enemies, future bosses, and projectiles.
 - `entities/player_parts/` keeps Player combat, defense, movement, setup, and rendering concerns in smaller modules.
 - `entities/player_parts/reaction.py` tracks player-side whiff, landing, guard stress, and payoff feedback timers.
@@ -158,6 +162,7 @@ assets/
 - `managers/game_state.py` stores top-level mode routing state.
 - `managers/room_manager.py` stores the fixed dungeon room sequence and progression state.
 - `managers/room_state.py` stores lightweight room type and flow-state constants.
+- `managers/dungeon_layout.py` exposes immutable fixed-layout data without procedural generation.
 - `managers/encounter_director.py` coordinates wave intros, activation timing, and clean attacker handoffs.
 - `managers/encounter_profiles.py` stores lightweight per-wave pacing profiles so encounters can escalate without giant scripts.
 - `modes/dungeon_mode.py` wraps the current playable wave-combat loop so the game can route between modes.
@@ -189,6 +194,7 @@ assets/
 - `ui/room_banner.py` draws dungeon room number, room clear, and dungeon clear prompts.
 - `ui/wave_banner.py` draws short centered wave-intro presentation text.
 - `world/` stores arena and environment drawing code.
+- `world/dungeon_room.py` layers placeholder walls, floor bounds, room labels, and clear-state exit markers over Dungeon rooms.
 - `assets/SPRITE_PIPELINE.md` documents sprite folder conventions and prepared visual states.
 - `assets/` is reserved for future sprites, sounds, and music.
 
@@ -205,6 +211,8 @@ assets/
 - Completion flow foundation with Dungeon Defeat, retry, Solo rematch, and shared end-state prompts
 - Room Cleared pacing cleanup that waits for `Enter` before opening reward selection
 - Gameplay config foundation that moves prototype tuning into focused Python modules without adding content
+- Dungeon layout foundation with fixed START, ENCOUNTER, ELITE/BOSS, and CLEAR placeholder layouts
+- Dungeon room bounds, player spawn points, enemy spawn anchors, room labels, wall markers, and clear-state exit markers
 - Elite/Boss foundation for Room 3 using a single heavy melee enemy with slower pacing, longer telegraphs, and clearer punish windows
 - Boss readability and pacing polish with slower attack cadence, stronger downtime, and clearer recovery punish windows
 - Goku skill prototype with `U` Ki Blast, `I` Kamehameha, and `O` locked
@@ -265,6 +273,8 @@ assets/
 - Room 2: encounter
 - Room 3: elite/boss encounter
 - Final state: Dungeon Cleared
+- Room 1 uses the fixed START layout, Room 2 uses ENCOUNTER, Room 3 uses ELITE/BOSS, and completion uses CLEAR
+- Fixed layouts provide room bounds, player spawns, enemy spawn anchors, and placeholder exit markers only
 - Encounter rooms pause on Room Cleared and wait for `Enter` before opening a three-choice reward screen
 - `Enter` confirms selected rewards before advancing to the next room
 - Player defeat shows a Dungeon Defeat overlay with `R` retry and `Esc` return-to-menu actions
@@ -280,6 +290,7 @@ assets/
 - Phase 32 adds a Solo-only sprite combat and energy prototype: shaman body frames, slash combo visuals, boss sprite playback, technique frames attached to the preserved Phase 31 skill flow, and `U` Combo Burst. Dungeon visuals and bindings remain unchanged
 - Phase 33 adds completion-flow foundation only: Dungeon Defeat and retry, Solo rematch, readable Room Cleared pacing before reward selection, and consistent retry/menu prompts. No combat, AI, animation, asset, or fantasy expansion has been added
 - Phase 34 adds a lightweight gameplay config foundation: player, enemy, boss, skill, reward, Solo, and Dungeon prototype tuning now live in focused Python modules. Existing behavior is preserved; no new gameplay content has been added
+- Phase 35 adds fixed Dungeon layout foundation only: START, ENCOUNTER, ELITE/BOSS, and CLEAR layouts now provide spawn anchors, placeholder bounds, walls, labels, and clear-state exits. No final art, procedural generation, lore, or new gameplay content has been added
 - Phase 26 adds boss pacing foundation only: heavier melee tuning, longer telegraph/recovery, and punish-focused combat readability
 - Phase 27 polishes boss rhythm only: clearer telegraphs, longer recovery, slower pressure cadence, and more reliable punish timing without special attacks or VFX
 
