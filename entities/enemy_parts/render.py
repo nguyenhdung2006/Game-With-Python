@@ -28,7 +28,12 @@ def draw(enemy, surface):
         color = choose_flash_color(enemy.body_color, enemy.hurt_color, enemy.hurt_flash_timer)
 
     visual_state = get_enemy_visual_state(enemy)
-    sprite_drawn = draw_entity_sprite(surface, enemy, draw_rect, visual_state)
+    dungeon_sprite_renderer = getattr(enemy, "dungeon_sprite_renderer", None)
+    sprite_drawn = False
+    if dungeon_sprite_renderer is not None:
+        sprite_drawn = dungeon_sprite_renderer.draw(surface, enemy, draw_rect, visual_state)
+    if not sprite_drawn:
+        sprite_drawn = draw_entity_sprite(surface, enemy, draw_rect, visual_state)
 
     if enemy.hurt_flash_timer > 0 and not enemy.defeated:
         recoil_rect = draw_rect.copy()

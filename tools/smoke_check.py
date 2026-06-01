@@ -48,6 +48,7 @@ from config.skill_config import KAMEHAMEHA_CONFIG, KI_BLAST_CONFIG
 from config.mode_config import SOLO_KAMEHAMEHA_ENERGY_COST
 from entities.basic_enemy import BasicEnemy
 from entities.elite_enemy import EliteEnemy
+from entities.fast_enemy import FastEnemy
 from entities.player import Player
 from managers.dungeon_layout import DungeonLayoutManager
 from managers.game_state import GameState
@@ -66,6 +67,7 @@ from settings import (
 from systems.beam import Beam
 from systems.audio_manager import AudioManager
 from systems.effects import CombatImpact
+from systems.enemy_sprite_renderer import EnemySpriteRenderer
 from systems.input_manager import InputManager
 from systems.boss_skill_controller import (
     BOSS_SKILL_ACTIVE,
@@ -693,6 +695,91 @@ def check_enemy_sprite_validation():
     check(missing_report["animations"][0]["status"] == "MISSING", "Missing enemy sprite file did not report safely")
 
 
+def check_dungeon_enemy_sprite_integration():
+    """Exercise prototype Dungeon sprite mapping, playback, and fallback."""
+    renderer = EnemySpriteRenderer()
+    basic_enemy = BasicEnemy(420)
+    fast_enemy = FastEnemy(520)
+    elite_enemy = EliteEnemy(620)
+    check(renderer.get_sprite_id(basic_enemy) == "orc", "BasicEnemy did not map to the Orc prototype")
+    check(renderer.get_sprite_id(fast_enemy) == "soldier", "FastEnemy did not map to the Soldier prototype")
+    check(renderer.get_sprite_id(elite_enemy) is None, "Elite enemy should keep its existing visual")
+
+    expected_animations = {
+        "idle": "idle",
+        "chase": "walk",
+        "telegraph": "attack_01",
+        "attack": "attack_02",
+        "hurt": "hurt",
+        "stagger": "hurt",
+        "defeated": "death",
+    }
+    for visual_state, animation_name in expected_animations.items():
+        check(
+            renderer.get_animation_name(visual_state) == animation_name,
+            f"Dungeon enemy sprite state did not map safely: {visual_state}",
+        )
+
+    for animation_name, animation in ENEMY_SPRITE_CONFIGS["orc"]["animations"].items():
+        renderer.frame_cache[("orc", animation_name)] = tuple(
+            pygame.Surface((100, 100), pygame.SRCALPHA)
+            for _ in range(animation["frame_count"])
+        )
+    renderer.update(basic_enemy, "idle", ENEMY_SPRITE_CONFIGS["orc"]["animations"]["idle"]["frame_speed"])
+    check(renderer.playback[basic_enemy]["frame_index"] == 1, "Looping Dungeon enemy sprite did not advance")
+    renderer.update(basic_enemy, "defeated", 10)
+    check(renderer.playback[basic_enemy]["frame_index"] == 3, "Dungeon enemy death sprite did not hold its last frame")
+    surface = pygame.Surface((WIDTH, HEIGHT), pygame.SRCALPHA)
+    basic_enemy.facing = -1
+    check(renderer.draw(surface, basic_enemy, basic_enemy.rect, "idle"), "Dungeon enemy sprite draw failed")
+
+    missing_renderer = EnemySpriteRenderer(
+        {
+            "missing": {
+                "enemy_id": "missing",
+                "root_folder": PROJECT_ROOT / "assets" / "sprites" / "missing-test-only",
+                "frame_width": 100,
+                "frame_height": 100,
+                "render_scale": 1,
+                "feet_anchor": (50, 60),
+                "animations": {
+                    "idle": {
+                        "filename": "Missing-Idle.png",
+                        "frame_count": 1,
+                        "frame_speed": 0.1,
+                        "hold_last": False,
+                    },
+                },
+            },
+        }
+    )
+    basic_enemy.dungeon_sprite_id = "missing"
+    basic_enemy.dungeon_sprite_renderer = missing_renderer
+    check(
+        not missing_renderer.draw(surface, basic_enemy, basic_enemy.rect, "idle"),
+        "Missing Dungeon enemy sprite did not return rectangle fallback",
+    )
+    basic_enemy.draw(surface)
+
+    player = create_player(420)
+    combat_enemy = BasicEnemy(player.rect.right + 10)
+    combat_enemy.facing = -1
+    combat_enemy.start_attack()
+    start_health = player.health
+    check(process_enemy_attacks([combat_enemy], player), "Basic enemy attack stopped connecting")
+    check(player.health < start_health, "Basic enemy attack stopped damaging player")
+    combat_enemy.take_damage(combat_enemy.health)
+    check(combat_enemy.defeated, "Basic enemy can no longer be defeated")
+
+    dungeon = DungeonMode()
+    dungeon.encounter_manager.spawn_wave(0, dungeon.player)
+    spawned_enemy = dungeon.encounter_manager.active_enemies[0]
+    check(
+        spawned_enemy.dungeon_sprite_renderer is dungeon.enemy_sprite_renderer,
+        "Dungeon encounter did not attach its sprite renderer",
+    )
+
+
 def check_boss_skill_transitions():
     """Force the neutral boss skill through telegraph, active, and recovery."""
     player = create_player(420)
@@ -950,6 +1037,7 @@ def run():
         ("audio hooks foundation", check_audio_hooks_foundation),
         ("input binding foundation", check_input_binding_foundation),
         ("enemy sprite asset validation", check_enemy_sprite_validation),
+        ("dungeon enemy sprite integration", check_dungeon_enemy_sprite_integration),
         ("boss skill states", check_boss_skill_transitions),
         ("projectile and beam", check_projectile_and_beam),
         ("solo boss technique playback", check_solo_boss_technique_playback),

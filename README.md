@@ -150,6 +150,7 @@ systems/
     settings_store.py
     audio_manager.py
     input_manager.py
+    enemy_sprite_renderer.py
     solo_combo_burst.py
     solo_boss_combo_controller.py
     solo_sprite_renderer.py
@@ -240,6 +241,7 @@ assets/
 - `systems/settings_store.py` loads, validates, and writes local JSON preferences without saving progression or run state.
 - `systems/audio_manager.py` initializes optional Pygame audio safely, applies stored volume preferences, and no-ops when devices or files are unavailable.
 - `systems/input_manager.py` resolves configurable keyboard actions, held-state checks, press events, and UI binding labels.
+- `systems/enemy_sprite_renderer.py` caches and draws Dungeon-only Orc/Soldier strip frames with state mapping, foot anchors, facing flips, and rectangle fallback.
 - `systems/solo_combo_burst.py` sequences the Solo-only three-hit Combo Burst using existing normal attack setup.
 - `systems/solo_boss_combo_controller.py` owns the Solo-only boss energy meter and user-approved multi-hit frame sequences.
 - `systems/solo_sprite_renderer.py` loads and draws Solo-only shaman, slash, boss, and boss-technique prototype frames with safe fallbacks.
@@ -282,6 +284,7 @@ assets/
 - Audio hooks foundation with optional mixer initialization, settings-driven volume levels, and event-based placeholders without bundled audio assets
 - Input binding foundation with persisted JSON-safe action mappings, shared input helpers, and binding-aware controls UI
 - Dungeon enemy sprite asset validation with config-driven Orc/Soldier strip checks and an optional standalone preview viewer
+- Dungeon Orc/Soldier sprite render prototype with conservative state animation mapping and safe placeholder fallback
 - Room Cleared pacing cleanup that waits for `Enter` before opening reward selection
 - Gameplay config foundation that moves prototype tuning into focused Python modules without adding content
 - Dungeon layout foundation with fixed START, ENCOUNTER, ELITE/BOSS, and CLEAR placeholder layouts
@@ -364,13 +367,16 @@ assets/
 
 ## Prototype Dungeon Enemy Sprites
 
-- Orc and Soldier sprite sheets are prototype/test inputs only and are not rendered by Dungeon gameplay yet
+- Orc and Soldier sprite sheets are prototype/test inputs rendered by normal Dungeon enemies only
 - Each animation sheet is one horizontal strip of 100x100 frames
 - Orc validation covers Idle, Walk, Attack01, Attack02, Hurt, and Death
 - Soldier validation covers Idle, Walk, Attack01, Attack02, Attack03, Hurt, and Death
 - `python tools/validate_enemy_sprites.py` prints missing-file and sheet-dimension diagnostics without opening a window
 - `python tools/sprite_sheet_preview.py orc` or `python tools/sprite_sheet_preview.py soldier` opens the optional manual viewer
-- The current Soldier test drop remains in its existing prototype folder; Phase 44 does not move assets or integrate animation
+- BasicEnemy uses the Orc prototype and FastEnemy uses the Soldier prototype; Elite/Boss visuals stay unchanged
+- Idle and Walk loop, Attack/Hurt follow the existing mechanical state, and Death holds its final frame
+- Missing or invalid sheets fall back to the existing rectangle renderer without changing combat behavior
+- The current Soldier test drop remains in its existing prototype folder; Phase 45 does not move assets or add a final animation pipeline
 
 ## Dungeon Flow
 
@@ -408,6 +414,7 @@ assets/
 - Phase 42 adds optional audio infrastructure only: safe mixer initialization, settings-driven volumes, empty audio folders, and one-shot hooks for attacks, hits, boss skills, rewards, end states, and menu selection. No copyrighted or bundled audio assets have been added
 - Phase 43 adds input-binding infrastructure only: default action mappings, persisted binding structure, shared press/held helpers, incremental Solo/Dungeon routing, and binding-aware UI labels. Default controls remain unchanged; no remapping screen or gameplay content has been added
 - Phase 44 adds Dungeon enemy sprite asset validation only: config-driven Orc/Soldier 100x100 strip metadata, a headless-safe report tool, an optional standalone viewer, and smoke coverage for missing assets. Dungeon rendering and gameplay behavior remain unchanged
+- Phase 45 adds a Dungeon-only enemy sprite integration prototype: BasicEnemy renders Orc strips, FastEnemy renders Soldier strips, mechanical states drive cached playback, and missing sheets preserve rectangle fallback. Combat behavior, balance, Solo boss flow, and final animation decisions remain unchanged
 - Phase 26 adds boss pacing foundation only: heavier melee tuning, longer telegraph/recovery, and punish-focused combat readability
 - Phase 27 polishes boss rhythm only: clearer telegraphs, longer recovery, slower pressure cadence, and more reliable punish timing without special attacks or VFX
 

@@ -11,6 +11,7 @@ from settings import HEALTH_PLAYER
 from systems.combat import process_enemy_attacks, process_player_attacks
 from systems.effects import CombatImpact
 from systems.input_manager import InputManager
+from systems.enemy_sprite_renderer import EnemySpriteRenderer
 from systems.projectile_manager import ProjectileManager
 from systems.reward_manager import RewardManager
 from systems.render_layers import draw_combat_scene
@@ -45,6 +46,7 @@ class DungeonMode:
         self.projectile_manager = ProjectileManager()
         self.skill_manager = SkillManager(self.projectile_manager, self.input_manager)
         self.reward_manager = RewardManager()
+        self.enemy_sprite_renderer = EnemySpriteRenderer()
         self.paused = False
         self.controls_visible = False
         self.enter_current_room()
@@ -242,12 +244,17 @@ class DungeonMode:
         room_layout = self.room_manager.current_layout()
 
         if self.room_manager.current_room_type() == ROOM_ENCOUNTER:
-            self.encounter_manager = EncounterManager(room_layout=room_layout, audio_manager=self.audio_manager)
+            self.encounter_manager = EncounterManager(
+                room_layout=room_layout,
+                audio_manager=self.audio_manager,
+                enemy_sprite_renderer=self.enemy_sprite_renderer,
+            )
         elif self.room_manager.current_room_type() == ROOM_BOSS_ENCOUNTER:
             self.encounter_manager = EncounterManager(
                 BOSS_ROOM_PROFILES,
                 room_layout=room_layout,
                 audio_manager=self.audio_manager,
+                enemy_sprite_renderer=self.enemy_sprite_renderer,
             )
         else:
             self.encounter_manager = None

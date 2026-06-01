@@ -10,6 +10,7 @@ from config.dungeon_layout_config import (
     DEFAULT_ENEMY_SPAWN_RIGHT_START,
     DEFAULT_ENEMY_SPAWN_SPACING,
 )
+from entities.enemy_parts.render_state import get_enemy_visual_state
 from managers.encounter_director import EncounterDirector
 from managers.encounter_profiles import WAVE_PROFILES
 from settings import ENCOUNTER_WAVE_DELAY, ENEMY_STATE_TELEGRAPH, GROUND_Y, HEALTH_ENEMY, WIDTH
@@ -20,10 +21,11 @@ from ui.health_bar import draw_health_bar
 class EncounterManager:
     """Spawn hardcoded waves and track when the encounter is cleared."""
 
-    def __init__(self, wave_definitions=None, room_layout=None, audio_manager=None):
+    def __init__(self, wave_definitions=None, room_layout=None, audio_manager=None, enemy_sprite_renderer=None):
         self.wave_definitions = WAVE_PROFILES if wave_definitions is None else wave_definitions
         self.room_layout = room_layout
         self.audio_manager = audio_manager
+        self.enemy_sprite_renderer = enemy_sprite_renderer
         self.active_enemies = []
         self.current_wave_index = -1
         self.wave_delay_timer = ENCOUNTER_WAVE_DELAY
@@ -34,6 +36,7 @@ class EncounterManager:
     def update(self, player, dt):
         """Update wave flow and all active enemies."""
         self.director.update(dt, self.active_enemies)
+        self.update_enemy_sprites(dt)
 
         if self.encounter_cleared:
             return
@@ -92,6 +95,7 @@ class EncounterManager:
             spawn_x, spawn_floor_y = spawn_positions[index]
             enemy = enemy_class(spawn_x)
             enemy.audio_manager = self.audio_manager
+            enemy.dungeon_sprite_renderer = self.enemy_sprite_renderer
             enemy.rect.bottom = spawn_floor_y
             self.configure_enemy_entrance(
                 enemy,
@@ -167,6 +171,13 @@ class EncounterManager:
     def get_enemies(self):
         """Expose the active enemies for combat processing."""
         return self.active_enemies
+
+    def update_enemy_sprites(self, dt):
+        """Tick optional Dungeon-only presentation playback."""
+        if self.enemy_sprite_renderer is None:
+            return
+        for enemy in self.active_enemies:
+            self.enemy_sprite_renderer.update(enemy, get_enemy_visual_state(enemy), dt)
 
     def draw(self, surface):
         """Draw every active enemy."""

@@ -1,4 +1,4 @@
-"""Prototype Dungeon enemy sprite-sheet metadata for validation tools only."""
+"""Prototype Dungeon enemy sprite-sheet metadata for validation and rendering."""
 
 from pathlib import Path
 
@@ -17,14 +17,16 @@ def animation(filename, frame_count, frame_speed, hold_last=False):
     }
 
 
-# These sheets are prototype/test inputs only. Dungeon rendering continues to
-# use the current fallback visuals until the user approves sprite integration.
+# These sheets remain prototype/test inputs. Gameplay hitboxes stay independent
+# from their presentation scale so final animation decisions can happen later.
 ENEMY_SPRITE_CONFIGS = {
     "orc": {
         "enemy_id": "orc",
         "root_folder": SPRITE_ROOT / "enemies" / "basic" / "Orc with shadows",
         "frame_width": 100,
         "frame_height": 100,
+        "render_scale": 4,
+        "feet_anchor": (54, 60),
         "animations": {
             "idle": animation("Orc-Idle.png", 6, 0.14),
             "walk": animation("Orc-Walk.png", 8, 0.10),
@@ -39,6 +41,8 @@ ENEMY_SPRITE_CONFIGS = {
         "root_folder": SPRITE_ROOT / "player" / "Soldier with shadows",
         "frame_width": 100,
         "frame_height": 100,
+        "render_scale": 4,
+        "feet_anchor": (50, 60),
         "animations": {
             "idle": animation("Soldier-Idle.png", 6, 0.14),
             "walk": animation("Soldier-Walk.png", 8, 0.10),

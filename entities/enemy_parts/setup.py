@@ -57,6 +57,7 @@ def initialize_enemy_state(enemy, x, y, config):
     enemy.sprite_size = config.get("sprite_size", (enemy.width, enemy.height))
     enemy.sprite_offset = config.get("sprite_offset", (0, 0))
     enemy.sprite_flip_with_facing = config.get("sprite_flip_with_facing", True)
+    enemy.dungeon_sprite_renderer = None
 
     enemy.state = ENEMY_STATE_IDLE
     enemy.telegraph_timer = 0
