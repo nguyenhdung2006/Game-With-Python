@@ -28,6 +28,19 @@ Print the prototype balance snapshot and warnings:
 python tools/balance_audit.py
 ```
 
+Validate the prototype Dungeon enemy sprite sheets:
+
+```powershell
+python tools/validate_enemy_sprites.py
+```
+
+Open the optional manual sprite-strip viewer:
+
+```powershell
+python tools/sprite_sheet_preview.py orc
+python tools/sprite_sheet_preview.py soldier
+```
+
 ## Controls
 
 Mode select:
@@ -87,6 +100,7 @@ config/
     dungeon_layout_config.py
     default_settings.py
     input_config.py
+    enemy_sprite_config.py
 entities/
     player.py
     player_parts/
@@ -150,6 +164,8 @@ systems/
 tools/
     smoke_check.py
     balance_audit.py
+    validate_enemy_sprites.py
+    sprite_sheet_preview.py
 ui/
     dungeon_hud.py
     health_bar.py
@@ -187,6 +203,7 @@ assets/
 - `config/dungeon_layout_config.py` stores fixed placeholder room bounds, player spawns, enemy spawn anchors, and exits.
 - `config/default_settings.py` stores safe local preference defaults and lightweight settings-menu metadata.
 - `config/input_config.py` stores JSON-safe default action bindings while preserving the current keyboard layout.
+- `config/enemy_sprite_config.py` describes prototype Orc and Soldier horizontal sprite strips for validation only.
 - `entities/` stores game objects such as the player, enemies, future bosses, and projectiles.
 - `entities/player_parts/` keeps Player combat, defense, movement, setup, and rendering concerns in smaller modules.
 - `entities/player_parts/reaction.py` tracks player-side whiff, landing, guard stress, and payoff feedback timers.
@@ -231,6 +248,8 @@ assets/
 - `systems/physics.py` stores shared movement and collision helpers.
 - `tools/smoke_check.py` runs lightweight standalone regression assertions for config, flow, rewards, boss skills, projectiles, and beams.
 - `tools/balance_audit.py` prints the current prototype tuning snapshot and conservative warning diagnostics.
+- `tools/validate_enemy_sprites.py` checks prototype Dungeon enemy strips, expected 100x100 frame counts, missing files, and sheet dimensions without opening a window.
+- `tools/sprite_sheet_preview.py` opens an optional manual Orc/Soldier strip viewer without connecting sprites to gameplay.
 - `ui/` stores reusable interface drawing code such as health bars.
 - `ui/completion_overlay.py` draws shared retry and return-to-menu prompts for terminal states.
 - `ui/pause_overlay.py` draws the shared dimmed pause panel and restart/menu actions.
@@ -262,6 +281,7 @@ assets/
 - Local settings foundation with safe JSON defaults, a Mode Select settings screen, optional controls hints, and camera-shake preferences
 - Audio hooks foundation with optional mixer initialization, settings-driven volume levels, and event-based placeholders without bundled audio assets
 - Input binding foundation with persisted JSON-safe action mappings, shared input helpers, and binding-aware controls UI
+- Dungeon enemy sprite asset validation with config-driven Orc/Soldier strip checks and an optional standalone preview viewer
 - Room Cleared pacing cleanup that waits for `Enter` before opening reward selection
 - Gameplay config foundation that moves prototype tuning into focused Python modules without adding content
 - Dungeon layout foundation with fixed START, ENCOUNTER, ELITE/BOSS, and CLEAR placeholder layouts
@@ -342,6 +362,16 @@ assets/
 - `P` pauses the live duel, `R` restarts while paused, and `H` opens a modal Solo control reference
 - No rewards or room progression are added; sprite playback and Combo Burst remain Solo-only prototypes rather than a full animation or skill system
 
+## Prototype Dungeon Enemy Sprites
+
+- Orc and Soldier sprite sheets are prototype/test inputs only and are not rendered by Dungeon gameplay yet
+- Each animation sheet is one horizontal strip of 100x100 frames
+- Orc validation covers Idle, Walk, Attack01, Attack02, Hurt, and Death
+- Soldier validation covers Idle, Walk, Attack01, Attack02, Attack03, Hurt, and Death
+- `python tools/validate_enemy_sprites.py` prints missing-file and sheet-dimension diagnostics without opening a window
+- `python tools/sprite_sheet_preview.py orc` or `python tools/sprite_sheet_preview.py soldier` opens the optional manual viewer
+- The current Soldier test drop remains in its existing prototype folder; Phase 44 does not move assets or integrate animation
+
 ## Dungeon Flow
 
 - Room 1: encounter
@@ -377,6 +407,7 @@ assets/
 - Phase 41 adds a lightweight local settings foundation only: safe JSON defaults, a Mode Select settings screen, persisted audio/display placeholders, camera-shake preferences, and an optional controls hint. No progression save, run-state save, combat content, animation, or assets have been added
 - Phase 42 adds optional audio infrastructure only: safe mixer initialization, settings-driven volumes, empty audio folders, and one-shot hooks for attacks, hits, boss skills, rewards, end states, and menu selection. No copyrighted or bundled audio assets have been added
 - Phase 43 adds input-binding infrastructure only: default action mappings, persisted binding structure, shared press/held helpers, incremental Solo/Dungeon routing, and binding-aware UI labels. Default controls remain unchanged; no remapping screen or gameplay content has been added
+- Phase 44 adds Dungeon enemy sprite asset validation only: config-driven Orc/Soldier 100x100 strip metadata, a headless-safe report tool, an optional standalone viewer, and smoke coverage for missing assets. Dungeon rendering and gameplay behavior remain unchanged
 - Phase 26 adds boss pacing foundation only: heavier melee tuning, longer telegraph/recovery, and punish-focused combat readability
 - Phase 27 polishes boss rhythm only: clearer telegraphs, longer recovery, slower pressure cadence, and more reliable punish timing without special attacks or VFX
 

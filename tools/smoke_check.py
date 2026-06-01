@@ -29,6 +29,7 @@ from config.dungeon_layout_config import (
     LAYOUT_START,
 )
 from config.enemy_config import BASIC_ENEMY_CONFIG, FAST_ENEMY_CONFIG
+from config.enemy_sprite_config import ENEMY_SPRITE_CONFIGS
 from config.input_config import DEFAULT_KEY_BINDINGS
 from config.player_config import DASH_COOLDOWN, DASH_SPEED, PLAYER_MAX_HEALTH, PLAYER_SPEED
 from config.reward_config import (
@@ -82,6 +83,7 @@ from systems.skill_manager import SkillManager
 from systems.solo_boss_combo_controller import SoloBossComboController
 from systems.solo_combo_burst import SoloComboBurst
 from systems.solo_sprite_renderer import SoloSpriteRenderer
+from tools.validate_enemy_sprites import cut_sheet_frames, validate_enemy_sprites, validate_sprite_config
 from ui.solo_setup import SLIDER_LEFT, SLIDER_WIDTH, SLIDER_Y
 from ui.settings_menu import SettingsMenu
 
@@ -650,6 +652,47 @@ def check_input_binding_foundation():
     check(dungeon.paused, "Custom Dungeon pause binding did not open pause")
 
 
+def check_enemy_sprite_validation():
+    """Validate prototype sheet metadata, cutting, and missing-file safety."""
+    check(set(ENEMY_SPRITE_CONFIGS) == {"orc", "soldier"}, "Enemy sprite prototype ids changed")
+    reports = validate_enemy_sprites()
+    check(len(reports) == 2, "Enemy sprite validator did not inspect both prototypes")
+    for report in reports:
+        statuses = {animation["status"] for animation in report["animations"]}
+        check(statuses <= {"OK", "MISSING"}, "Enemy sprite report contains an unexpected validation error")
+        check(report["valid"] == (statuses == {"OK"}), "Enemy sprite report validity summary is inconsistent")
+
+    orc_config = ENEMY_SPRITE_CONFIGS["orc"]
+    idle_config = orc_config["animations"]["idle"]
+    idle_sheet = pygame.Surface((idle_config["frame_count"] * orc_config["frame_width"], orc_config["frame_height"]))
+    frames = cut_sheet_frames(
+        idle_sheet,
+        orc_config["frame_width"],
+        orc_config["frame_height"],
+        idle_config["frame_count"],
+    )
+    check(len(frames) == idle_config["frame_count"], "Enemy sprite sheet cutter returned the wrong frame count")
+    check(frames[0].get_size() == (100, 100), "Enemy sprite sheet cutter returned the wrong frame size")
+
+    missing_config = {
+        "enemy_id": "missing_test",
+        "root_folder": PROJECT_ROOT / "assets" / "sprites" / "missing-test-only",
+        "frame_width": 100,
+        "frame_height": 100,
+        "animations": {
+            "idle": {
+                "filename": "Missing-Idle.png",
+                "frame_count": 1,
+                "frame_speed": 0.1,
+                "hold_last": False,
+            },
+        },
+    }
+    missing_report = validate_sprite_config(missing_config)
+    check(not missing_report["valid"], "Missing enemy sprite file unexpectedly validated")
+    check(missing_report["animations"][0]["status"] == "MISSING", "Missing enemy sprite file did not report safely")
+
+
 def check_boss_skill_transitions():
     """Force the neutral boss skill through telegraph, active, and recovery."""
     player = create_player(420)
@@ -906,6 +949,7 @@ def run():
         ("save and settings foundation", check_settings_foundation),
         ("audio hooks foundation", check_audio_hooks_foundation),
         ("input binding foundation", check_input_binding_foundation),
+        ("enemy sprite asset validation", check_enemy_sprite_validation),
         ("boss skill states", check_boss_skill_transitions),
         ("projectile and beam", check_projectile_and_beam),
         ("solo boss technique playback", check_solo_boss_technique_playback),
