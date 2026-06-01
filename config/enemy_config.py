@@ -123,3 +123,46 @@ FAST_ENEMY_CONFIG = {
     "punish_outline_color": (255, 228, 175),
     "stagger_emphasis_color": (255, 245, 215),
 }
+
+SLIME_ENEMY_CONFIG = {
+    **BASIC_ENEMY_CONFIG,
+    "label": "SLIME ENEMY",
+    "width": 42,
+    "height": 48,
+    "max_health": 58,
+    "chase_speed": 112,
+    "attack_start_distance": 72,
+    "telegraph_duration": 0.46,
+    "attack_duration": 0.20,
+    "attack_cooldown": 1.08,
+    "attack_damage": 6,
+    "attack_range": 58,
+    "attack_height": 34,
+    "attack_knockback": 150,
+    "retreat_duration": 0.28,
+    "retreat_speed": 86,
+    "recovery_duration": 0.24,
+    "stagger_duration": 0.42,
+    "body_color": (118, 188, 78),
+    "hurt_color": (222, 255, 192),
+    "defeated_color": (58, 92, 42),
+    "telegraph_color": (205, 238, 115),
+    "attack_color": (152, 218, 92),
+    "telegraph_pulse_speed": 11,
+    "recoil_outline_color": (68, 122, 48),
+}
+
+# Orc level variants intentionally keep the baseline Orc melee behavior.
+# Only durability scales here; final balance and any identity-specific behavior
+# stay available for a later user-directed content pass.
+ORC_LEVEL_2_ENEMY_CONFIG = {
+    **BASIC_ENEMY_CONFIG,
+    "label": "ORC 2",
+    "max_health": BASIC_ENEMY_CONFIG["max_health"] * 2,
+}
+
+ORC_LEVEL_3_ENEMY_CONFIG = {
+    **BASIC_ENEMY_CONFIG,
+    "label": "ORC 3",
+    "max_health": BASIC_ENEMY_CONFIG["max_health"] * 3,
+}

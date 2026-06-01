@@ -8,14 +8,14 @@ from config.enemy_sprite_config import ENEMY_SPRITE_CONFIGS
 
 
 VISUAL_STATE_ANIMATIONS = {
-    "idle": "idle",
-    "chase": "walk",
-    "telegraph": "attack_01",
-    "attack": "attack_02",
-    "hurt": "hurt",
-    "stagger": "hurt",
-    "recovery": "idle",
-    "defeated": "death",
+    "idle": ("idle",),
+    "chase": ("walk", "idle"),
+    "telegraph": ("attack_01", "attack", "idle"),
+    "attack": ("attack_02", "attack_01", "attack", "idle"),
+    "hurt": ("hurt", "idle"),
+    "stagger": ("hurt", "idle"),
+    "recovery": ("idle",),
+    "defeated": ("death", "idle"),
 }
 
 
@@ -31,7 +31,9 @@ class EnemySpriteRenderer:
     def update(self, enemy, visual_state, dt):
         """Advance one enemy's presentation frame from its current visual state."""
         sprite_id = self.get_sprite_id(enemy)
-        animation_name = self.get_animation_name(visual_state)
+        animation_name = self.get_animation_name(sprite_id, visual_state)
+        if animation_name is None:
+            return
         frames = self.load_frames(sprite_id, animation_name)
         if not frames:
             return
@@ -49,7 +51,9 @@ class EnemySpriteRenderer:
     def draw(self, surface, enemy, draw_rect, visual_state):
         """Draw one anchored prototype frame, or return False for fallback."""
         sprite_id = self.get_sprite_id(enemy)
-        animation_name = self.get_animation_name(visual_state)
+        animation_name = self.get_animation_name(sprite_id, visual_state)
+        if animation_name is None:
+            return False
         frames = self.load_frames(sprite_id, animation_name)
         if not frames:
             return False
@@ -77,9 +81,13 @@ class EnemySpriteRenderer:
         sprite_id = getattr(enemy, "dungeon_sprite_id", None)
         return sprite_id if sprite_id in self.sprite_configs else None
 
-    def get_animation_name(self, visual_state):
-        """Map current mechanical enemy states onto conservative strip names."""
-        return VISUAL_STATE_ANIMATIONS.get(visual_state, "idle")
+    def get_animation_name(self, sprite_id, visual_state):
+        """Map mechanical states onto the first configured compatible strip."""
+        if sprite_id not in self.sprite_configs:
+            return None
+        animations = self.sprite_configs[sprite_id]["animations"]
+        candidates = VISUAL_STATE_ANIMATIONS.get(visual_state, ("idle",))
+        return next((animation_name for animation_name in candidates if animation_name in animations), None)
 
     def get_playback_state(self, enemy, animation_name):
         """Reset presentation playback whenever the selected strip changes."""
@@ -94,7 +102,7 @@ class EnemySpriteRenderer:
         return state
 
     def load_frames(self, sprite_id, animation_name):
-        """Load and cache a configured horizontal strip safely."""
+        """Load and cache one configured horizontal row safely."""
         cache_key = (sprite_id, animation_name)
         if cache_key in self.frame_cache:
             return self.frame_cache[cache_key]
@@ -118,12 +126,19 @@ class EnemySpriteRenderer:
         frame_width = config["frame_width"]
         frame_height = config["frame_height"]
         frame_count = animation["frame_count"]
-        if sheet.get_size() != (frame_width * frame_count, frame_height):
+        sheet_rows = animation.get("sheet_rows", 1)
+        sheet_row = animation.get("sheet_row", 0)
+        if not 0 <= sheet_row < sheet_rows:
+            self.frame_cache[cache_key] = ()
+            return ()
+        if sheet.get_size() != (frame_width * frame_count, frame_height * sheet_rows):
             self.frame_cache[cache_key] = ()
             return ()
 
         frames = tuple(
-            sheet.subsurface((index * frame_width, 0, frame_width, frame_height)).copy()
+            sheet.subsurface(
+                (index * frame_width, sheet_row * frame_height, frame_width, frame_height)
+            ).copy()
             for index in range(frame_count)
         )
         self.frame_cache[cache_key] = frames

@@ -24,6 +24,7 @@ from ui.pause_overlay import draw_pause_overlay
 from ui.reward_select import draw_reward_select
 from ui.room_banner import draw_room_cleared
 from world.dungeon_room import draw_dungeon_room
+from world.dungeon_decor import DungeonDecorRenderer
 
 
 class DungeonMode:
@@ -47,6 +48,7 @@ class DungeonMode:
         self.skill_manager = SkillManager(self.projectile_manager, self.input_manager)
         self.reward_manager = RewardManager()
         self.enemy_sprite_renderer = EnemySpriteRenderer()
+        self.dungeon_decor_renderer = DungeonDecorRenderer()
         self.paused = False
         self.controls_visible = False
         self.enter_current_room()
@@ -113,6 +115,7 @@ class DungeonMode:
         if self.is_gameplay_frozen():
             return
 
+        self.dungeon_decor_renderer.update(dt)
         self.impact.update(dt)
         if not self.is_active_encounter_room():
             return
@@ -273,7 +276,12 @@ class DungeonMode:
     def draw_room_world(self, surface):
         """Draw the current fixed room layout with a clear-state exit marker."""
         show_exit = self.room_manager.is_room_cleared() or self.room_manager.is_reward_active()
-        draw_dungeon_room(surface, self.room_manager.current_layout(), show_exit=show_exit)
+        draw_dungeon_room(
+            surface,
+            self.room_manager.current_layout(),
+            show_exit=show_exit,
+            decor_renderer=self.dungeon_decor_renderer,
+        )
 
     def is_active_encounter_room(self):
         """Return True only while an encounter room is actively running."""

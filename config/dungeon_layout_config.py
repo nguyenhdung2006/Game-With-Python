@@ -29,6 +29,18 @@ DUNGEON_ROOM_LAYOUTS = (
         "enemy_spawn_points_right": ((760, 540), (930, 540), (1100, 540)),
         "enemy_spawn_points_left": ((160, 540), (330, 540), (500, 540)),
         "exit_position": (1162, 452),
+        "torch_positions": ((116, 346), (380, 322), (900, 322), (1164, 346)),
+        "decor_props": (
+            ("crate", 132, 532),
+            ("crate", 188, 532),
+            ("bones_1", 302, 536),
+            ("chain", 448, 354),
+            ("shield", 520, 360),
+            ("sword", 570, 360),
+            ("chain", 832, 354),
+            ("bones_2", 1038, 536),
+            ("vase", 1090, 534),
+        ),
     },
     {
         "layout_id": "room_2_encounter",
@@ -41,6 +53,18 @@ DUNGEON_ROOM_LAYOUTS = (
         "enemy_spawn_points_right": ((748, 540), (918, 540), (1088, 540)),
         "enemy_spawn_points_left": ((176, 540), (346, 540), (516, 540)),
         "exit_position": (1146, 452),
+        "torch_positions": ((132, 340), (432, 316), (848, 316), (1148, 340)),
+        "decor_props": (
+            ("bookshelf_tall", 156, 520),
+            ("bookshelf", 218, 520),
+            ("painting", 318, 328),
+            ("table_long", 450, 528),
+            ("chair", 530, 528),
+            ("scroll", 592, 520),
+            ("painting_small", 968, 330),
+            ("vase", 1044, 532),
+            ("vase_broken", 1092, 532),
+        ),
     },
     {
         "layout_id": "room_3_elite",
@@ -53,6 +77,16 @@ DUNGEON_ROOM_LAYOUTS = (
         "enemy_spawn_points_right": ((820, 540),),
         "enemy_spawn_points_left": ((386, 540),),
         "exit_position": (1130, 452),
+        "torch_positions": ((152, 334), (426, 304), (854, 304), (1128, 334)),
+        "decor_props": (
+            ("flag", 262, 382),
+            ("coffin", 350, 528),
+            ("bones_1", 444, 536),
+            ("throne", 640, 526),
+            ("bones_2", 832, 536),
+            ("coffin", 930, 528),
+            ("flag", 1018, 382),
+        ),
     },
 )
 
@@ -67,4 +101,13 @@ DUNGEON_CLEAR_LAYOUT = {
     "enemy_spawn_points_right": (),
     "enemy_spawn_points_left": (),
     "exit_position": (1130, 452),
+    "torch_positions": ((152, 334), (426, 304), (854, 304), (1128, 334)),
+    "decor_props": (
+        ("flag", 262, 382),
+        ("bones_1", 444, 536),
+        ("throne", 640, 526),
+        ("chest_open", 776, 528),
+        ("bones_2", 832, 536),
+        ("flag", 1018, 382),
+    ),
 }

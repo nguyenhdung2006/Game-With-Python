@@ -14,17 +14,34 @@ DOOR_SHADOW = (34, 72, 72)
 LABEL_COLOR = (205, 220, 238)
 
 
-def draw_dungeon_room(surface, layout, show_exit=False):
+def draw_dungeon_room(surface, layout, show_exit=False, decor_renderer=None):
     """Draw the arena plus simple layout markers for the current room."""
     draw_arena(surface)
     if layout is None:
         return
 
+    draw_room_interior(surface, layout)
     draw_arena_bounds(surface, layout)
     draw_wall_markers(surface, layout)
-    if show_exit:
+    door_drawn = False
+    if decor_renderer is not None:
+        door_drawn = decor_renderer.draw(surface, layout, show_exit)
+    if show_exit and not door_drawn:
         draw_exit_marker(surface, layout)
     draw_room_label(surface, layout)
+
+
+def draw_room_interior(surface, layout):
+    """Give Dungeon rooms a quiet stone interior distinct from the Solo arena."""
+    x, y, width, height = layout.room_bounds
+    pygame.draw.rect(surface, (26, 31, 42), (x, y, width, height))
+    pygame.draw.rect(surface, (38, 45, 58), (x + 18, y + 18, width - 36, height - 18))
+    for brick_y in range(y + 34, GROUND_Y, 32):
+        row_offset = 0 if (brick_y // 32) % 2 == 0 else 24
+        pygame.draw.line(surface, (50, 59, 74), (x + 18, brick_y), (x + width - 18, brick_y), 1)
+        for brick_x in range(x + 26 + row_offset, x + width - 18, 48):
+            pygame.draw.line(surface, (48, 56, 70), (brick_x, brick_y), (brick_x, brick_y + 31), 1)
+    pygame.draw.rect(surface, (54, 60, 72), (x + 18, GROUND_Y - 18, width - 36, 18))
 
 
 def draw_arena_bounds(surface, layout):

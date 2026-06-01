@@ -9,7 +9,13 @@ if str(PROJECT_ROOT) not in sys.path:
     sys.path.insert(0, str(PROJECT_ROOT))
 
 from config.boss_config import BOSS_SKILL_CONFIG, ELITE_ENEMY_CONFIG, SOLO_BOSS_COMBO_CONFIG
-from config.enemy_config import BASIC_ENEMY_CONFIG, FAST_ENEMY_CONFIG
+from config.enemy_config import (
+    BASIC_ENEMY_CONFIG,
+    FAST_ENEMY_CONFIG,
+    ORC_LEVEL_2_ENEMY_CONFIG,
+    ORC_LEVEL_3_ENEMY_CONFIG,
+    SLIME_ENEMY_CONFIG,
+)
 from config.player_config import LIGHT_ATTACK_COMBO, PLAYER_MAX_HEALTH
 from config.reward_config import (
     MAX_COMBO_FINISHER_DAMAGE_MULTIPLIER,
@@ -77,7 +83,13 @@ def run():
     print(f"Combo damage: {[hit['damage'] for hit in LIGHT_ATTACK_COMBO]}")
 
     print_section("Enemies")
-    for enemy in (BASIC_ENEMY_CONFIG, FAST_ENEMY_CONFIG):
+    for enemy in (
+        BASIC_ENEMY_CONFIG,
+        FAST_ENEMY_CONFIG,
+        SLIME_ENEMY_CONFIG,
+        ORC_LEVEL_2_ENEMY_CONFIG,
+        ORC_LEVEL_3_ENEMY_CONFIG,
+    ):
         print(f"{enemy['label']}: HP {enemy['max_health']}, damage {enemy['attack_damage']}, range {enemy['attack_range']}")
 
     print_section("Elite / Boss Placeholder")

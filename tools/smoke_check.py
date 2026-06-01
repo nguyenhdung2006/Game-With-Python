@@ -28,7 +28,13 @@ from config.dungeon_layout_config import (
     LAYOUT_ENCOUNTER,
     LAYOUT_START,
 )
-from config.enemy_config import BASIC_ENEMY_CONFIG, FAST_ENEMY_CONFIG
+from config.enemy_config import (
+    BASIC_ENEMY_CONFIG,
+    FAST_ENEMY_CONFIG,
+    ORC_LEVEL_2_ENEMY_CONFIG,
+    ORC_LEVEL_3_ENEMY_CONFIG,
+    SLIME_ENEMY_CONFIG,
+)
 from config.enemy_sprite_config import ENEMY_SPRITE_CONFIGS
 from config.input_config import DEFAULT_KEY_BINDINGS
 from config.player_config import DASH_COOLDOWN, DASH_SPEED, PLAYER_MAX_HEALTH, PLAYER_SPEED
@@ -49,7 +55,9 @@ from config.mode_config import SOLO_KAMEHAMEHA_ENERGY_COST
 from entities.basic_enemy import BasicEnemy
 from entities.elite_enemy import EliteEnemy
 from entities.fast_enemy import FastEnemy
+from entities.orc_level_enemy import OrcLevel2Enemy, OrcLevel3Enemy
 from entities.player import Player
+from entities.slime_enemy import SlimeEnemy
 from managers.dungeon_layout import DungeonLayoutManager
 from managers.game_state import GameState
 from managers.room_state import ROOM_ACTIVE, ROOM_CLEARED, ROOM_REWARD
@@ -88,6 +96,8 @@ from systems.solo_sprite_renderer import SoloSpriteRenderer
 from tools.validate_enemy_sprites import cut_sheet_frames, validate_enemy_sprites, validate_sprite_config
 from ui.solo_setup import SLIDER_LEFT, SLIDER_WIDTH, SLIDER_Y
 from ui.settings_menu import SettingsMenu
+from world.dungeon_decor import PROP_PATHS, DungeonDecorRenderer
+from world.dungeon_room import draw_dungeon_room
 
 
 def check(condition, message):
@@ -121,6 +131,9 @@ def check_config_values():
     for label, enemy_config in (
         ("basic enemy", BASIC_ENEMY_CONFIG),
         ("fast enemy", FAST_ENEMY_CONFIG),
+        ("slime enemy", SLIME_ENEMY_CONFIG),
+        ("orc level 2 enemy", ORC_LEVEL_2_ENEMY_CONFIG),
+        ("orc level 3 enemy", ORC_LEVEL_3_ENEMY_CONFIG),
         ("elite enemy", ELITE_ENEMY_CONFIG),
     ):
         check(required_enemy_fields <= enemy_config.keys(), f"{label} config is incomplete")
@@ -130,6 +143,14 @@ def check_config_values():
         check(enemy_config["attack_range"] > 0, f"{label} range must be positive")
         check(enemy_config["telegraph_duration"] > 0, f"{label} telegraph must be readable")
         check(enemy_config["attack_cooldown"] > 0, f"{label} cooldown must be positive")
+    check(
+        ORC_LEVEL_2_ENEMY_CONFIG["max_health"] == BASIC_ENEMY_CONFIG["max_health"] * 2,
+        "Orc level 2 HP scaling changed",
+    )
+    check(
+        ORC_LEVEL_3_ENEMY_CONFIG["max_health"] == BASIC_ENEMY_CONFIG["max_health"] * 3,
+        "Orc level 3 HP scaling changed",
+    )
 
     required_ki_blast_fields = {"damage", "cooldown", "speed", "lifetime", "width", "height"}
     check(required_ki_blast_fields <= KI_BLAST_CONFIG.keys(), "Ki Blast config is incomplete")
@@ -216,6 +237,10 @@ def check_layout_definitions():
         check(len(data["room_bounds"]) == 4, f"Invalid room bounds: {data['layout_id']}")
         check(len(data["arena_bounds"]) == 2, f"Invalid arena bounds: {data['layout_id']}")
         check(len(data["player_spawn"]) == 2, f"Invalid player spawn: {data['layout_id']}")
+        check(data["torch_positions"], f"Missing torch positions: {data['layout_id']}")
+        check(data["decor_props"], f"Missing decor props: {data['layout_id']}")
+        for prop_id, _, _ in data["decor_props"]:
+            check(prop_id in PROP_PATHS, f"Unknown Dungeon decor prop: {prop_id}")
         _, _, room_width, room_height = data["room_bounds"]
         arena_left, arena_right = data["arena_bounds"]
         check(room_width > 0 and room_height > 0, f"Room bounds must be positive: {data['layout_id']}")
@@ -228,6 +253,27 @@ def check_layout_definitions():
                 check(len(spawn) == 2, f"Invalid enemy spawn: {data['layout_id']}")
                 check(arena_left <= spawn[0] <= arena_right, f"Enemy spawn is outside arena: {data['layout_id']}")
         layout_ids.add(data["layout_id"])
+
+
+def check_dungeon_decor_foundation():
+    """Draw room decor, animate torches, and preserve missing-asset fallback."""
+    renderer = DungeonDecorRenderer()
+    surface = pygame.Surface((WIDTH, HEIGHT), pygame.SRCALPHA)
+    layout = DungeonLayoutManager().room_layouts[0]
+    draw_dungeon_room(surface, layout, decor_renderer=renderer)
+    initial_torch_frame = renderer.torch_frame_index
+    renderer.update(renderer.torch_frame_duration)
+    check(renderer.torch_frame_index != initial_torch_frame, "Dungeon torch playback did not advance")
+    draw_dungeon_room(surface, layout, show_exit=True, decor_renderer=renderer)
+    check(renderer.load_image(PROP_PATHS["sword"]) is not None, "Dungeon sword prop did not load")
+    check(
+        all("Không dùng đến" not in str(path) for path in PROP_PATHS.values()),
+        "Excluded Free asset folder leaked into Dungeon decor",
+    )
+
+    missing_renderer = DungeonDecorRenderer()
+    missing_renderer.image_cache[str(PROP_PATHS["crate"])] = None
+    draw_dungeon_room(surface, layout, show_exit=True, decor_renderer=missing_renderer)
 
 
 def check_reward_runtime():
@@ -656,9 +702,12 @@ def check_input_binding_foundation():
 
 def check_enemy_sprite_validation():
     """Validate prototype sheet metadata, cutting, and missing-file safety."""
-    check(set(ENEMY_SPRITE_CONFIGS) == {"orc", "soldier"}, "Enemy sprite prototype ids changed")
+    check(
+        set(ENEMY_SPRITE_CONFIGS) == {"orc", "soldier", "slime", "orc2", "orc3"},
+        "Enemy sprite prototype ids changed",
+    )
     reports = validate_enemy_sprites()
-    check(len(reports) == 2, "Enemy sprite validator did not inspect both prototypes")
+    check(len(reports) == 5, "Enemy sprite validator did not inspect every prototype")
     for report in reports:
         statuses = {animation["status"] for animation in report["animations"]}
         check(statuses <= {"OK", "MISSING"}, "Enemy sprite report contains an unexpected validation error")
@@ -675,6 +724,24 @@ def check_enemy_sprite_validation():
     )
     check(len(frames) == idle_config["frame_count"], "Enemy sprite sheet cutter returned the wrong frame count")
     check(frames[0].get_size() == (100, 100), "Enemy sprite sheet cutter returned the wrong frame size")
+
+    orc2_config = ENEMY_SPRITE_CONFIGS["orc2"]
+    orc2_idle = orc2_config["animations"]["idle"]
+    orc2_sheet = pygame.Surface(
+        (
+            orc2_idle["frame_count"] * orc2_config["frame_width"],
+            orc2_idle["sheet_rows"] * orc2_config["frame_height"],
+        )
+    )
+    orc2_frames = cut_sheet_frames(
+        orc2_sheet,
+        orc2_config["frame_width"],
+        orc2_config["frame_height"],
+        orc2_idle["frame_count"],
+        orc2_idle["sheet_row"],
+    )
+    check(len(orc2_frames) == 4, "Directional Orc sprite cutter returned the wrong frame count")
+    check(orc2_frames[0].get_size() == (64, 64), "Directional Orc sprite cutter returned the wrong frame size")
 
     missing_config = {
         "enemy_id": "missing_test",
@@ -700,25 +767,34 @@ def check_dungeon_enemy_sprite_integration():
     renderer = EnemySpriteRenderer()
     basic_enemy = BasicEnemy(420)
     fast_enemy = FastEnemy(520)
-    elite_enemy = EliteEnemy(620)
+    slime_enemy = SlimeEnemy(570)
+    orc2_enemy = OrcLevel2Enemy(620)
+    orc3_enemy = OrcLevel3Enemy(670)
+    elite_enemy = EliteEnemy(720)
     check(renderer.get_sprite_id(basic_enemy) == "orc", "BasicEnemy did not map to the Orc prototype")
     check(renderer.get_sprite_id(fast_enemy) == "soldier", "FastEnemy did not map to the Soldier prototype")
+    check(renderer.get_sprite_id(slime_enemy) == "slime", "SlimeEnemy did not map to the Slime prototype")
+    check(renderer.get_sprite_id(orc2_enemy) == "orc2", "OrcLevel2Enemy did not map to its prototype")
+    check(renderer.get_sprite_id(orc3_enemy) == "orc3", "OrcLevel3Enemy did not map to its prototype")
     check(renderer.get_sprite_id(elite_enemy) is None, "Elite enemy should keep its existing visual")
 
     expected_animations = {
-        "idle": "idle",
-        "chase": "walk",
-        "telegraph": "attack_01",
-        "attack": "attack_02",
-        "hurt": "hurt",
-        "stagger": "hurt",
-        "defeated": "death",
+        "idle": ("orc", "idle"),
+        "chase": ("orc", "walk"),
+        "telegraph": ("orc", "attack_01"),
+        "attack": ("orc", "attack_02"),
+        "hurt": ("orc", "hurt"),
+        "stagger": ("orc", "hurt"),
+        "defeated": ("orc", "death"),
     }
-    for visual_state, animation_name in expected_animations.items():
+    for visual_state, (sprite_id, animation_name) in expected_animations.items():
         check(
-            renderer.get_animation_name(visual_state) == animation_name,
+            renderer.get_animation_name(sprite_id, visual_state) == animation_name,
             f"Dungeon enemy sprite state did not map safely: {visual_state}",
         )
+    check(renderer.get_animation_name("slime", "attack") == "attack", "Slime attack strip fallback failed")
+    check(renderer.get_animation_name("slime", "hurt") == "idle", "Slime hurt strip fallback failed")
+    check(renderer.get_animation_name("orc2", "attack") == "attack", "Orc 2 attack strip fallback failed")
 
     for animation_name, animation in ENEMY_SPRITE_CONFIGS["orc"]["animations"].items():
         renderer.frame_cache[("orc", animation_name)] = tuple(
@@ -732,6 +808,19 @@ def check_dungeon_enemy_sprite_integration():
     surface = pygame.Surface((WIDTH, HEIGHT), pygame.SRCALPHA)
     basic_enemy.facing = -1
     check(renderer.draw(surface, basic_enemy, basic_enemy.rect, "idle"), "Dungeon enemy sprite draw failed")
+
+    for animation_name, animation in ENEMY_SPRITE_CONFIGS["slime"]["animations"].items():
+        renderer.frame_cache[("slime", animation_name)] = tuple(
+            pygame.Surface((32, 32), pygame.SRCALPHA)
+            for _ in range(animation["frame_count"])
+        )
+    renderer.update(slime_enemy, "defeated", 10)
+    check(renderer.playback[slime_enemy]["frame_index"] == 5, "Slime death sprite did not hold its last frame")
+    check(renderer.draw(surface, slime_enemy, slime_enemy.rect, "attack"), "Slime sprite draw failed")
+    check(len(renderer.load_frames("orc2", "idle")) == 4, "Directional Orc 2 idle strip did not load")
+    check(renderer.draw(surface, orc2_enemy, orc2_enemy.rect, "idle"), "Directional Orc 2 draw failed")
+    check(len(renderer.load_frames("orc3", "idle")) == 4, "Directional Orc 3 idle strip did not load")
+    check(renderer.draw(surface, orc3_enemy, orc3_enemy.rect, "idle"), "Directional Orc 3 draw failed")
 
     missing_renderer = EnemySpriteRenderer(
         {
@@ -771,12 +860,33 @@ def check_dungeon_enemy_sprite_integration():
     combat_enemy.take_damage(combat_enemy.health)
     check(combat_enemy.defeated, "Basic enemy can no longer be defeated")
 
+    slime_player = create_player(420)
+    slime_enemy = SlimeEnemy(slime_player.rect.right + 10)
+    slime_enemy.facing = -1
+    slime_enemy.start_attack()
+    slime_start_health = slime_player.health
+    check(process_enemy_attacks([slime_enemy], slime_player), "Slime enemy attack did not connect")
+    check(slime_player.health < slime_start_health, "Slime enemy attack did not damage player")
+    slime_enemy.take_damage(slime_enemy.health)
+    check(slime_enemy.defeated, "Slime enemy can no longer be defeated")
+
     dungeon = DungeonMode()
     dungeon.encounter_manager.spawn_wave(0, dungeon.player)
     spawned_enemy = dungeon.encounter_manager.active_enemies[0]
+    check(isinstance(spawned_enemy, SlimeEnemy), "Dungeon Wave 1 did not spawn the Slime prototype")
     check(
         spawned_enemy.dungeon_sprite_renderer is dungeon.enemy_sprite_renderer,
         "Dungeon encounter did not attach its sprite renderer",
+    )
+    dungeon.encounter_manager.spawn_wave(1, dungeon.player)
+    check(
+        any(isinstance(enemy, OrcLevel2Enemy) for enemy in dungeon.encounter_manager.active_enemies),
+        "Dungeon Wave 2 did not spawn Orc level 2",
+    )
+    dungeon.encounter_manager.spawn_wave(2, dungeon.player)
+    check(
+        any(isinstance(enemy, OrcLevel3Enemy) for enemy in dungeon.encounter_manager.active_enemies),
+        "Dungeon Wave 3 did not spawn Orc level 3",
     )
 
 
@@ -1030,6 +1140,7 @@ def run():
         ("config values", check_config_values),
         ("reward definitions", check_reward_definitions),
         ("dungeon layouts", check_layout_definitions),
+        ("dungeon decor foundation", check_dungeon_decor_foundation),
         ("reward runtime", check_reward_runtime),
         ("mode lifecycle", check_modes_and_reward_flow),
         ("pause and controls QoL", check_pause_and_controls_qol),

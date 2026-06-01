@@ -19,6 +19,8 @@ class DungeonLayout:
     enemy_spawn_points_right: tuple
     enemy_spawn_points_left: tuple
     exit_position: tuple | None
+    torch_positions: tuple
+    decor_props: tuple
 
     def enemy_spawn_points_for_player(self, player_center_x):
         """Return configured spawn anchors on the side away from the player."""

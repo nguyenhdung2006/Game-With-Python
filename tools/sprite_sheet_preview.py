@@ -32,6 +32,7 @@ def load_animation_frames(sprite_config, animation_name):
         sprite_config["frame_width"],
         sprite_config["frame_height"],
         animation["frame_count"],
+        animation.get("sheet_row", 0),
     )
     return frames, animation
 

@@ -7,6 +7,8 @@ turning encounter flow into giant scripted sequences.
 from entities.basic_enemy import BasicEnemy
 from entities.elite_enemy import EliteEnemy
 from entities.fast_enemy import FastEnemy
+from entities.orc_level_enemy import OrcLevel2Enemy, OrcLevel3Enemy
+from entities.slime_enemy import SlimeEnemy
 from settings import (
     ENCOUNTER_ATTACK_SWAP_DELAY,
     ENCOUNTER_ENTRANCE_MOVE_SPEED,
@@ -25,7 +27,7 @@ from settings import (
 WAVE_PROFILES = [
     {
         "label": "Wave 1",
-        "enemies": [BasicEnemy],
+        "enemies": [SlimeEnemy, BasicEnemy],
         "banner_duration": ENCOUNTER_WAVE_BANNER_DURATION,
         "activation_delay": ENCOUNTER_WAVE_ACTIVATION_DELAY + 0.18,
         "attack_swap_delay": ENCOUNTER_ATTACK_SWAP_DELAY + 0.08,
@@ -41,7 +43,7 @@ WAVE_PROFILES = [
     },
     {
         "label": "Wave 2",
-        "enemies": [BasicEnemy, FastEnemy],
+        "enemies": [SlimeEnemy, OrcLevel2Enemy, FastEnemy],
         "banner_duration": ENCOUNTER_WAVE_BANNER_DURATION,
         "activation_delay": ENCOUNTER_WAVE_ACTIVATION_DELAY,
         "attack_swap_delay": ENCOUNTER_ATTACK_SWAP_DELAY,
@@ -57,7 +59,7 @@ WAVE_PROFILES = [
     },
     {
         "label": "Wave 3",
-        "enemies": [FastEnemy, FastEnemy, BasicEnemy],
+        "enemies": [FastEnemy, SlimeEnemy, OrcLevel3Enemy],
         "banner_duration": ENCOUNTER_WAVE_BANNER_DURATION + 0.08,
         "activation_delay": ENCOUNTER_WAVE_ACTIVATION_DELAY - 0.14,
         "attack_swap_delay": ENCOUNTER_ATTACK_SWAP_DELAY - 0.06,

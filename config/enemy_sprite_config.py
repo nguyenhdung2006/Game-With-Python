@@ -8,12 +8,21 @@ SPRITE_ROOT = PROJECT_ROOT / "assets" / "sprites"
 
 
 def animation(filename, frame_count, frame_speed, hold_last=False):
-    """Return one horizontal 100x100 sprite-strip definition."""
+    """Return one horizontal sprite-strip definition."""
     return {
         "filename": filename,
         "frame_count": frame_count,
         "frame_speed": frame_speed,
         "hold_last": hold_last,
+    }
+
+
+def directional_animation(filename, frame_count, frame_speed, hold_last=False):
+    """Return one four-direction sheet definition using its side-facing row."""
+    return {
+        **animation(filename, frame_count, frame_speed, hold_last),
+        "sheet_rows": 4,
+        "sheet_row": 2,
     }
 
 
@@ -51,6 +60,50 @@ ENEMY_SPRITE_CONFIGS = {
             "attack_03": animation("Soldier-Attack03.png", 9, 0.10),
             "hurt": animation("Soldier-Hurt.png", 4, 0.10),
             "death": animation("Soldier-Death.png", 4, 0.14, hold_last=True),
+        },
+    },
+    "slime": {
+        "enemy_id": "slime",
+        "root_folder": SPRITE_ROOT / "enemies" / "basic" / "Strips",
+        "frame_width": 32,
+        "frame_height": 32,
+        "render_scale": 3,
+        "feet_anchor": (16, 27),
+        "animations": {
+            "idle": animation("idle_strip.png", 4, 0.14),
+            "walk": animation("move_strip.png", 4, 0.11),
+            "attack": animation("attack_strip.png", 4, 0.11),
+            "death": animation("death_strip.png", 6, 0.14, hold_last=True),
+        },
+    },
+    "orc2": {
+        "enemy_id": "orc2",
+        "root_folder": SPRITE_ROOT / "enemies" / "basic" / "Orc_level" / "Orc2",
+        "frame_width": 64,
+        "frame_height": 64,
+        "render_scale": 2,
+        "feet_anchor": (32, 56),
+        "animations": {
+            "idle": directional_animation("Orc2_idle/orc2_idle_full.png", 4, 0.14),
+            "walk": directional_animation("Orc2_walk/orc2_walk_full.png", 6, 0.10),
+            "attack": directional_animation("Orc2_attack/orc2_attack_full.png", 8, 0.10),
+            "hurt": directional_animation("Orc2_hurt/orc2_hurt_full.png", 6, 0.10),
+            "death": directional_animation("Orc2_death/orc2_death_full.png", 8, 0.14, hold_last=True),
+        },
+    },
+    "orc3": {
+        "enemy_id": "orc3",
+        "root_folder": SPRITE_ROOT / "enemies" / "basic" / "Orc_level" / "Orc3",
+        "frame_width": 64,
+        "frame_height": 64,
+        "render_scale": 2,
+        "feet_anchor": (32, 56),
+        "animations": {
+            "idle": directional_animation("orc3_idle/orc3_idle_full.png", 4, 0.14),
+            "walk": directional_animation("orc3_walk/orc3_walk_full.png", 6, 0.10),
+            "attack": directional_animation("orc3_attack/orc3_attack_full.png", 8, 0.10),
+            "hurt": directional_animation("orc3_hurt/orc3_hurt_full.png", 6, 0.10),
+            "death": directional_animation("orc3_death/orc3_death_full.png", 8, 0.14, hold_last=True),
         },
     },
 }

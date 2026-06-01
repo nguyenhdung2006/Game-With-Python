@@ -39,6 +39,7 @@ Open the optional manual sprite-strip viewer:
 ```powershell
 python tools/sprite_sheet_preview.py orc
 python tools/sprite_sheet_preview.py soldier
+python tools/sprite_sheet_preview.py slime
 ```
 
 ## Controls
@@ -120,6 +121,7 @@ entities/
     elite_enemy.py
     basic_enemy.py
     fast_enemy.py
+    slime_enemy.py
     enemy.py
 managers/
     encounter_director.py
@@ -215,6 +217,8 @@ assets/
 - `entities/elite_enemy.py` defines the heavy, readable single-enemy archetype used for the Room 3 boss foundation.
 - `entities/basic_enemy.py` defines the balanced baseline enemy archetype.
 - `entities/fast_enemy.py` defines the quicker, lower-health pressure archetype.
+- `entities/slime_enemy.py` defines the low-health Slime prototype that reuses the shared Dungeon melee behavior.
+- `entities/orc_level_enemy.py` defines Orc 2 and Orc 3 durability tiers that reuse the shared Dungeon melee behavior.
 - `managers/` stores flow systems such as enemy wave spawning and encounter progression.
 - `managers/game_state.py` stores top-level mode routing state.
 - `managers/room_manager.py` stores the fixed dungeon room sequence and progression state.
@@ -241,7 +245,7 @@ assets/
 - `systems/settings_store.py` loads, validates, and writes local JSON preferences without saving progression or run state.
 - `systems/audio_manager.py` initializes optional Pygame audio safely, applies stored volume preferences, and no-ops when devices or files are unavailable.
 - `systems/input_manager.py` resolves configurable keyboard actions, held-state checks, press events, and UI binding labels.
-- `systems/enemy_sprite_renderer.py` caches and draws Dungeon-only Orc/Soldier strip frames with state mapping, foot anchors, facing flips, and rectangle fallback.
+- `systems/enemy_sprite_renderer.py` caches and draws Dungeon-only Orc/Soldier/Slime strip frames with state mapping, foot anchors, facing flips, and rectangle fallback.
 - `systems/solo_combo_burst.py` sequences the Solo-only three-hit Combo Burst using existing normal attack setup.
 - `systems/solo_boss_combo_controller.py` owns the Solo-only boss energy meter and user-approved multi-hit frame sequences.
 - `systems/solo_sprite_renderer.py` loads and draws Solo-only shaman, slash, boss, and boss-technique prototype frames with safe fallbacks.
@@ -250,8 +254,8 @@ assets/
 - `systems/physics.py` stores shared movement and collision helpers.
 - `tools/smoke_check.py` runs lightweight standalone regression assertions for config, flow, rewards, boss skills, projectiles, and beams.
 - `tools/balance_audit.py` prints the current prototype tuning snapshot and conservative warning diagnostics.
-- `tools/validate_enemy_sprites.py` checks prototype Dungeon enemy strips, expected 100x100 frame counts, missing files, and sheet dimensions without opening a window.
-- `tools/sprite_sheet_preview.py` opens an optional manual Orc/Soldier strip viewer without connecting sprites to gameplay.
+- `tools/validate_enemy_sprites.py` checks prototype Dungeon enemy strips, configured frame counts, missing files, and sheet dimensions without opening a window.
+- `tools/sprite_sheet_preview.py` opens an optional manual Orc/Soldier/Slime strip viewer without connecting sprites to gameplay.
 - `ui/` stores reusable interface drawing code such as health bars.
 - `ui/completion_overlay.py` draws shared retry and return-to-menu prompts for terminal states.
 - `ui/pause_overlay.py` draws the shared dimmed pause panel and restart/menu actions.
@@ -283,8 +287,8 @@ assets/
 - Local settings foundation with safe JSON defaults, a Mode Select settings screen, optional controls hints, and camera-shake preferences
 - Audio hooks foundation with optional mixer initialization, settings-driven volume levels, and event-based placeholders without bundled audio assets
 - Input binding foundation with persisted JSON-safe action mappings, shared input helpers, and binding-aware controls UI
-- Dungeon enemy sprite asset validation with config-driven Orc/Soldier strip checks and an optional standalone preview viewer
-- Dungeon Orc/Soldier sprite render prototype with conservative state animation mapping and safe placeholder fallback
+- Dungeon enemy sprite asset validation with config-driven Orc/Soldier/Slime strip checks and an optional standalone preview viewer
+- Dungeon Orc/Soldier/Slime sprite render prototype with conservative state animation mapping and safe placeholder fallback
 - Room Cleared pacing cleanup that waits for `Enter` before opening reward selection
 - Gameplay config foundation that moves prototype tuning into focused Python modules without adding content
 - Dungeon layout foundation with fixed START, ENCOUNTER, ELITE/BOSS, and CLEAR placeholder layouts
@@ -367,16 +371,41 @@ assets/
 
 ## Prototype Dungeon Enemy Sprites
 
-- Orc and Soldier sprite sheets are prototype/test inputs rendered by normal Dungeon enemies only
-- Each animation sheet is one horizontal strip of 100x100 frames
+- Orc, Soldier, Slime, Orc 2, and Orc 3 sprite sheets are prototype/test inputs rendered by normal Dungeon enemies only
+- Each animation sheet is one horizontal strip; Orc/Soldier use 100x100 frames and Slime uses 32x32 frames
 - Orc validation covers Idle, Walk, Attack01, Attack02, Hurt, and Death
 - Soldier validation covers Idle, Walk, Attack01, Attack02, Attack03, Hurt, and Death
+- Slime validation covers Idle, Move, Attack, and Death
+- Orc 2 and Orc 3 use their separate 64x64 four-direction sheets; Dungeon playback selects one side-facing row safely
 - `python tools/validate_enemy_sprites.py` prints missing-file and sheet-dimension diagnostics without opening a window
-- `python tools/sprite_sheet_preview.py orc` or `python tools/sprite_sheet_preview.py soldier` opens the optional manual viewer
-- BasicEnemy uses the Orc prototype and FastEnemy uses the Soldier prototype; Elite/Boss visuals stay unchanged
+- `python tools/sprite_sheet_preview.py orc`, `python tools/sprite_sheet_preview.py soldier`, `python tools/sprite_sheet_preview.py slime`, `python tools/sprite_sheet_preview.py orc2`, or `python tools/sprite_sheet_preview.py orc3` opens the optional manual viewer
+- BasicEnemy uses the `Orc with shadows` Orc 1 prototype at 100 HP; Wave 2 uses Orc 2 at 200 HP and Wave 3 uses Orc 3 at 300 HP from the separate `Orc_level` drop
+- FastEnemy uses the Soldier prototype and SlimeEnemy uses the Slime prototype; Elite/Boss visuals stay unchanged
 - Idle and Walk loop, Attack/Hurt follow the existing mechanical state, and Death holds its final frame
 - Missing or invalid sheets fall back to the existing rectangle renderer without changing combat behavior
 - The current Soldier test drop remains in its existing prototype folder; Phase 45 does not move assets or add a final animation pipeline
+
+## Dungeon Asset Pack Notes
+
+- The inspected demo pack uses 32x32 dungeon tiles and includes TMX/TSX support
+- `Tiled_Examples/Dungeon_example.tmx` separates Base, Props, Objects, and Items layers cleanly
+- The tilesets include dungeon walls/floors, two animated environment tile groups, torch, trap, doors, chest, bones, health potion, and mana potion
+- Hero Warrior currently exposes Idle frames in Down, Side, and Up directions only, so it is useful for pipeline experiments but not ready to replace the combat player
+- The inspected arrow projectile has 32x32 and 100x100 variants; it is reserved for a later ranged-enemy phase
+- The inspected object atlas and fire animation sheets are reserved for a later room-decoration and ambient-prop pass
+- `python tools/cut_effect_review_frames.py` cuts both fire sheets and every non-empty object-atlas cell into `assets/sprites/effects/review_frames/` with a JSON manifest for manual review
+- The tileset and prop pack are good candidates for a dedicated Dungeon map-rendering phase; Phase 45 keeps the current room gameplay stable
+- The inspected demo license permits use inside a game, but the source asset pack should not be redistributed as a standalone bundle
+
+## Prototype Dungeon Room Decor
+
+- Fixed Dungeon rooms now draw a cached presentation layer over the existing combat arena without changing hitboxes, collision, room flow, or balance
+- Room 1 uses storage props, Room 2 uses shelves and table props, and Room 3 uses the throne, flags, bones, and coffins as an elite-room presentation prototype
+- Torches animate from the isolated three-frame prototype and freeze with Dungeon pause because their timer is updated through DungeonMode
+- Cleared rooms use the isolated open-door sprite; missing decor falls back safely to the previous marker rendering
+- The Free sword is used as a room prop only. Male/Female Adventurer sprites remain reserved because they have Idle, Walk, Jump, Dash, and Death sheets but no attack sheet
+- `assets/sprites/Free/Không dùng đến/` is intentionally excluded from integration
+- `python tools/preview_dungeon_rooms.py` exports `dungeon-room-preview.png` for a quick four-room visual check
 
 ## Dungeon Flow
 
@@ -415,6 +444,8 @@ assets/
 - Phase 43 adds input-binding infrastructure only: default action mappings, persisted binding structure, shared press/held helpers, incremental Solo/Dungeon routing, and binding-aware UI labels. Default controls remain unchanged; no remapping screen or gameplay content has been added
 - Phase 44 adds Dungeon enemy sprite asset validation only: config-driven Orc/Soldier 100x100 strip metadata, a headless-safe report tool, an optional standalone viewer, and smoke coverage for missing assets. Dungeon rendering and gameplay behavior remain unchanged
 - Phase 45 adds a Dungeon-only enemy sprite integration prototype: BasicEnemy renders Orc strips, FastEnemy renders Soldier strips, mechanical states drive cached playback, and missing sheets preserve rectangle fallback. Combat behavior, balance, Solo boss flow, and final animation decisions remain unchanged
+- The Slime prototype extends normal Dungeon waves with its provided 32x32 Idle, Move, Attack, and Death strips while reusing the existing melee behavior foundation
+- The Orc durability prototype keeps `Orc with shadows` as Orc 1 and adds the separate `Orc_level` Orc 2/3 art at x2/x3 HP only; damage and melee AI are unchanged
 - Phase 26 adds boss pacing foundation only: heavier melee tuning, longer telegraph/recovery, and punish-focused combat readability
 - Phase 27 polishes boss rhythm only: clearer telegraphs, longer recovery, slower pressure cadence, and more reliable punish timing without special attacks or VFX
 

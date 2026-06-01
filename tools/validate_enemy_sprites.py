@@ -17,14 +17,16 @@ import pygame
 from config.enemy_sprite_config import ENEMY_SPRITE_CONFIGS
 
 
-def cut_sheet_frames(surface, frame_width, frame_height, frame_count=None):
-    """Cut the first horizontal row of a sheet into copied frame surfaces."""
+def cut_sheet_frames(surface, frame_width, frame_height, frame_count=None, sheet_row=0):
+    """Cut one horizontal row of a sheet into copied frame surfaces."""
     if frame_width <= 0 or frame_height <= 0 or surface.get_height() < frame_height:
+        return []
+    if sheet_row < 0 or (sheet_row + 1) * frame_height > surface.get_height():
         return []
     available_frames = surface.get_width() // frame_width
     frame_total = available_frames if frame_count is None else min(frame_count, available_frames)
     return [
-        surface.subsurface((index * frame_width, 0, frame_width, frame_height)).copy()
+        surface.subsurface((index * frame_width, sheet_row * frame_height, frame_width, frame_height)).copy()
         for index in range(frame_total)
     ]
 
@@ -71,15 +73,24 @@ def validate_sprite_config(sprite_config):
             try:
                 sheet = pygame.image.load(str(sheet_path))
                 sheet_width, sheet_height = sheet.get_size()
+                sheet_rows = animation_config.get("sheet_rows", 1)
+                sheet_row = animation_config.get("sheet_row", 0)
                 expected_width = frame_count * frame_width
+                expected_height = sheet_rows * frame_height
                 if sheet_width != expected_width:
                     result["status"] = "WIDTH_MISMATCH"
                     result["details"] = f"expected width {expected_width}, found {sheet_width}"
-                elif sheet_height != frame_height:
+                elif sheet_height != expected_height:
                     result["status"] = "HEIGHT_MISMATCH"
-                    result["details"] = f"expected height {frame_height}, found {sheet_height}"
+                    result["details"] = f"expected height {expected_height}, found {sheet_height}"
+                elif not 0 <= sheet_row < sheet_rows:
+                    result["status"] = "ROW_MISMATCH"
+                    result["details"] = f"sheet row {sheet_row} is outside {sheet_rows} rows"
                 else:
-                    result["details"] = f"{frame_count} frames at {frame_width}x{frame_height}"
+                    result["details"] = (
+                        f"{frame_count} frames at {frame_width}x{frame_height}, "
+                        f"row {sheet_row + 1}/{sheet_rows}"
+                    )
             except (OSError, pygame.error) as error:
                 result["status"] = "LOAD_ERROR"
                 result["details"] = str(error)
