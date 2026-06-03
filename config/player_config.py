@@ -11,10 +11,22 @@ PLAYER_MAX_HEALTH = 100
 PLAYER_HURT_DURATION = 0.20
 PLAYER_HURT_FLASH_DURATION = 0.12
 PLAYER_INVULNERABILITY_DURATION = 0.65
+PLAYER_HURT_VISUAL_HOLD_DURATION = 0.58
+PLAYER_HURT_CHAIN_RESET_TIME = 0.85
 PLAYER_KNOCKBACK_FRICTION = 1800
 PLAYER_HURT_COLOR = (255, 235, 245)
 PLAYER_INVULNERABLE_COLOR = (155, 225, 255)
 PLAYER_DEFEATED_COLOR = (45, 55, 70)
+
+# Super Saiyan burst
+SUPER_SAIYAN_MAX_ENERGY = 100
+SUPER_SAIYAN_DEALT_DAMAGE_GAIN = 0.70
+SUPER_SAIYAN_HURT_DAMAGE_GAIN = 0.55
+SUPER_SAIYAN_DAMAGE_MULTIPLIER = 2.0
+SUPER_SAIYAN_DURATION = 9.0
+SUPER_SAIYAN_TRANSFORM_DURATION = 0.95
+SUPER_SAIYAN_COLOR = (255, 218, 86)
+SUPER_SAIYAN_GLOW_COLOR = (255, 244, 158)
 
 # Defense
 PLAYER_BLOCK_MOVE_MULTIPLIER = 0.38
@@ -81,7 +93,7 @@ PLAYER_STATE_SETTLE_DURATION = 0.08
 
 # Existing mechanical combo tuning
 COMBO_RESET_TIME = 0.75
-LIGHT_ATTACK_COMBO = (
+PUNCH_ATTACK_COMBO = (
     {
         "damage": 8,
         "range": 68,
@@ -126,6 +138,94 @@ LIGHT_ATTACK_COMBO = (
         "shake_duration": 0.18,
         "shake_strength": 7,
         "color": (255, 210, 120),
+    },
+    {
+        "damage": 14,
+        "range": 88,
+        "height": 62,
+        "duration": 0.18,
+        "cooldown": 0.28,
+        "recovery": 0.14,
+        "cancel_window": 0.06,
+        "knockback": 560,
+        "movement_multiplier": 0.26,
+        "hitstop": 0.055,
+        "shake_duration": 0.16,
+        "shake_strength": 6,
+        "color": (255, 190, 110),
+        "recovery_visual_state": "punch_recovery",
+        "recovery_visual_duration": 0.16,
+    },
+    {
+        "damage": 18,
+        "range": 98,
+        "height": 68,
+        "duration": 0.18,
+        "cooldown": 0.38,
+        "recovery": 0.18,
+        "cancel_window": 0.06,
+        "knockback": 720,
+        "movement_multiplier": 0.18,
+        "hitstop": 0.070,
+        "shake_duration": 0.20,
+        "shake_strength": 8,
+        "color": (255, 175, 95),
+        "recovery_visual_state": "punch_recovery",
+        "recovery_visual_duration": 0.16,
+    },
+)
+
+# Keep the established name for reward and balance-report compatibility.
+LIGHT_ATTACK_COMBO = PUNCH_ATTACK_COMBO
+
+KICK_ATTACK_COMBO = (
+    {
+        "damage": 10,
+        "range": 76,
+        "height": 58,
+        "duration": 0.14,
+        "cooldown": 0.20,
+        "recovery": 0.10,
+        "cancel_window": 0.05,
+        "knockback": 360,
+        "launch_y": -680,
+        "movement_multiplier": 0.48,
+        "hitstop": 0.045,
+        "shake_duration": 0.12,
+        "shake_strength": 4,
+        "color": (155, 225, 255),
+        "recovery_visual_state": "kick_recovery_1",
+        "recovery_visual_duration": 0.16,
+    },
+    {
+        "damage": 12,
+        "range": 88,
+        "height": 62,
+        "duration": 0.16,
+        "cooldown": 0.24,
+        "recovery": 0.11,
+        "cancel_window": 0.05,
+        "knockback": 470,
+        "movement_multiplier": 0.34,
+        "hitstop": 0.050,
+        "shake_duration": 0.15,
+        "shake_strength": 5,
+        "color": (145, 245, 220),
+    },
+    {
+        "damage": 18,
+        "range": 102,
+        "height": 70,
+        "duration": 0.22,
+        "cooldown": 0.38,
+        "recovery": 0.18,
+        "cancel_window": 0.07,
+        "knockback": 820,
+        "movement_multiplier": 0.18,
+        "hitstop": 0.070,
+        "shake_duration": 0.20,
+        "shake_strength": 8,
+        "color": (255, 205, 115),
     },
 )
 

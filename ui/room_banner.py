@@ -4,6 +4,7 @@ import pygame
 
 from managers.room_state import ROOM_BOSS_ENCOUNTER, ROOM_DUNGEON_CLEAR, ROOM_ENCOUNTER
 from settings import HEIGHT, WHITE, WIDTH
+from ui.fonts import get_font
 
 
 ACCENT = (130, 220, 255)
@@ -51,7 +52,7 @@ def format_room_type(room_type):
 
 
 def _draw_panel_text(surface, text, center_y, size, color):
-    font = pygame.font.Font(None, size)
+    font = get_font(size)
     text_surface = font.render(text, True, color)
     padding_x = 22
     padding_y = 10
@@ -62,7 +63,7 @@ def _draw_panel_text(surface, text, center_y, size, color):
 
 
 def _draw_center_text(surface, text, center_y, size, color):
-    font = pygame.font.Font(None, size)
+    font = get_font(size)
     text_surface = font.render(text, True, color)
     text_rect = text_surface.get_rect(center=(WIDTH // 2, center_y))
     surface.blit(text_surface, text_rect)

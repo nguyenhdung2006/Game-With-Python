@@ -21,7 +21,10 @@ class CombatImpact:
     def start_hit_impact(self, attack_data):
         """Start hitstop and shake using the current attack's feel values."""
         self.hitstop_timer = max(self.hitstop_timer, attack_data["hitstop"])
-        if not self.preferences.get("screen_shake_enabled", True):
+        if (
+            not self.preferences.get("screen_shake_enabled", True)
+            or self.preferences.get("reduce_motion_enabled", False)
+        ):
             return
 
         strength_multiplier = self.preferences.get("camera_shake_strength", 1.0)

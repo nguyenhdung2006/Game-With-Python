@@ -4,6 +4,8 @@ import pygame
 
 from managers.room_state import ROOM_BOSS_ENCOUNTER, ROOM_DUNGEON_CLEAR, ROOM_ENCOUNTER
 from settings import HEIGHT, WHITE, WIDTH
+from ui.combat_hud import draw_skill_bar
+from ui.fonts import get_font
 
 
 PANEL = (18, 22, 34)
@@ -21,9 +23,10 @@ def draw_dungeon_hud(surface, room_manager, reward_manager, player, skill_manage
         f"Rewards: {reward_manager.chosen_reward_count()}",
     ]
     lines.extend(get_stat_lines(player))
+    draw_text_panel(surface, lines, 24, 152, 250)
+
     if skill_manager is not None:
-        lines.extend(get_skill_lines(skill_manager))
-    draw_text_panel(surface, lines, 24, 98, 310)
+        draw_skill_bar(surface, skill_manager)
 
     reward_names = reward_manager.chosen_reward_display_names()
     if reward_names:
@@ -34,9 +37,9 @@ def draw_dungeon_hud(surface, room_manager, reward_manager, player, skill_manage
 
 def draw_dungeon_clear_summary(surface, room_manager, reward_manager, player, input_manager=None):
     """Draw final dungeon clear summary with run rewards and stat modifiers."""
-    title_font = pygame.font.Font(None, 58)
-    text_font = pygame.font.Font(None, 30)
-    small_font = pygame.font.Font(None, 26)
+    title_font = get_font(58)
+    text_font = get_font(30)
+    small_font = get_font(26)
 
     panel_rect = pygame.Rect(WIDTH // 2 - 330, 150, 660, 390)
     pygame.draw.rect(surface, PANEL, panel_rect, border_radius=8)
@@ -135,7 +138,7 @@ def format_room_type(room_type):
 
 def draw_text_panel(surface, lines, x, y, width):
     """Draw a simple text panel sized to its lines."""
-    font = pygame.font.Font(None, 25)
+    font = get_font(25)
     line_height = 24
     panel_height = 18 + line_height * len(lines)
     panel_rect = pygame.Rect(x, y, width, panel_height)

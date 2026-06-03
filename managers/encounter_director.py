@@ -12,6 +12,7 @@ from settings import (
     WIDTH,
 )
 from ui.wave_banner import draw_wave_banner
+from ui.fonts import get_font
 import pygame
 
 
@@ -191,7 +192,7 @@ def draw_status_text(surface, text, center_y, size=42):
     if not text:
         return
 
-    font = pygame.font.Font(None, size)
+    font = get_font(size)
     text_surface = font.render(text, True, WHITE)
     text_rect = text_surface.get_rect(center=(WIDTH // 2, center_y))
     surface.blit(text_surface, text_rect)

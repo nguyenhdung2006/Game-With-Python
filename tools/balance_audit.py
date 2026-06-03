@@ -16,7 +16,14 @@ from config.enemy_config import (
     ORC_LEVEL_3_ENEMY_CONFIG,
     SLIME_ENEMY_CONFIG,
 )
-from config.player_config import LIGHT_ATTACK_COMBO, PLAYER_MAX_HEALTH
+from config.player_config import (
+    KICK_ATTACK_COMBO,
+    LIGHT_ATTACK_COMBO,
+    PLAYER_MAX_HEALTH,
+    SUPER_SAIYAN_DAMAGE_MULTIPLIER,
+    SUPER_SAIYAN_DURATION,
+    SUPER_SAIYAN_MAX_ENERGY,
+)
 from config.reward_config import (
     MAX_COMBO_FINISHER_DAMAGE_MULTIPLIER,
     MAX_DAMAGE_MULTIPLIER,
@@ -28,7 +35,7 @@ from config.reward_config import (
     MIN_SKILL_COOLDOWN_MULTIPLIER,
     REWARD_DEFINITIONS,
 )
-from config.skill_config import KAMEHAMEHA_CONFIG, KI_BLAST_CONFIG
+from config.skill_config import ENERGY_DISC_CONFIG, KAMEHAMEHA_CONFIG, KI_BLAST_CONFIG
 
 
 def print_section(title):
@@ -63,8 +70,16 @@ def collect_warnings():
         warnings.append("Solo boss final skill recovery may be too short to punish")
     if SOLO_BOSS_COMBO_CONFIG["skill_lock_duration"] > 3.0:
         warnings.append("Solo player skill-lock duration may feel oppressive")
+    if SUPER_SAIYAN_DAMAGE_MULTIPLIER > 2.5:
+        warnings.append(f"Super Saiyan damage burst may be excessive: x{SUPER_SAIYAN_DAMAGE_MULTIPLIER:.2f}")
+    if SUPER_SAIYAN_DURATION > 12:
+        warnings.append(f"Super Saiyan duration may dominate combat pacing: {SUPER_SAIYAN_DURATION:.2f}s")
 
-    for label, skill in (("Ki Blast", KI_BLAST_CONFIG), ("Kamehameha", KAMEHAMEHA_CONFIG)):
+    for label, skill in (
+        ("Ki Blast", KI_BLAST_CONFIG),
+        ("Kamehameha", KAMEHAMEHA_CONFIG),
+        ("Energy Disc", ENERGY_DISC_CONFIG),
+    ):
         if skill["damage"] >= ELITE_ENEMY_CONFIG["max_health"] * 0.35:
             warnings.append(f"{label} damage is high relative to elite HP: {skill['damage']}")
     for reward in REWARD_DEFINITIONS:
@@ -80,7 +95,12 @@ def run():
 
     print_section("Player")
     print(f"HP: {PLAYER_MAX_HEALTH}")
-    print(f"Combo damage: {[hit['damage'] for hit in LIGHT_ATTACK_COMBO]}")
+    print(f"Punch combo damage: {[hit['damage'] for hit in LIGHT_ATTACK_COMBO]}")
+    print(f"Kick combo damage: {[hit['damage'] for hit in KICK_ATTACK_COMBO]}")
+    print(
+        f"Super Saiyan: {SUPER_SAIYAN_MAX_ENERGY} gauge, "
+        f"x{SUPER_SAIYAN_DAMAGE_MULTIPLIER:.2f} outgoing damage, {SUPER_SAIYAN_DURATION:.2f}s burst"
+    )
 
     print_section("Enemies")
     for enemy in (
@@ -102,6 +122,7 @@ def run():
     print_section("Player Skills")
     print(f"Ki Blast: damage {KI_BLAST_CONFIG['damage']}, cooldown {KI_BLAST_CONFIG['cooldown']:.2f}s")
     print(f"Kamehameha: damage {KAMEHAMEHA_CONFIG['damage']}, cooldown {KAMEHAMEHA_CONFIG['cooldown']:.2f}s")
+    print(f"Energy Disc: damage {ENERGY_DISC_CONFIG['damage']}, cooldown {ENERGY_DISC_CONFIG['cooldown']:.2f}s")
 
     print_section("Solo Boss Combo Skills")
     base_damage = SOLO_BOSS_COMBO_CONFIG["base_hit_damage"]

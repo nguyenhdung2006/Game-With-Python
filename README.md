@@ -1,4 +1,4 @@
-# Anime Stickman Combat
+# Anime Combat Project
 
 A 2D Python/Pygame combat game prototype set in a ruined battlefield arena.
 
@@ -15,6 +15,10 @@ Run the game from the project root:
 ```powershell
 python main.py
 ```
+
+The Settings screen defaults to `120 FPS`. It also exposes `60`, `144`, and
+`240 FPS` caps plus a presentation-only animation-speed option. Slower visual
+playback does not slow combat simulation or input response.
 
 Run the lightweight regression checks:
 
@@ -50,6 +54,8 @@ Mode select:
 - `2` = Dungeon / Wave Mode
 - `3` = Team Round 3v3 locked screen
 - `4` = Settings
+- `5` = How to Play preview board
+- `6` = Game Preview board
 - `Esc` = quit on mode select, return to mode select from modes
 
 Playable modes:
@@ -65,12 +71,14 @@ Dungeon / Wave Mode:
 - `D` = move right
 - `W` = jump
 - `Left Shift` = dash
-- `J` = light attack / 3-hit combo
+- `J` = punch / 5-hit combo
+- `C` = kick / 3-hit combo
 - `K` = parry on press, block when held
 - `L` = dodge / evade
+- Fill the `SAIYAN` gauge by fighting to trigger a timed Super Saiyan `x2` damage burst automatically
 - `U` = Ki Blast
 - `I` = Kamehameha
-- `O` = locked skill slot
+- `O` = Energy Disc
 - Reward select: `A/D` or `Left/Right` changes reward, `Enter` confirms
 - Room cleared: `Enter` opens reward selection
 - Defeat / Dungeon Cleared: `R` retries the run, `Esc` returns to mode select
@@ -79,9 +87,9 @@ Solo / Versus Mode:
 
 - Same movement, defense, combo, and skill controls as Dungeon / Wave Mode
 - Pre-fight setup: `Up/Down` selects HP slider, `A/D` or `Left/Right` adjusts, `Enter` starts
-- `U` = Combo Burst prototype (costs Solo energy)
+- `U` = Ki Blast (costs Solo energy)
 - `I` = Kamehameha (costs Solo energy)
-- `O` = locked skill slot
+- `O` = Energy Disc (costs Solo energy)
 - No rewards or room progression
 - Victory / Defeat: `R` starts a rematch, `Esc` returns to mode select
 
@@ -135,6 +143,7 @@ modes/
     dungeon_mode.py
     solo_mode.py
 systems/
+    animation_timing.py
     beam.py
     boss_skill_controller.py
     combat.py
@@ -170,6 +179,9 @@ tools/
     validate_enemy_sprites.py
     sprite_sheet_preview.py
 ui/
+    combat_hud.py
+    fonts.py
+    game_guide.py
     dungeon_hud.py
     health_bar.py
     mode_select.py
@@ -229,6 +241,7 @@ assets/
 - `modes/dungeon_mode.py` wraps the current playable wave-combat loop so the game can route between modes.
 - `modes/solo_mode.py` owns the playable 1v1 arena sandbox without dungeon rewards or room progression.
 - `systems/beam.py` defines the short-lived rectangular Kamehameha prototype hitbox.
+- `systems/animation_timing.py` scales presentation-only animation clocks independently from combat simulation.
 - `systems/boss_skill_controller.py` manages neutral boss skill cooldown, telegraph, active, and recovery states.
 - `systems/combat.py` stores hitbox, damage, and defense resolution helpers.
 - `systems/enemy_spacing.py` keeps multi-enemy spacing and flanking behavior lightweight and reusable.
@@ -241,12 +254,12 @@ assets/
 - `systems/render_layers.py` keeps combat-space render ordering explicit.
 - `systems/reaction_feedback.py` draws small enemy vulnerability, recovery, and stagger readability effects.
 - `systems/skill.py` defines neutral skill slot primitives with cooldown and resource-cost fields.
-- `systems/skill_manager.py` owns the three player skill slots and routes Ki Blast, Kamehameha, and the locked slot.
+- `systems/skill_manager.py` owns the three player skill slots and routes Ki Blast, Kamehameha, and Energy Disc.
 - `systems/settings_store.py` loads, validates, and writes local JSON preferences without saving progression or run state.
 - `systems/audio_manager.py` initializes optional Pygame audio safely, applies stored volume preferences, and no-ops when devices or files are unavailable.
 - `systems/input_manager.py` resolves configurable keyboard actions, held-state checks, press events, and UI binding labels.
 - `systems/enemy_sprite_renderer.py` caches and draws Dungeon-only Orc/Soldier/Slime strip frames with state mapping, foot anchors, facing flips, and rectangle fallback.
-- `systems/solo_combo_burst.py` sequences the Solo-only three-hit Combo Burst using existing normal attack setup.
+- `systems/solo_combo_burst.py` preserves the older Solo-only Combo Burst prototype for review, but it is no longer bound in the current Solo flow.
 - `systems/solo_boss_combo_controller.py` owns the Solo-only boss energy meter and user-approved multi-hit frame sequences.
 - `systems/solo_sprite_renderer.py` loads and draws Solo-only shaman, slash, boss, and boss-technique prototype frames with safe fallbacks.
 - `systems/sprite_loader.py` provides safe cached sprite loading with placeholder fallback.
@@ -257,6 +270,9 @@ assets/
 - `tools/validate_enemy_sprites.py` checks prototype Dungeon enemy strips, configured frame counts, missing files, and sheet dimensions without opening a window.
 - `tools/sprite_sheet_preview.py` opens an optional manual Orc/Soldier/Slime strip viewer without connecting sprites to gameplay.
 - `ui/` stores reusable interface drawing code such as health bars.
+- `ui/combat_hud.py` draws the shared bottom technique hotbar and styled combat resource bars.
+- `ui/fonts.py` caches default Pygame fonts so frequently drawn UI avoids repeated allocations.
+- `ui/game_guide.py` draws the full How to Play preview board used by menu key `5` and in-match help key `H`.
 - `ui/completion_overlay.py` draws shared retry and return-to-menu prompts for terminal states.
 - `ui/pause_overlay.py` draws the shared dimmed pause panel and restart/menu actions.
 - `ui/controls_overlay.py` draws modal Solo and Dungeon control references without adding asset dependencies.
@@ -275,12 +291,14 @@ assets/
 ## Current Features
 
 - Mode select screen on launch with Solo / Versus, Dungeon / Wave, and Team Round 3v3 entries
+- Game Preview board with playable-mode highlights, authored dungeon journey, and combat identity summary
 - Solo / Versus playable 1v1 arena foundation with one player and one duel enemy
 - Dungeon / Wave Mode routes into the current playable combat encounter
-- Dungeon room flow foundation with Room 1 encounter, Room 2 encounter, Room 3 elite/boss encounter, and Dungeon Cleared state
+- Dungeon room flow foundation with Ruined Gate, Forgotten Archive, Ashen Throne elite encounter, and Dungeon Cleared state
 - Room clear flow that waits for `Enter` before advancing
 - Room reward foundation with three mechanical reward choices after encounter rooms
 - Dungeon HUD and run status polish showing room status, reward count, selected rewards, and mechanical stat modifiers
+- Presentation-only Combat Momentum HUD that celebrates connected strings and parries without changing balance
 - Dungeon clear summary with rooms cleared, selected rewards, and final modifiers
 - Completion flow foundation with Dungeon Defeat, retry, Solo rematch, and shared end-state prompts
 - Pause and controls QoL foundation for Solo and Dungeon with frozen gameplay timers, modal input safety, and mode-relevant help
@@ -298,23 +316,24 @@ assets/
 - Lightweight regression smoke checks and a first balance-audit report for prototype tuning
 - Elite/Boss foundation for Room 3 using a single heavy melee enemy with slower pacing, longer telegraphs, and clearer punish windows
 - Boss readability and pacing polish with slower attack cadence, stronger downtime, and clearer recovery punish windows
-- Goku skill prototype with `U` Ki Blast, `I` Kamehameha, and `O` locked
-- Ki Blast as a fast projectile with cooldown, damage multiplier support, lifetime cleanup, and one-hit collision
+- Goku skill prototype with `U` Ki Blast, `I` Kamehameha, and `O` Energy Disc
+- Ki Blast as a fast projectile with cooldown, damage multiplier support, lifetime cleanup, one-hit collision, and `R13-03/04` impact playback
+- Energy Disc as an animated `R12-05/06` projectile with shared `R13-03/04` impact playback
 - Kamehameha as a short-lived rectangular beam prototype that damages each enemy once per use
-- Solo / Versus supports movement, jump, dash, combo attacks, Solo Combo Burst, Kamehameha, enemy chase/telegraph/attack, and Victory/Defeat overlays
+- Solo / Versus supports movement, jump, dash, combo attacks, Ki Blast, Kamehameha, Energy Disc, enemy chase/telegraph/attack, and Victory/Defeat overlays
 - Solo / Versus has pre-fight player and boss HP sliders plus player and boss energy bars
 - Solo boss normal attacks hold one logical technique frame; energy skills use user-approved `1-2-3`, `4-5-6`, and `1-2-3-4-5-6` multi-hit sequences
 - Solo boss combo combat polish adds weighted anti-spam AI, tier-specific pacing, Final lockout, and punishable major-skill recovery windows
 - Solo HUD shows lightweight `STUNNED` and `SKILL LOCKED` timer feedback
 - Boss skill AI foundation with cooldown spacing, readable telegraph, one-hit placeholder rectangle, and recovery punish window
-- Solo sprite combat prototype with shaman player frames, close-range slash visuals, boss sprite playback, boss technique frames, energy bar, and `U` Combo Burst
+- Solo sprite combat prototype with user-approved Goku frame groups, close-range slash visuals, boss sprite playback, boss technique frames, and energy bars
 - Team Round 3v3 locked / coming-soon screen
 - Ruined battlefield arena drawn with Pygame shapes
 - Player left/right movement
 - Jumping with gravity and ground collision
 - Short dash with cooldown and afterimage trail
 - Enemy training dummy with health, hurt flash, knockback, and defeated state
-- 3-hit light attack combo with different damage, hitboxes, and knockback
+- Separate `J` punch and `C` kick combos with queued continuous playback, stop-only recovery, launch, and pushback
 - Combat impact polish with attack slowdown, hitstop, and camera shake
 - Basic enemy AI with chase, telegraph, and melee attack states
 - Player hurt feedback, invulnerability frames, and enemy retreat spacing
@@ -339,6 +358,7 @@ assets/
 - Dungeon / Wave Mode: playable fixed room flow
 - Team Round 3v3: locked / coming soon
 - Settings: local player preferences
+- Game Preview: content and combat-identity overview
 
 ## Local Settings
 
@@ -346,9 +366,9 @@ assets/
 - `Up/Down` selects a preference, `Left/Right` adjusts values, and `Enter` toggles boolean options
 - `Esc` returns to Mode Select
 - Preferences are stored locally in `data/settings.json`
-- Volume values and fullscreen preference are persisted placeholders for later audio/display integration
+- Volume values are connected to the optional audio manager, and fullscreen switching applies immediately
 - Master, SFX, and music volume values are connected to the optional audio manager
-- Screen-shake enable/strength and the compact controls hint apply safely now
+- Screen-shake enable/strength, reduced-motion accessibility, and the compact controls hint apply safely now
 - Missing or corrupt JSON falls back to defaults; progression and active run state are not saved
 - Key bindings are stored safely for future remapping, but Phase 43 intentionally does not add a remapping UI
 
@@ -357,7 +377,7 @@ assets/
 - Press `1` from mode select to start a 1v1 arena fight
 - The arena spawns the player and one duel enemy
 - The player can use existing movement, combo, guard/dodge, and Kamehameha controls
-- In Solo, `U` is overridden by the energy-driven three-hit Combo Burst prototype; Dungeon keeps `U` Ki Blast
+- Solo and Dungeon both use `U` for Ki Blast; Solo additionally spends its duel energy resource
 - The Solo boss keeps the shared chase, telegraph, attack, hurt, and defeat behavior while a Solo-only controller owns its energy combo skills
 - Player and enemy health bars are shown
 - Player energy and skill HUD are shown
@@ -367,7 +387,7 @@ assets/
 - Player defeat shows `Defeat`
 - Victory and Defeat both support `R` rematch without restarting the application
 - `P` pauses the live duel, `R` restarts while paused, and `H` opens a modal Solo control reference
-- No rewards or room progression are added; sprite playback and Combo Burst remain Solo-only prototypes rather than a full animation or skill system
+- No rewards or room progression are added; reviewed sprite playback remains a prototype rather than a full animation system
 
 ## Prototype Dungeon Enemy Sprites
 
@@ -384,6 +404,22 @@ assets/
 - Idle and Walk loop, Attack/Hurt follow the existing mechanical state, and Death holds its final frame
 - Missing or invalid sheets fall back to the existing rectangle renderer without changing combat behavior
 - The current Soldier test drop remains in its existing prototype folder; Phase 45 does not move assets or add a final animation pipeline
+
+## Prototype Goku Player Frames
+
+- `python -B tools/annotate_goku_sheet_reference.py` exports numbered sheet references such as `R01-01` for user-guided mapping
+- `python -B tools/cut_goku_sheet_preview.py` exports only user-approved runtime groups into `assets/sprites/goku/approved_player_frames/`
+- Solo freezes combat after HP setup while `R01-01` through `R01-04` play once at a slower pace, then shows `FIGHT` while playing `R01-05` through `R01-08`
+- After the `FIGHT` sequence finishes, idle holds `R01-08` instead of replaying the opening frames
+- Normal movement uses `R03-01` through `R03-04`; dash and dodge use `R03-05` through `R03-08`
+- Guard and parry use `R05-01` through `R05-04`
+- Ki Blast rotates through the approved `R10-01..02`, `R10-03..04`, and `R10-05..06` shot pairs; its yellow projectile keeps the approved energy tail and round head while flying independently to distant enemies
+- Kamehameha plays the approved `R11-01` through `R11-09` windup before releasing a full-length blue beam that pierces targets; the two ends retain their original shape while only the middle section extends
+- Solo victory uses `R01-09`
+- Jump uses `R04-01` through `R04-06`; `J` chains the five `R06` punch groups, while `C` chains the three `R07` kick groups; stopping after kick 1 plays `R04-07/08`; hurt uses `R09-01` through `R09-07`
+- Super Saiyan auto-triggers when the separate `SAIYAN` gauge is full: `R22-01` through `R22-10` play the transformation, `R22-11` holds the powered idle, and the existing attack animations keep their timing while every player attack deals `x2` damage
+- Energy Disc plays `R12-01` through `R12-04` before releasing the animated `R12-05/06` projectile; collisions use `R13-03/04`
+- Defeat and transformation visuals keep conservative fallbacks until the user approves more frame ids
 
 ## Dungeon Asset Pack Notes
 
@@ -409,9 +445,9 @@ assets/
 
 ## Dungeon Flow
 
-- Room 1: encounter
-- Room 2: encounter
-- Room 3: elite/boss encounter
+- Room 1: Ruined Gate encounter
+- Room 2: Forgotten Archive encounter
+- Room 3: Ashen Throne elite/boss encounter
 - Final state: Dungeon Cleared
 - Room 1 uses the fixed START layout, Room 2 uses ENCOUNTER, Room 3 uses ELITE/BOSS, and completion uses CLEAR
 - Fixed layouts provide room bounds, player spawns, enemy spawn anchors, and placeholder exit markers only
@@ -421,7 +457,7 @@ assets/
 - Dungeon retry resets room progression, rewards, player state, cooldowns, projectiles, beams, and enemies
 - `P` pauses live Dungeon flow, `R` retries while paused, and `H` opens a modal Dungeon control reference
 - Dungeon HUD shows current room, room type, reward count, damage multiplier, dash cooldown multiplier, and max HP bonus
-- Dungeon HUD shows Ki Blast, Kamehameha, and Locked slot readiness/cooldowns
+- Dungeon HUD shows Ki Blast, Kamehameha, and Energy Disc readiness/cooldowns
 - Dungeon Clear shows selected rewards and final mechanical modifiers
 - Rewards are mechanical only and appear after Room 1 and Room 2 encounter clears
 - Reward selection still offers three unique choices with category, description, and stack-cap labels

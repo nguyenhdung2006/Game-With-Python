@@ -17,6 +17,8 @@ from settings import (
     WIDTH,
 )
 
+_ARENA_BACKGROUND = None
+
 
 def draw_vertical_gradient(surface, top_color, bottom_color):
     """Draw a simple dramatic sky gradient with pygame lines."""
@@ -94,10 +96,22 @@ def draw_ground(surface):
 
 def draw_arena(surface):
     """Draw the complete battlefield scene."""
-    draw_vertical_gradient(surface, SKY_TOP, SKY_BOTTOM)
+    surface.blit(get_arena_background(), (0, 0))
 
-    pygame.draw.circle(surface, (98, 34, 44), (650, 150), 70)
-    pygame.draw.circle(surface, (42, 36, 48), (680, 130), 68)
 
-    draw_background_ruins(surface)
-    draw_ground(surface)
+def get_arena_background():
+    """Build the fixed battlefield once, then reuse it at high frame rates."""
+    global _ARENA_BACKGROUND
+    if _ARENA_BACKGROUND is not None:
+        return _ARENA_BACKGROUND
+
+    background = pygame.Surface((WIDTH, HEIGHT))
+    draw_vertical_gradient(background, SKY_TOP, SKY_BOTTOM)
+
+    pygame.draw.circle(background, (98, 34, 44), (650, 150), 70)
+    pygame.draw.circle(background, (42, 36, 48), (680, 130), 68)
+
+    draw_background_ruins(background)
+    draw_ground(background)
+    _ARENA_BACKGROUND = background
+    return _ARENA_BACKGROUND

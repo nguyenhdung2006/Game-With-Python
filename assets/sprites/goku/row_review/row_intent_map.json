@@ -1,0 +1,215 @@
+{
+  "workflow_rule": {
+    "review_one_row_at_a_time": true,
+    "preview_before_gameplay_config": true,
+    "defer_uncertain_until_done_all_frame": true,
+    "notes": "If an intent is unclear, keep it provisional until the user says done all frame, then compare all rows before final gameplay mapping."
+  },
+  "rows": {
+    "R01": {
+      "status": "approved",
+      "role": "stance, intro, idle, pose variants",
+      "preview_folder": "assets/sprites/goku/row_review/R01",
+      "groups": [
+        {
+          "frames": ["R01-01", "R01-02", "R01-03", "R01-04"],
+          "intent": "Intro / enter fight / settle into stance",
+          "gameplay_state": "intro_entry",
+          "confidence": "high",
+          "notes": "Use before control starts."
+        },
+        {
+          "frames": ["R01-05", "R01-06", "R01-07", "R01-08"],
+          "intent": "Fight-ready transition",
+          "gameplay_state": "fight_ready",
+          "confidence": "high",
+          "notes": "Use after intro callout or before wave start."
+        },
+        {
+          "frames": ["R01-08"],
+          "intent": "Main combat idle hold",
+          "gameplay_state": "idle_hold",
+          "confidence": "high",
+          "notes": "Stable readable stance. Return here after actions."
+        },
+        {
+          "frames": ["R01-09"],
+          "intent": "Pose / light taunt / victory candidate",
+          "gameplay_state": "pose_taunt_or_victory_candidate",
+          "confidence": "medium",
+          "notes": "Single pose; avoid looping quickly."
+        },
+        {
+          "frames": ["R01-10", "R01-11"],
+          "intent": "Side stance / turn candidate",
+          "gameplay_state": "side_stance_or_turn_candidate",
+          "confidence": "medium",
+          "notes": "Useful for cinematic/preview turn, not walk."
+        },
+        {
+          "frames": ["R01-12", "R01-13"],
+          "intent": "Alt idle / calm stance / menu preview",
+          "gameplay_state": "alt_idle_or_menu_idle",
+          "confidence": "medium",
+          "notes": "Better for preview/menu than active combat."
+        }
+      ]
+    },
+    "R02": {
+      "status": "provisional",
+      "role": "evasive movement, dash burst, dash exit, vanish/teleport candidate",
+      "core_theme": "High-speed evasive movement and instant displacement",
+      "movement_philosophy": "This row represents movement beyond readable foot travel. The character should feel like they are bypassing normal locomotion through burst acceleration, vanish movement, and momentum-based recovery.",
+      "primary_combat_identity": [
+        "mobility",
+        "repositioning",
+        "evasive traversal",
+        "anime burst motion",
+        "teleport-style movement"
+      ],
+      "visual_identity": [
+        "silhouette break",
+        "speed trail distortion",
+        "afterimage disappearance",
+        "explosive acceleration",
+        "instant relocation"
+      ],
+      "do_not_use": [
+        "normal run cycle",
+        "grounded walk",
+        "standard jump loop",
+        "hurt reaction",
+        "attack recoil",
+        "attack recovery"
+      ],
+      "transition_compatibility": {
+        "preferred": [
+          "dash chain",
+          "vanish follow-up",
+          "teleport strike",
+          "air combo starter",
+          "cinematic reposition"
+        ],
+        "avoid": [
+          "abrupt idle snap",
+          "grounded walk transition",
+          "slow locomotion blend",
+          "attack recovery transition"
+        ]
+      },
+      "state_priority": "Teleport/vanish states should override normal dodge states if both systems exist.",
+      "preview_folder": "assets/sprites/goku/row_review/R02",
+      "groups": [
+        {
+          "frames": ["R02-01", "R02-02"],
+          "intent": "Unresolved evasive / air movement candidate",
+          "gameplay_state": "review_later",
+          "confidence": "unresolved",
+          "notes": "Looks like a diagonal lift/evade, but final use should wait until all character rows are reviewed. Not punch recovery. Do not wire into gameplay yet.",
+          "combat_rules": {
+            "attack_hitbox": false,
+            "hurtbox": "defer_until_final_state_choice",
+            "invincibility": "defer_until_final_state_choice"
+          }
+        },
+        {
+          "frames": ["R02-03", "R02-04", "R02-05", "R02-06"],
+          "intent": "Ground dash burst into speed trail",
+          "gameplay_state": "dash_burst",
+          "confidence": "high",
+          "notes": "Best candidate for dash startup/travel. Do not use as normal run."
+        },
+        {
+          "frames": ["R02-07", "R02-08"],
+          "intent": "Dash exit / aerial slide recovery",
+          "gameplay_state": "dash_exit_or_dash_recover",
+          "confidence": "medium",
+          "notes": "Can follow R02-03..R02-06; may also support air movement recovery."
+        },
+        {
+          "frames": ["R02-09", "R02-10", "R02-11"],
+          "intent": "Vertical vanish / teleport afterimage",
+          "gameplay_state": "vanish_or_teleport",
+          "confidence": "high",
+          "notes": "Best candidate for vanish/teleport visual. Keep separate from normal dodge unless design requires vanish dodge."
+        }
+      ]
+    },
+    "R03": {
+      "status": "provisional",
+      "role": "grounded locomotion candidate, combat approach, front-facing hover or power movement candidate",
+      "core_theme": "Readable body travel and controlled forward movement, with a separate front-facing powered motion group",
+      "movement_philosophy": "This row contains movement that stays more readable than Row 02. It appears to cover foot-based approach movement first, then a front-facing stance/hover motion that should not be treated as ordinary walking until later comparison.",
+      "primary_combat_identity": [
+        "locomotion",
+        "combat approach",
+        "cautious forward advance",
+        "readable run cycle candidate",
+        "front-facing power drift candidate"
+      ],
+      "visual_identity": [
+        "readable silhouette travel",
+        "grounded foot rhythm",
+        "forward lean during approach",
+        "controlled momentum",
+        "front-facing hover/power bob"
+      ],
+      "do_not_use": [
+        "hurt state",
+        "attack recoil",
+        "attack recovery",
+        "teleport or vanish effect",
+        "high-speed dash smear",
+        "unrelated defensive state"
+      ],
+      "transition_compatibility": {
+        "preferred": [
+          "idle return",
+          "combat approach",
+          "walk-to-run acceleration",
+          "run-to-idle settle",
+          "power stance loop"
+        ],
+        "avoid": [
+          "direct transition from speed trail without recovery",
+          "direct transition to hurt state",
+          "mixing front-facing hover frames into side walk/run loops",
+          "using front-facing hover as normal grounded locomotion"
+        ]
+      },
+      "state_priority": "If Row 03 walk/run states and Row 02 dash/vanish states compete, Row 02 should own instant displacement while Row 03 should own readable locomotion.",
+      "preview_folder": "assets/sprites/goku/row_review/R03",
+      "groups": [
+        {
+          "frames": ["R03-01", "R03-02", "R03-03", "R03-04"],
+          "intent": "Side walk / measured forward advance candidate",
+          "gameplay_state": "walk_candidate",
+          "confidence": "medium",
+          "notes": "Looks like readable grounded foot travel. Keep provisional until compared with later movement rows."
+        },
+        {
+          "frames": ["R03-05", "R03-06", "R03-07", "R03-08"],
+          "intent": "Forward run / combat approach candidate",
+          "gameplay_state": "run_candidate_or_combat_approach",
+          "confidence": "medium_high",
+          "notes": "Strong run/approach candidate with readable body travel. Existing config uses this as run, but final approval should wait for review."
+        },
+        {
+          "frames": ["R03-09", "R03-10", "R03-11", "R03-12", "R03-13", "R03-14"],
+          "intent": "Front-facing hover / power stance motion candidate",
+          "gameplay_state": "power_hover_candidate_or_cinematic_forward_drift",
+          "confidence": "medium",
+          "notes": "Front-facing and stylized. Do not mix into side locomotion. Compare later before assigning gameplay."
+        }
+      ],
+      "gameplay_notes": [
+        "R03-01..R03-04 can be a slow walk/cautious approach candidate if the loop reads well in gameplay.",
+        "R03-05..R03-08 can be a run/combat approach candidate, but should remain separate from Row 02 dash burst.",
+        "R03-09..R03-14 should remain provisional. It may be hover, power movement, front-facing cinematic drift, or menu/preview motion.",
+        "Row 03 should not be used for hurt, attack recoil, attack recovery, vanish, or dash smear states.",
+        "No Row 03 segment should get an attack hitbox by default."
+      ]
+    }
+  },
+  "pending_rows": ["R04", "R05", "R06", "R07", "R08", "R09", "R10"]
+}

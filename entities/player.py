@@ -13,6 +13,7 @@ from entities.player_parts.combat import (
     get_attack_impact as _get_attack_impact,
     is_in_action_recovery as _is_in_action_recovery,
     reset_combo as _reset_combo,
+    start_kick_attack as _start_kick_attack,
     start_light_attack as _start_light_attack,
     update_attack_timers as _update_attack_timers,
 )
@@ -54,6 +55,14 @@ from entities.player_parts.reaction import (
 )
 from entities.player_parts.render import draw as _draw
 from entities.player_parts.setup import initialize_player_state
+from entities.player_parts.render_state import update_player_visual_timers
+from systems.super_saiyan import (
+    add_saiyan_energy as _add_saiyan_energy,
+    is_transforming as _is_transforming,
+    register_incoming_damage as _register_incoming_damage,
+    register_outgoing_damage as _register_outgoing_damage,
+    update_super_saiyan as _update_super_saiyan,
+)
 
 
 class Player:
@@ -66,8 +75,14 @@ class Player:
         """Run the per-frame player flow in one readable place."""
         self.update_hurt_timers(dt)
         self.update_reaction_timers(dt)
+        update_player_visual_timers(self, dt)
+        self.update_super_saiyan(dt)
 
         if self.defeated:
+            self.apply_physics(dt)
+            return
+
+        if self.is_transforming():
             self.apply_physics(dt)
             return
 
@@ -84,6 +99,7 @@ class Player:
     can_cancel_attack_to_block = _can_cancel_attack_to_block
     is_in_action_recovery = _is_in_action_recovery
     start_light_attack = _start_light_attack
+    start_kick_attack = _start_kick_attack
     begin_combo_attack = _begin_combo_attack
     begin_counter_attack = _begin_counter_attack
     update_attack_timers = _update_attack_timers
@@ -91,6 +107,13 @@ class Player:
     get_attack_hitbox = _get_attack_hitbox
     get_attack_impact = _get_attack_impact
     register_attack_payoff = _register_attack_payoff
+
+    # Super Saiyan burst behavior
+    add_saiyan_energy = _add_saiyan_energy
+    register_outgoing_damage = _register_outgoing_damage
+    register_incoming_damage = _register_incoming_damage
+    update_super_saiyan = _update_super_saiyan
+    is_transforming = _is_transforming
 
     # Defense behavior
     take_damage = _take_damage

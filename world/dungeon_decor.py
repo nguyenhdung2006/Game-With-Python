@@ -4,6 +4,8 @@ from pathlib import Path
 
 import pygame
 
+from systems.animation_timing import get_animation_dt
+
 
 PROJECT_ROOT = Path(__file__).resolve().parents[1]
 SPRITE_ROOT = PROJECT_ROOT / "assets" / "sprites"
@@ -41,8 +43,9 @@ DOOR_PATHS = {
 class DungeonDecorRenderer:
     """Draw optional room dressing while keeping combat geometry unchanged."""
 
-    def __init__(self, scale=2, torch_frame_duration=0.16):
+    def __init__(self, scale=2, torch_frame_duration=0.16, preferences=None):
         self.scale = scale
+        self.preferences = preferences if preferences is not None else {}
         self.torch_frame_duration = torch_frame_duration
         self.torch_frame_index = 0
         self.torch_elapsed = 0.0
@@ -50,7 +53,7 @@ class DungeonDecorRenderer:
 
     def update(self, dt):
         """Advance ambient torch playback only while Dungeon gameplay updates."""
-        self.torch_elapsed += dt
+        self.torch_elapsed += get_animation_dt(self.preferences, dt)
         while self.torch_elapsed >= self.torch_frame_duration:
             self.torch_elapsed -= self.torch_frame_duration
             self.torch_frame_index = (self.torch_frame_index + 1) % len(TORCH_PATHS)

@@ -1,7 +1,9 @@
 """Player skill slot routing and cooldown tracking."""
 
-from config.skill_config import KAMEHAMEHA_CONFIG, KI_BLAST_CONFIG
+from config.goku_sprite_config import GOKU_KI_BLAST_ACTION_IDS
+from config.skill_config import ENERGY_DISC_CONFIG, KAMEHAMEHA_CONFIG, KI_BLAST_CONFIG
 from systems.skill import Skill
+from systems.super_saiyan import get_outgoing_damage_multiplier
 
 
 class SkillManager:
@@ -24,7 +26,12 @@ class SkillManager:
                 cooldown=KAMEHAMEHA_CONFIG["cooldown"],
                 use_callback=self.use_kamehameha,
             ),
-            Skill("locked", "Locked", unlocked=False),
+            Skill(
+                "energy_disc",
+                "Energy Disc",
+                cooldown=ENERGY_DISC_CONFIG["cooldown"],
+                use_callback=self.use_energy_disc,
+            ),
         ]
 
     def update(self, dt):
@@ -84,10 +91,16 @@ class SkillManager:
 
         damage = round(
             KI_BLAST_CONFIG["damage"]
-            * getattr(player, "damage_multiplier", 1.0)
+            * get_outgoing_damage_multiplier(player)
             * getattr(player, "skill_damage_multiplier", 1.0)
         )
         self.projectile_manager.spawn_ki_blast(player, damage)
+        visual_index = getattr(player, "ki_blast_visual_index", 0)
+        player.skill_visual_state = GOKU_KI_BLAST_ACTION_IDS[
+            visual_index % len(GOKU_KI_BLAST_ACTION_IDS)
+        ]
+        player.ki_blast_visual_index = visual_index + 1
+        player.skill_visual_timer = KI_BLAST_CONFIG["visual_duration"]
         return True
 
     def use_kamehameha(self, context):
@@ -98,10 +111,32 @@ class SkillManager:
 
         damage = round(
             KAMEHAMEHA_CONFIG["damage"]
-            * getattr(player, "damage_multiplier", 1.0)
+            * get_outgoing_damage_multiplier(player)
             * getattr(player, "skill_damage_multiplier", 1.0)
         )
         self.projectile_manager.spawn_kamehameha(player, damage)
+        player.skill_visual_state = (
+            "super_saiyan_skill_2"
+            if getattr(player, "is_super_saiyan", False)
+            else "skill_2"
+        )
+        player.skill_visual_timer = KAMEHAMEHA_CONFIG["visual_duration"]
+        return True
+
+    def use_energy_disc(self, context):
+        """Fire the approved animated disc projectile skill."""
+        player = self.get_context_player(context)
+        if player is None or not self.can_use_player_skill(player):
+            return False
+
+        damage = round(
+            ENERGY_DISC_CONFIG["damage"]
+            * get_outgoing_damage_multiplier(player)
+            * getattr(player, "skill_damage_multiplier", 1.0)
+        )
+        self.projectile_manager.spawn_energy_disc(player, damage)
+        player.skill_visual_state = "skill_3"
+        player.skill_visual_timer = ENERGY_DISC_CONFIG["visual_duration"]
         return True
 
     def get_context_player(self, context):
@@ -117,6 +152,8 @@ class SkillManager:
         if getattr(player, "is_hurt", False) or getattr(player, "hurt_timer", 0) > 0:
             return False
         if getattr(player, "skill_lock_timer", 0) > 0:
+            return False
+        if getattr(player, "is_transforming", lambda: False)():
             return False
         if require_grounded and not getattr(player, "grounded", True):
             return False

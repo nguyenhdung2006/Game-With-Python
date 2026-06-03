@@ -6,6 +6,8 @@ DUNGEON_MODE = "DUNGEON_MODE"
 SOLO_MODE = "SOLO_MODE"
 TEAM_MODE_LOCKED = "TEAM_MODE_LOCKED"
 SETTINGS_MODE = "SETTINGS_MODE"
+GUIDE_MODE = "GUIDE_MODE"
+PREVIEW_MODE = "PREVIEW_MODE"
 
 
 class GameState:
@@ -29,6 +31,12 @@ class GameState:
     def enter_settings(self):
         self.current = SETTINGS_MODE
 
+    def enter_guide(self):
+        self.current = GUIDE_MODE
+
+    def enter_preview(self):
+        self.current = PREVIEW_MODE
+
     def is_mode_select(self):
         return self.current == MODE_SELECT
 
@@ -40,3 +48,9 @@ class GameState:
 
     def is_settings(self):
         return self.current == SETTINGS_MODE
+
+    def is_guide(self):
+        return self.current == GUIDE_MODE
+
+    def is_preview(self):
+        return self.current == PREVIEW_MODE

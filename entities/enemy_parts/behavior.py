@@ -34,6 +34,7 @@ def update(enemy, player, dt, allow_attack=True):
     if enemy.defeated:
         enemy.state = ENEMY_STATE_DEFEATED
         enemy.knockback_velocity_x = 0
+        update_knockback(enemy, dt)
         return
 
     if enemy.hurt_reaction_timer > 0:
@@ -134,16 +135,25 @@ def update_spawn_slide(enemy, dt):
 
 def update_knockback(enemy, dt):
     """Move the enemy while knockback is still active."""
-    if enemy.knockback_velocity_x == 0:
+    if enemy.knockback_velocity_x == 0 and enemy.knockback_velocity_y == 0:
         return
 
-    enemy.x += enemy.knockback_velocity_x * dt
-    enemy.x = clamp_x_to_screen(enemy.x, enemy.width, WIDTH)
-    enemy.knockback_velocity_x = move_toward_zero(
-        enemy.knockback_velocity_x,
-        enemy.knockback_friction * dt,
-    )
-    enemy.rect.x = round(enemy.x)
+    if enemy.knockback_velocity_x != 0:
+        enemy.x += enemy.knockback_velocity_x * dt
+        enemy.x = clamp_x_to_screen(enemy.x, enemy.width, WIDTH)
+        enemy.knockback_velocity_x = move_toward_zero(
+            enemy.knockback_velocity_x,
+            enemy.knockback_friction * dt,
+        )
+        enemy.rect.x = round(enemy.x)
+
+    if enemy.knockback_velocity_y != 0:
+        enemy.y += enemy.knockback_velocity_y * dt
+        enemy.knockback_velocity_y += enemy.launch_gravity * dt
+        if enemy.y >= enemy.launch_ground_y:
+            enemy.y = enemy.launch_ground_y
+            enemy.knockback_velocity_y = 0
+        enemy.rect.y = round(enemy.y)
 
 
 def face_player(enemy, player):

@@ -3,6 +3,7 @@
 import pygame
 
 from settings import ENCOUNTER_WAVE_BANNER_FADE_TIME, WHITE, WIDTH
+from ui.fonts import get_font
 
 
 def draw_wave_banner(surface, text, timer, duration):
@@ -11,7 +12,7 @@ def draw_wave_banner(surface, text, timer, duration):
         return
 
     alpha = get_banner_alpha(timer, duration)
-    font = pygame.font.Font(None, 72)
+    font = get_font(72)
     text_surface = font.render(text, True, WHITE)
 
     banner_surface = pygame.Surface(

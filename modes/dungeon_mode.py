@@ -3,20 +3,25 @@
 import pygame
 
 from entities.player import Player
+from entities.player_parts.render_state import get_player_visual_state
 from managers.encounter_manager import EncounterManager
 from managers.encounter_profiles import BOSS_ROOM_PROFILES
 from managers.room_manager import RoomManager
 from managers.room_state import ROOM_BOSS_ENCOUNTER, ROOM_ENCOUNTER
 from settings import HEALTH_PLAYER
 from systems.combat import process_enemy_attacks, process_player_attacks
+from systems.combat_momentum import CombatMomentum
 from systems.effects import CombatImpact
 from systems.input_manager import InputManager
 from systems.enemy_sprite_renderer import EnemySpriteRenderer
+from systems.goku_player_sprite_renderer import GokuPlayerSpriteRenderer
 from systems.projectile_manager import ProjectileManager
 from systems.reward_manager import RewardManager
 from systems.render_layers import draw_combat_scene
 from systems.skill_manager import SkillManager
 from ui.completion_overlay import draw_completion_overlay
+from ui.combat_momentum import draw_combat_momentum
+from ui.combat_hud import draw_saiyan_bar
 from ui.controls_overlay import draw_controls_hint, draw_controls_overlay
 from ui.dungeon_hud import draw_dungeon_clear_summary, draw_dungeon_hud
 from ui.health_bar import draw_health_bar
@@ -42,13 +47,17 @@ class DungeonMode:
         self.player = Player(*self.room_manager.current_layout().player_spawn)
         self.player.audio_manager = self.audio_manager
         self.player.input_manager = self.input_manager
+        self.combat_momentum = CombatMomentum()
+        self.player.combat_momentum = self.combat_momentum
+        self.player_sprite_renderer = GokuPlayerSpriteRenderer(preferences=self.preferences)
+        self.player.player_sprite_renderer = self.player_sprite_renderer
         self.encounter_manager = None
         self.impact = CombatImpact(self.preferences)
-        self.projectile_manager = ProjectileManager()
+        self.projectile_manager = ProjectileManager(self.preferences)
         self.skill_manager = SkillManager(self.projectile_manager, self.input_manager)
         self.reward_manager = RewardManager()
-        self.enemy_sprite_renderer = EnemySpriteRenderer()
-        self.dungeon_decor_renderer = DungeonDecorRenderer()
+        self.enemy_sprite_renderer = EnemySpriteRenderer(preferences=self.preferences)
+        self.dungeon_decor_renderer = DungeonDecorRenderer(preferences=self.preferences)
         self.paused = False
         self.controls_visible = False
         self.enter_current_room()
@@ -91,6 +100,9 @@ class DungeonMode:
         if not self.is_active_encounter_room() or self.impact.is_hitstop_active():
             return
 
+        if self.player.is_transforming():
+            return
+
         if self.input_manager.event_matches("jump", event):
             self.player.jump()
         elif self.input_manager.event_matches("dash", event):
@@ -109,6 +121,8 @@ class DungeonMode:
                 self.impact.start_hit_impact(dodge_result)
         elif self.input_manager.event_matches("attack", event):
             self.player.start_light_attack()
+        elif self.input_manager.event_matches("kick", event):
+            self.player.start_kick_attack()
 
     def update(self, keys, dt):
         """Update the active dungeon room."""
@@ -123,8 +137,10 @@ class DungeonMode:
         if self.impact.is_hitstop_active():
             return
 
+        self.combat_momentum.update(dt)
         self.skill_manager.update(dt)
         self.player.update(keys, dt)
+        self.player_sprite_renderer.update(self.player, get_player_visual_state(self.player), dt)
         self.encounter_manager.update(self.player, dt)
         active_enemies = self.encounter_manager.get_enemies()
         self.projectile_manager.update(dt, active_enemies)
@@ -330,3 +346,5 @@ class DungeonMode:
             "PLAYER",
         )
         self.encounter_manager.draw_ui(screen)
+        draw_saiyan_bar(screen, self.player)
+        draw_combat_momentum(screen, self.combat_momentum)

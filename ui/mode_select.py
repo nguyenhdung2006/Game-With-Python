@@ -3,6 +3,7 @@
 import pygame
 
 from settings import HEIGHT, WHITE, WIDTH
+from ui.fonts import get_font
 
 
 MENU_BG = (12, 14, 24)
@@ -24,11 +25,13 @@ def draw_mode_select(surface, input_manager=None):
         (binding_label(input_manager, "select_dungeon", "2"), "Dungeon / Wave Mode", "Playable combat vertical slice", True),
         (binding_label(input_manager, "select_team", "3"), "Team Round 3v3", "Coming soon", False),
         (binding_label(input_manager, "select_settings", "4"), "Settings", "Local preferences", True),
+        (binding_label(input_manager, "select_guide", "5"), "How to Play", "Preview controls and combat rhythm", True),
+        (binding_label(input_manager, "select_preview", "6"), "Game Preview", "Explore modes, dungeon journey, and combat identity", True),
     ]
 
-    start_y = 255
+    start_y = 214
     for index, option in enumerate(options):
-        _draw_mode_option(surface, start_y + index * 92, *option)
+        _draw_mode_option(surface, start_y + index * 66, *option)
 
     back = binding_label(input_manager, "back", "Esc")
     _draw_center_text(surface, f"Press a mode key to choose. {back} quits.", HEIGHT - 50, 28, TEXT_MUTED)
@@ -53,14 +56,14 @@ def draw_placeholder_screen(surface, title, description):
 
 
 def _draw_mode_option(surface, y, key_label, title, subtitle, playable):
-    rect = pygame.Rect(WIDTH // 2 - 310, y, 620, 66)
+    rect = pygame.Rect(WIDTH // 2 - 310, y, 620, 58)
     color = PANEL_HIGHLIGHT if playable else PANEL
     pygame.draw.rect(surface, color, rect, border_radius=6)
     pygame.draw.rect(surface, ACCENT if playable else LOCKED, rect, 2, border_radius=6)
 
-    key_font = pygame.font.Font(None, 42)
-    title_font = pygame.font.Font(None, 36)
-    subtitle_font = pygame.font.Font(None, 25)
+    key_font = get_font(42)
+    title_font = get_font(36)
+    subtitle_font = get_font(25)
 
     key_color = ACCENT if playable else LOCKED
     title_color = WHITE if playable else LOCKED
@@ -70,12 +73,12 @@ def _draw_mode_option(surface, y, key_label, title, subtitle, playable):
     subtitle_surface = subtitle_font.render(subtitle, True, TEXT_MUTED)
 
     surface.blit(key_surface, (rect.left + 24, rect.centery - key_surface.get_height() // 2))
-    surface.blit(title_surface, (rect.left + 112, rect.top + 12))
-    surface.blit(subtitle_surface, (rect.left + 112, rect.top + 40))
+    surface.blit(title_surface, (rect.left + 112, rect.top + 8))
+    surface.blit(subtitle_surface, (rect.left + 112, rect.top + 34))
 
 
 def _draw_center_text(surface, text, center_y, size, color):
-    font = pygame.font.Font(None, size)
+    font = get_font(size)
     text_surface = font.render(text, True, color)
     text_rect = text_surface.get_rect(center=(WIDTH // 2, center_y))
     surface.blit(text_surface, text_rect)

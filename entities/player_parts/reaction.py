@@ -144,6 +144,10 @@ def begin_counter_payoff_feedback(player):
 
 def register_attack_payoff(player):
     """Add a small success pulse when the player's strike connects."""
+    combat_momentum = getattr(player, "combat_momentum", None)
+    if combat_momentum is not None:
+        combat_momentum.register_hit(player)
+
     scale = 1.0
     if player.is_counter_attacking:
         scale = 1.6

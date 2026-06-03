@@ -21,6 +21,8 @@ def initialize_enemy_state(enemy, x, y, config):
 
     enemy.rect = pygame.Rect(x, y, enemy.width, enemy.height)
     enemy.x = float(x)
+    enemy.y = float(y)
+    enemy.launch_ground_y = float(y)
 
     enemy.hurt_flash_duration = config["hurt_flash_duration"]
     enemy.knockback_friction = config["knockback_friction"]
@@ -51,6 +53,8 @@ def initialize_enemy_state(enemy, x, y, config):
 
     enemy.hurt_flash_timer = 0
     enemy.knockback_velocity_x = 0
+    enemy.knockback_velocity_y = 0
+    enemy.launch_gravity = 2200
     enemy.defeated = False
     enemy.facing = -1
     enemy.sprite_paths = config.get("sprite_paths", {})

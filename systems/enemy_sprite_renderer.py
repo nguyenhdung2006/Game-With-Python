@@ -5,6 +5,7 @@ from weakref import WeakKeyDictionary
 import pygame
 
 from config.enemy_sprite_config import ENEMY_SPRITE_CONFIGS
+from systems.animation_timing import get_animation_dt
 
 
 VISUAL_STATE_ANIMATIONS = {
@@ -22,8 +23,9 @@ VISUAL_STATE_ANIMATIONS = {
 class EnemySpriteRenderer:
     """Cache and draw prototype sprite strips without owning gameplay state."""
 
-    def __init__(self, sprite_configs=None):
+    def __init__(self, sprite_configs=None, preferences=None):
         self.sprite_configs = ENEMY_SPRITE_CONFIGS if sprite_configs is None else sprite_configs
+        self.preferences = preferences if preferences is not None else {}
         self.frame_cache = {}
         self.transformed_frame_cache = {}
         self.playback = WeakKeyDictionary()
@@ -40,7 +42,8 @@ class EnemySpriteRenderer:
 
         animation = self.sprite_configs[sprite_id]["animations"][animation_name]
         state = self.get_playback_state(enemy, animation_name)
-        state["elapsed"] += dt
+        animation_dt = get_animation_dt(self.preferences, dt) if animation_name in {"idle", "walk", "death"} else dt
+        state["elapsed"] += animation_dt
         while state["elapsed"] >= animation["frame_speed"]:
             state["elapsed"] -= animation["frame_speed"]
             if state["frame_index"] < len(frames) - 1:

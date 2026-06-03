@@ -8,7 +8,9 @@ from settings import (
     PLAYER_BLOCK_SHAKE_STRENGTH,
     PLAYER_DODGE_INVULNERABILITY_DURATION,
     PLAYER_HURT_DURATION,
+    PLAYER_HURT_CHAIN_RESET_TIME,
     PLAYER_HURT_FLASH_DURATION,
+    PLAYER_HURT_VISUAL_HOLD_DURATION,
     PLAYER_INVULNERABILITY_DURATION,
     PLAYER_PARRY_COOLDOWN,
     PLAYER_PARRY_HITSTOP,
@@ -31,14 +33,30 @@ def take_damage(player, amount):
     interrupt_actions_for_damage(player)
     player.hurt_timer = PLAYER_HURT_DURATION
     player.hurt_flash_timer = PLAYER_HURT_FLASH_DURATION
+    register_hurt_visual(player)
     player.invulnerability_timer = PLAYER_INVULNERABILITY_DURATION
     player.is_hurt = True
+    combat_momentum = getattr(player, "combat_momentum", None)
+    if combat_momentum is not None:
+        combat_momentum.register_damage_taken()
 
     if player.health == 0:
         player.defeated = True
+    else:
+        player.register_incoming_damage(adjusted_damage)
 
     play_audio_event(player, "player_hit")
     return True
+
+
+def register_hurt_visual(player):
+    """Advance the approved R09 reaction sequence for connected incoming hits."""
+    if player.hurt_chain_timer > 0:
+        player.hurt_chain_step = min(4, player.hurt_chain_step + 1)
+    else:
+        player.hurt_chain_step = 1
+    player.hurt_chain_timer = PLAYER_HURT_CHAIN_RESET_TIME
+    player.hurt_visual_timer = PLAYER_HURT_VISUAL_HOLD_DURATION
 
 
 def interrupt_actions_for_damage(player):
@@ -57,8 +75,15 @@ def interrupt_actions_for_damage(player):
     player.block_flash_timer = 0
 
     player.queued_next_attack = False
+    player.queued_attack_style = None
     player.buffered_attack = False
+    player.buffered_attack_style = None
     player.attack_buffer_timer = 0
+    player.combo_step = 0
+    player.combo_style = None
+    player.combo_timer = 0
+    player.melee_recovery_visual_state = None
+    player.melee_recovery_visual_timer = 0
     player.can_counter = False
     player.counter_window_timer = 0
 
@@ -90,6 +115,14 @@ def update_hurt_timers(player, dt):
 
     if player.hurt_flash_timer > 0:
         player.hurt_flash_timer = max(0, player.hurt_flash_timer - dt)
+
+    if player.hurt_visual_timer > 0:
+        player.hurt_visual_timer = max(0, player.hurt_visual_timer - dt)
+
+    if player.hurt_chain_timer > 0:
+        player.hurt_chain_timer = max(0, player.hurt_chain_timer - dt)
+        if player.hurt_chain_timer == 0:
+            player.hurt_chain_step = 0
 
     if player.invulnerability_timer > 0:
         player.invulnerability_timer = max(0, player.invulnerability_timer - dt)
@@ -208,6 +241,9 @@ def parry_success(player, attacker_direction):
     player.block_flash_timer = 0
     player.knockback_velocity_x = attacker_direction * (player.block_pushback * 0.45)
     player.begin_parry_payoff_feedback()
+    combat_momentum = getattr(player, "combat_momentum", None)
+    if combat_momentum is not None:
+        combat_momentum.register_parry()
 
     return {
         "hitstop": PLAYER_PARRY_HITSTOP,
@@ -233,6 +269,8 @@ def block_hit(player, amount, attacker_direction):
     if player.health == 0:
         player.defeated = True
         player.is_blocking = False
+    else:
+        player.register_incoming_damage(blocked_damage)
 
     return {
         "hitstop": PLAYER_BLOCK_HITSTOP,

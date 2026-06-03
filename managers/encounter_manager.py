@@ -192,11 +192,11 @@ class EncounterManager:
     def draw_enemy_bars(self, surface):
         """Stack health bars for active enemies on the right side."""
         for index, enemy in enumerate(self.active_enemies):
-            y = 38 + index * 46
+            y = 38 + index * 58
             label = f"{enemy.label} {index + 1}"
             draw_health_bar(
                 surface,
-                760,
+                WIDTH - 420,
                 y,
                 360,
                 24,

@@ -5,6 +5,7 @@ import re
 
 import pygame
 
+from entities.player_parts.render_state import get_player_visual_state
 from settings import ENEMY_STATE_ATTACK, ENEMY_STATE_TELEGRAPH, GROUND_Y
 from systems.boss_skill_controller import BOSS_SKILL_ACTIVE, BOSS_SKILL_TELEGRAPH
 from systems.combat import create_enemy_attack_hitbox
@@ -16,6 +17,9 @@ from systems.effects import (
     draw_parry_guard,
     draw_rect_afterimages,
 )
+from systems.goku_player_sprite_renderer import GokuPlayerSpriteRenderer
+from systems.super_saiyan import draw_super_saiyan_aura
+from systems.animation_timing import get_animation_dt
 
 
 PLAYER_SCALE = 0.38
@@ -27,8 +31,10 @@ BOSS_TECHNIQUE_SCALE = 0.82
 class SoloSpriteRenderer:
     """Draw Solo prototype sprites while leaving shared entity renderers stable."""
 
-    def __init__(self):
+    def __init__(self, preferences=None):
         asset_root = Path(__file__).resolve().parents[1] / "assets" / "sprites"
+        self.preferences = preferences if preferences is not None else {}
+        self.goku_player_renderer = GokuPlayerSpriteRenderer(preferences=self.preferences)
         self.player_frames = self.load_numbered_frames(
             asset_root / "player" / "shaman",
             "shaman_*.png",
@@ -66,17 +72,25 @@ class SoloSpriteRenderer:
         self.boss_skill_technique_timer = 0.0
         self.boss_skill_technique_delay = 0.085
         self.previous_boss_state = None
+        self.boss_transformed_frame_cache = {}
 
-    def update(self, player, boss, dt):
+    def update(self, player, boss, dt, player_action_override=None):
         """Tick body and effect animation timers independently from combat."""
-        self.player_idle_timer += dt
+        self.goku_player_renderer.update(
+            player,
+            get_player_visual_state(player),
+            dt,
+            player_action_override,
+        )
+        animation_dt = get_animation_dt(self.preferences, dt)
+        self.player_idle_timer += animation_dt
         if self.player_frames and self.player_idle_timer >= self.player_idle_delay:
             self.player_idle_timer %= self.player_idle_delay
             self.player_idle_index = (self.player_idle_index + 1) % len(self.player_frames)
 
         self.update_player_slash(player, dt)
 
-        self.boss_frame_timer += dt
+        self.boss_frame_timer += animation_dt
         if self.boss_frames and self.boss_frame_timer >= self.boss_frame_delay:
             self.boss_frame_timer %= self.boss_frame_delay
             self.boss_frame_index = (self.boss_frame_index + 1) % len(self.boss_frames)
@@ -144,12 +158,8 @@ class SoloSpriteRenderer:
         offset = min(3, int(self.player_attack_elapsed / frame_duration))
         self.slash_frame_index = base_index + offset
 
-    def draw_player(self, surface, player):
-        """Draw the shaman prototype with slash frames and safe fallback."""
-        if not self.player_frames:
-            player.draw(surface)
-            return
-
+    def draw_player(self, surface, player, player_action_override=None):
+        """Draw approved Goku body frames with the previous safe fallback."""
         draw_rect_afterimages(
             surface,
             player.dash_trail,
@@ -158,13 +168,26 @@ class SoloSpriteRenderer:
             (76, 180, 255),
         )
 
-        frame = self.player_frames[self.player_idle_index % len(self.player_frames)]
-        if player.facing < 0:
-            frame = pygame.transform.flip(frame, True, False)
-        frame_rect = frame.get_rect(midbottom=(player.rect.centerx, player.rect.bottom + 4))
-        surface.blit(frame, frame_rect)
+        draw_super_saiyan_aura(surface, player.rect, player)
+        frame_rect = self.goku_player_renderer.draw(
+            surface,
+            player,
+            player.rect,
+            get_player_visual_state(player),
+            player_action_override,
+        )
+        if frame_rect is None:
+            if not self.player_frames:
+                player.draw(surface)
+                return
+            frame = self.player_frames[self.player_idle_index % len(self.player_frames)]
+            if player.facing < 0:
+                frame = pygame.transform.flip(frame, True, False)
+            frame_rect = frame.get_rect(midbottom=(player.rect.centerx, player.rect.bottom + 4))
+            surface.blit(frame, frame_rect)
 
-        self.draw_player_slash(surface, player, frame_rect)
+        if not self.goku_player_renderer.has_frames():
+            self.draw_player_slash(surface, player, frame_rect)
         draw_block_guard(
             surface,
             player.rect,
@@ -210,9 +233,8 @@ class SoloSpriteRenderer:
             boss.draw(surface)
             return
 
-        frame = self.boss_frames[self.boss_frame_index % len(self.boss_frames)]
-        if boss.facing < 0:
-            frame = pygame.transform.flip(frame, True, False)
+        frame_index = self.boss_frame_index % len(self.boss_frames)
+        frame = self.get_boss_frame(frame_index, boss.facing < 0)
         frame_rect = frame.get_rect(midbottom=(boss.rect.centerx, GROUND_Y))
         surface.blit(frame, frame_rect)
 
@@ -231,6 +253,16 @@ class SoloSpriteRenderer:
             draw_enemy_attack_rectangle(surface, attack_hitbox, boss.attack_color)
 
         boss.skill_controller.draw(surface, boss)
+
+    def get_boss_frame(self, frame_index, flip_x):
+        """Reuse boss facing transforms instead of flipping every draw."""
+        cache_key = (frame_index, flip_x)
+        if cache_key not in self.boss_transformed_frame_cache:
+            frame = self.boss_frames[frame_index]
+            self.boss_transformed_frame_cache[cache_key] = (
+                pygame.transform.flip(frame, True, False) if flip_x else frame
+            )
+        return self.boss_transformed_frame_cache[cache_key]
 
     def draw_boss_technique(self, surface, boss, frame_rect):
         """Attach available technique frames to existing boss attack states."""
@@ -270,8 +302,8 @@ class SoloSpriteRenderer:
         return self.boss_skill_technique_index
 
     def has_player_sprite(self):
-        """Return True when the shaman prototype frames loaded."""
-        return bool(self.player_frames)
+        """Return True when approved Goku frames or the old fallback loaded."""
+        return self.goku_player_renderer.has_frames() or bool(self.player_frames)
 
     def has_boss_sprite(self):
         """Return True when the boss prototype frames loaded."""

@@ -25,6 +25,7 @@ from systems.player_feedback import (
     get_player_draw_rect,
 )
 from systems.sprite_loader import draw_entity_sprite
+from systems.super_saiyan import draw_super_saiyan_aura
 from entities.player_parts.render_state import get_player_visual_state
 
 
@@ -64,9 +65,17 @@ def draw(player, surface):
         player.parry_flash_color,
     )
     draw_rect = get_player_draw_rect(player)
+    draw_super_saiyan_aura(surface, draw_rect, player)
 
     visual_state = get_player_visual_state(player)
-    sprite_drawn = draw_entity_sprite(surface, player, draw_rect, visual_state)
+    sprite_renderer = getattr(player, "player_sprite_renderer", None)
+    sprite_drawn = (
+        sprite_renderer.draw(surface, player, draw_rect, visual_state)
+        if sprite_renderer is not None
+        else None
+    )
+    if sprite_drawn is None:
+        sprite_drawn = draw_entity_sprite(surface, player, draw_rect, visual_state)
     if not sprite_drawn:
         color = PLAYER_COLOR
         if player.defeated:

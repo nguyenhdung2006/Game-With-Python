@@ -3,6 +3,7 @@
 import pygame
 
 from entities.player_parts.reaction import initialize_reaction_state
+from systems.super_saiyan import initialize_super_saiyan_state
 from settings import (
     COMBO_RESET_TIME,
     COUNTER_ATTACK,
@@ -43,12 +44,14 @@ def initialize_player_state(player, x, y):
     initialize_defense_state(player)
     initialize_mobility_state(player)
     initialize_reaction_state(player)
+    initialize_super_saiyan_state(player)
 
 
 def initialize_core_state(player, x, y):
     """Set the basic body, movement, and shared state fields."""
     player.audio_manager = None
     player.input_manager = None
+    player.combat_momentum = None
     player.width = PLAYER_WIDTH
     player.height = PLAYER_HEIGHT
     player.speed = PLAYER_SPEED
@@ -77,6 +80,7 @@ def initialize_core_state(player, x, y):
     player.facing = 1
     player.last_move_direction = 0
     player.sprite_paths = {}
+    player.player_sprite_renderer = None
     player.sprite_size = (player.width, player.height)
     player.sprite_offset = (0, 0)
     player.sprite_flip_with_facing = True
@@ -86,9 +90,15 @@ def initialize_core_state(player, x, y):
     player.defeated = False
     player.hurt_timer = 0
     player.hurt_flash_timer = 0
+    player.hurt_visual_timer = 0
+    player.hurt_chain_timer = 0
+    player.hurt_chain_step = 0
     player.invulnerability_timer = 0
     player.stun_timer = 0
     player.skill_lock_timer = 0
+    player.skill_visual_state = None
+    player.skill_visual_timer = 0
+    player.ki_blast_visual_index = 0
 
 
 def initialize_attack_state(player):
@@ -99,6 +109,7 @@ def initialize_attack_state(player):
     player.attack_range = first_attack["range"]
     player.attack_height = first_attack["height"]
     player.attack_knockback = first_attack["knockback"]
+    player.attack_launch_y = first_attack.get("launch_y", 0)
     player.attack_movement_multiplier = first_attack["movement_multiplier"]
     player.attack_color = first_attack["color"]
     player.attack_hitstop = first_attack["hitstop"]
@@ -109,6 +120,8 @@ def initialize_attack_state(player):
     player.attack_timer = 0
     player.attack_recovery = first_attack["recovery"]
     player.attack_cancel_window = first_attack["cancel_window"]
+    player.attack_recovery_visual_state = first_attack.get("recovery_visual_state")
+    player.attack_recovery_visual_duration = first_attack.get("recovery_visual_duration", 0)
     player.attack_recovery_timer = 0
 
     player.attack_cooldown = first_attack["cooldown"]
@@ -118,11 +131,17 @@ def initialize_attack_state(player):
     player.has_hit_this_attack = False
 
     player.combo_step = 0
+    player.attack_style = "punch"
+    player.combo_style = None
     player.combo_timer = 0
     player.combo_reset_time = COMBO_RESET_TIME
     player.queued_next_attack = False
+    player.queued_attack_style = None
     player.attack_buffer_timer = 0
     player.buffered_attack = False
+    player.buffered_attack_style = None
+    player.melee_recovery_visual_state = None
+    player.melee_recovery_visual_timer = 0
     player.counter_window_timer = 0
     player.can_counter = False
     player.counter_ready_color = PLAYER_COUNTER_READY_COLOR

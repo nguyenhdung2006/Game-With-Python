@@ -5,12 +5,15 @@ import pygame
 from config.boss_config import SOLO_BOSS_CONFIG
 from config.mode_config import (
     SOLO_BOSS_ENERGY_COLOR,
-    SOLO_COMBO_BURST_ENERGY_COST,
     SOLO_DEALT_HIT_ENERGY_GAIN,
     SOLO_ENEMY_RIGHT_OFFSET,
+    SOLO_ENERGY_DISC_ENERGY_COST,
     SOLO_ENERGY_BG,
     SOLO_ENERGY_COLOR,
     SOLO_HURT_ENERGY_GAIN,
+    SOLO_FIGHT_CALLOUT_DURATION,
+    SOLO_INTRO_ENTRY_DURATION,
+    SOLO_KI_BLAST_ENERGY_COST,
     SOLO_KAMEHAMEHA_ENERGY_COST,
     SOLO_MAX_ENERGY,
     SOLO_PLAYER_ATTACK_RANGES,
@@ -35,23 +38,26 @@ from settings import (
     WIDTH,
 )
 from systems.combat import process_enemy_attacks, process_player_attacks
+from systems.combat_momentum import CombatMomentum
 from systems.effects import CombatImpact
 from systems.input_manager import InputManager
 from systems.projectile_manager import ProjectileManager
 from systems.skill_manager import SkillManager
 from systems.solo_boss_combo_controller import SoloBossComboController
-from systems.solo_combo_burst import SoloComboBurst
 from systems.solo_sprite_renderer import SoloSpriteRenderer
+from ui.combat_hud import draw_resource_bar, draw_saiyan_bar, draw_skill_bar
+from ui.combat_momentum import draw_combat_momentum
 from ui.completion_overlay import draw_completion_overlay
 from ui.controls_overlay import draw_controls_hint, draw_controls_overlay
-from ui.dungeon_hud import draw_text_panel
+from ui.fonts import get_font
 from ui.health_bar import draw_health_bar
 from ui.pause_overlay import draw_pause_overlay
-from ui.solo_setup import draw_solo_setup, slider_index_at, value_from_slider_x
+from ui.solo_setup import draw_center_text, draw_solo_setup, slider_index_at, value_from_slider_x
 from world.battlefield import draw_arena
 
 
 SOLO_SETUP = "SETUP"
+SOLO_INTRO = "INTRO"
 SOLO_ACTIVE = "ACTIVE"
 SOLO_VICTORY = "VICTORY"
 SOLO_DEFEAT = "DEFEAT"
@@ -75,23 +81,26 @@ class SoloMode:
         self.player = Player(SOLO_PLAYER_SPAWN_X, GROUND_Y - PLAYER_HEIGHT)
         self.player.audio_manager = self.audio_manager
         self.player.input_manager = self.input_manager
+        self.combat_momentum = CombatMomentum()
+        self.player.combat_momentum = self.combat_momentum
         self.player.max_health = self.setup_player_hp
         self.player.health = self.player.max_health
         self.enemy = EliteEnemy(WIDTH - SOLO_ENEMY_RIGHT_OFFSET)
         self.enemy.audio_manager = self.audio_manager
         self.configure_solo_boss()
         self.impact = CombatImpact(self.preferences)
-        self.projectile_manager = ProjectileManager()
+        self.projectile_manager = ProjectileManager(self.preferences)
         self.skill_manager = SkillManager(self.projectile_manager, self.input_manager)
-        self.combo_burst = SoloComboBurst(energy_cost=SOLO_COMBO_BURST_ENERGY_COST)
-        self.sprite_renderer = SoloSpriteRenderer()
+        self.sprite_renderer = SoloSpriteRenderer(self.preferences)
         self.max_energy = SOLO_MAX_ENERGY
         self.energy = SOLO_START_ENERGY
         self.dealt_hit_energy_gain = SOLO_DEALT_HIT_ENERGY_GAIN
         self.hurt_energy_gain = SOLO_HURT_ENERGY_GAIN
         self.paused = False
         self.controls_visible = False
-        self.result_state = SOLO_SETUP if show_setup else SOLO_ACTIVE
+        self.intro_phase = "entry"
+        self.intro_timer = SOLO_INTRO_ENTRY_DURATION
+        self.result_state = SOLO_SETUP if show_setup else SOLO_INTRO
 
     def handle_event(self, event):
         """Handle player combat inputs during the active duel."""
@@ -120,24 +129,29 @@ class SoloMode:
         if not self.is_active() or self.impact.is_hitstop_active():
             return
 
+        if self.player.is_transforming():
+            return
+
         if self.input_manager.event_matches("jump", event):
             self.player.jump()
         elif self.input_manager.event_matches("dash", event):
             self.player.start_dash()
         elif self.input_manager.event_matches("skill_1", event):
-            self.energy, _ = self.combo_burst.start(self.player, self.energy)
+            self.try_use_ki_blast()
         elif self.input_manager.event_matches("skill_2", event):
             self.try_use_kamehameha()
         elif self.input_manager.event_matches("skill_3", event):
-            self.skill_manager.use_slot(3, self.player)
+            self.try_use_energy_disc()
         elif self.input_manager.event_matches("guard", event):
             self.player.start_guard()
         elif self.input_manager.event_matches("dodge", event):
             dodge_result = self.player.start_dodge()
             if dodge_result:
                 self.impact.start_hit_impact(dodge_result)
-        elif self.input_manager.event_matches("attack", event) and not self.combo_burst.active:
+        elif self.input_manager.event_matches("attack", event):
             self.player.start_light_attack()
+        elif self.input_manager.event_matches("kick", event):
+            self.player.start_kick_attack()
 
     def update(self, keys, dt):
         """Update the 1v1 fight."""
@@ -145,14 +159,23 @@ class SoloMode:
             return
 
         self.impact.update(dt)
+        if self.is_intro():
+            self.sprite_renderer.update(
+                self.player,
+                self.enemy,
+                dt,
+                self.get_player_action_override(),
+            )
+            self.update_intro(dt)
+            return
         if not self.is_active() or self.impact.is_hitstop_active():
             return
 
+        self.combat_momentum.update(dt)
         previous_player_health = self.player.health
         previous_enemy_health = self.enemy.health
         self.skill_manager.update(dt)
         self.player.update(keys, dt)
-        self.combo_burst.update(self.player, dt)
         self.tune_player_attack_range()
         self.enemy.update(self.player, dt)
 
@@ -169,7 +192,12 @@ class SoloMode:
 
         self.apply_energy_from_health_changes(previous_player_health, previous_enemy_health)
 
-        self.sprite_renderer.update(self.player, self.enemy, dt)
+        self.sprite_renderer.update(
+            self.player,
+            self.enemy,
+            dt,
+            self.get_player_action_override(),
+        )
         self.update_result_state()
 
     def draw(self, screen, scene_surface):
@@ -186,13 +214,18 @@ class SoloMode:
             return
 
         draw_arena(scene_surface)
-        self.sprite_renderer.draw_player(scene_surface, self.player)
+        self.sprite_renderer.draw_player(
+            scene_surface,
+            self.player,
+            self.get_player_action_override(),
+        )
         self.projectile_manager.draw(scene_surface)
         self.sprite_renderer.draw_boss(scene_surface, self.enemy)
 
         screen.fill((0, 0, 0))
         screen.blit(scene_surface, self.impact.get_camera_offset())
         self.draw_ui(screen)
+        self.draw_intro_overlay(screen)
 
         if self.result_state == SOLO_VICTORY:
             self.draw_result(screen, "Victory")
@@ -226,9 +259,20 @@ class SoloMode:
             "SOLO BOSS",
         )
         self.draw_energy_bar(screen)
+        draw_saiyan_bar(screen, self.player, y=138)
         self.draw_boss_energy_bar(screen)
         self.draw_player_status_feedback(screen)
-        draw_text_panel(screen, self.get_solo_skill_lines(), 24, 152, 360)
+        draw_combat_momentum(screen, self.combat_momentum)
+        draw_skill_bar(
+            screen,
+            self.skill_manager,
+            energy=self.energy,
+            energy_costs={
+                1: SOLO_KI_BLAST_ENERGY_COST,
+                2: SOLO_KAMEHAMEHA_ENERGY_COST,
+                3: SOLO_ENERGY_DISC_ENERGY_COST,
+            },
+        )
 
     def draw_result(self, screen, label):
         """Draw the end-state overlay without changing the fight underneath."""
@@ -252,6 +296,35 @@ class SoloMode:
     def is_setup(self):
         """Return True while Solo is waiting for pre-fight HP confirmation."""
         return self.result_state == SOLO_SETUP
+
+    def is_intro(self):
+        """Return True while the pre-fight presentation freezes combat."""
+        return self.result_state == SOLO_INTRO
+
+    def update_intro(self, dt):
+        """Advance entry frames into the readable FIGHT callout."""
+        self.intro_timer = max(0.0, self.intro_timer - dt)
+        if self.intro_timer > 0:
+            return
+        if self.intro_phase == "entry":
+            self.intro_phase = "fight"
+            self.intro_timer = SOLO_FIGHT_CALLOUT_DURATION
+        else:
+            self.intro_phase = None
+            self.result_state = SOLO_ACTIVE
+
+    def draw_intro_overlay(self, screen):
+        """Draw the short centered callout after the entry playback."""
+        if self.is_intro() and self.intro_phase == "fight":
+            draw_center_text(screen, "FIGHT", HEIGHT // 2, 108, WHITE)
+
+    def get_player_action_override(self):
+        """Select only user-approved presentation overrides."""
+        if self.is_intro():
+            return "intro_entry" if self.intro_phase == "entry" else "fight_ready"
+        if self.result_state == SOLO_VICTORY:
+            return "victory"
+        return None
 
     def play_sfx(self, name):
         """Play one optional Solo event hook."""
@@ -321,37 +394,42 @@ class SoloMode:
         self.energy -= SOLO_KAMEHAMEHA_ENERGY_COST
         return True
 
+    def try_use_ki_blast(self):
+        """Spend Solo energy only when the user-approved first skill starts."""
+        if self.energy < SOLO_KI_BLAST_ENERGY_COST:
+            return False
+        if not self.skill_manager.use_slot(1, self.player):
+            return False
+        self.energy -= SOLO_KI_BLAST_ENERGY_COST
+        return True
+
+    def try_use_energy_disc(self):
+        """Spend Solo energy only when the approved disc skill starts."""
+        if self.energy < SOLO_ENERGY_DISC_ENERGY_COST:
+            return False
+        if not self.skill_manager.use_slot(3, self.player):
+            return False
+        self.energy -= SOLO_ENERGY_DISC_ENERGY_COST
+        return True
+
     def draw_energy_bar(self, screen):
         """Draw a compact energy bar beneath player health."""
-        x = 60
-        y = 96
-        width = 300
-        height = 16
-        fill_width = round(width * (self.energy / self.max_energy))
-
-        pygame.draw.rect(screen, SOLO_ENERGY_BG, (x, y, width, height))
-        pygame.draw.rect(screen, SOLO_ENERGY_COLOR, (x, y, fill_width, height))
-        pygame.draw.rect(screen, WHITE, (x, y, width, height), 2)
-
-        font = pygame.font.Font(None, 24)
-        label = font.render(f"ENERGY {self.energy} / {self.max_energy}", True, WHITE)
-        screen.blit(label, (x, y + 20))
+        draw_resource_bar(screen, 60, 96, 300, 16, self.energy, self.max_energy, "ENERGY", SOLO_ENERGY_COLOR)
 
     def draw_boss_energy_bar(self, screen):
         """Draw the Solo boss energy resource beneath its health bar."""
-        x = WIDTH - 360
-        y = 96
-        width = 300
-        height = 16
-        fill_width = round(width * (self.enemy.energy / self.enemy.max_energy))
-
-        pygame.draw.rect(screen, SOLO_ENERGY_BG, (x, y, width, height))
-        pygame.draw.rect(screen, SOLO_BOSS_ENERGY_COLOR, (x, y, fill_width, height))
-        pygame.draw.rect(screen, WHITE, (x, y, width, height), 2)
-
-        font = pygame.font.Font(None, 24)
-        label = font.render(f"BOSS ENERGY {self.enemy.energy} / {self.enemy.max_energy}", True, WHITE)
-        screen.blit(label, (x, y + 20))
+        draw_resource_bar(
+            screen,
+            WIDTH - 360,
+            96,
+            300,
+            16,
+            self.enemy.energy,
+            self.enemy.max_energy,
+            "BOSS ENERGY",
+            SOLO_BOSS_ENERGY_COLOR,
+            align_right=True,
+        )
 
     def draw_player_status_feedback(self, screen):
         """Draw small readable timers for temporary Solo-only control effects."""
@@ -364,7 +442,7 @@ class SoloMode:
         if not statuses:
             return
 
-        font = pygame.font.Font(None, 28)
+        font = get_font(28)
         for index, (label, timer, color) in enumerate(statuses):
             x = 60
             y = 286 + index * 34
@@ -377,12 +455,14 @@ class SoloMode:
 
     def get_solo_skill_lines(self):
         """Return Solo-specific skill labels without changing Dungeon bindings."""
+        ki_blast = self.skill_manager.get_slot(1)
         kamehameha = self.skill_manager.get_slot(2)
+        energy_disc = self.skill_manager.get_slot(3)
         return [
             "Skills:",
-            f"{self.input_manager.get_binding_label('skill_1')}: Combo Burst {self.combo_burst.status_text(self.energy)}",
+            f"{self.input_manager.get_binding_label('skill_1')}: Ki Blast {ki_blast.status_text()} Cost {SOLO_KI_BLAST_ENERGY_COST}",
             f"{self.input_manager.get_binding_label('skill_2')}: Kamehameha {kamehameha.status_text()} Cost {SOLO_KAMEHAMEHA_ENERGY_COST}",
-            f"{self.input_manager.get_binding_label('skill_3')}: Locked",
+            f"{self.input_manager.get_binding_label('skill_3')}: Energy Disc {energy_disc.status_text()} Cost {SOLO_ENERGY_DISC_ENERGY_COST}",
         ]
 
     def setup_slider_specs(self):

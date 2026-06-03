@@ -7,10 +7,12 @@ from config.dungeon_layout_config import DUNGEON_CLEAR_LAYOUT, DUNGEON_ROOM_LAYO
 
 @dataclass(frozen=True)
 class DungeonLayout:
-    """One placeholder room layout with explicit bounds and spawn anchors."""
+    """One fixed room layout with explicit identity, bounds, and spawn anchors."""
 
     layout_id: str
     label: str
+    title: str
+    subtitle: str
     layout_type: str
     room_type: str
     room_bounds: tuple

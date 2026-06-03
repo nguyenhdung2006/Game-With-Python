@@ -20,7 +20,9 @@ DEFAULT_ENEMY_SPAWN_RIGHT_MARGIN = 90
 DUNGEON_ROOM_LAYOUTS = (
     {
         "layout_id": "room_1_start",
-        "label": "ROOM 1 - START",
+        "label": "ROOM 1 - RUINED GATE",
+        "title": "RUINED GATE",
+        "subtitle": "The first clash",
         "layout_type": LAYOUT_START,
         "room_type": "ENCOUNTER",
         "room_bounds": (36, 176, 1208, 364),
@@ -44,7 +46,9 @@ DUNGEON_ROOM_LAYOUTS = (
     },
     {
         "layout_id": "room_2_encounter",
-        "label": "ROOM 2 - ENCOUNTER",
+        "label": "ROOM 2 - FORGOTTEN ARCHIVE",
+        "title": "FORGOTTEN ARCHIVE",
+        "subtitle": "Pressure rises",
         "layout_type": LAYOUT_ENCOUNTER,
         "room_type": "ENCOUNTER",
         "room_bounds": (52, 164, 1176, 376),
@@ -68,7 +72,9 @@ DUNGEON_ROOM_LAYOUTS = (
     },
     {
         "layout_id": "room_3_elite",
-        "label": "ROOM 3 - ELITE",
+        "label": "ROOM 3 - ASHEN THRONE",
+        "title": "ASHEN THRONE",
+        "subtitle": "Elite showdown",
         "layout_type": LAYOUT_ELITE_BOSS,
         "room_type": "BOSS_ENCOUNTER",
         "room_bounds": (68, 148, 1144, 392),
@@ -93,6 +99,8 @@ DUNGEON_ROOM_LAYOUTS = (
 DUNGEON_CLEAR_LAYOUT = {
     "layout_id": "dungeon_clear",
     "label": "DUNGEON CLEAR",
+    "title": "ASHEN THRONE",
+    "subtitle": "The gate is open",
     "layout_type": LAYOUT_CLEAR,
     "room_type": "DUNGEON_CLEAR",
     "room_bounds": (68, 148, 1144, 392),

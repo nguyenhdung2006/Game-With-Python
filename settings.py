@@ -12,7 +12,7 @@ from config.player_config import *  # noqa: F403
 # Window and world geometry
 WIDTH = 1280
 HEIGHT = 720
-FPS = 60
+FPS = 120
 GROUND_Y = 540
 
 # Basic colors used by the arena and HUD.

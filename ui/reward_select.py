@@ -3,6 +3,7 @@
 import pygame
 
 from settings import HEIGHT, WHITE, WIDTH
+from ui.fonts import get_font
 
 
 CARD = (30, 35, 50)
@@ -47,9 +48,9 @@ def draw_reward_card(surface, rect, reward, stack_count, selected):
     pygame.draw.rect(surface, color, rect, border_radius=6)
     pygame.draw.rect(surface, border, rect, 3 if selected else 2, border_radius=6)
 
-    title_font = pygame.font.Font(None, 34)
-    desc_font = pygame.font.Font(None, 25)
-    detail_font = pygame.font.Font(None, 23)
+    title_font = get_font(34)
+    desc_font = get_font(25)
+    detail_font = get_font(23)
 
     title_surface = title_font.render(reward.display_name, True, WHITE)
     desc_surface = desc_font.render(reward.description, True, MUTED)
@@ -70,7 +71,7 @@ def format_stack_label(stack_count, max_stacks):
 
 
 def _draw_center_text(surface, text, center_y, size, color):
-    font = pygame.font.Font(None, size)
+    font = get_font(size)
     text_surface = font.render(text, True, color)
     text_rect = text_surface.get_rect(center=(WIDTH // 2, center_y))
     surface.blit(text_surface, text_rect)

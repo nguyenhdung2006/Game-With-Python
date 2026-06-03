@@ -3,6 +3,7 @@
 import pygame
 
 from settings import HEIGHT, WHITE, WIDTH
+from ui.fonts import get_font
 
 
 DIM_COLOR = (0, 0, 0, 150)
@@ -16,8 +17,8 @@ def draw_pause_overlay(surface, restart_label, input_manager=None):
     dim.fill(DIM_COLOR)
     surface.blit(dim, (0, 0))
 
-    title_font = pygame.font.Font(None, 72)
-    prompt_font = pygame.font.Font(None, 30)
+    title_font = get_font(72)
+    prompt_font = get_font(30)
     panel = pygame.Rect(WIDTH // 2 - 250, HEIGHT // 2 - 132, 500, 264)
 
     pygame.draw.rect(surface, PANEL, panel, border_radius=8)

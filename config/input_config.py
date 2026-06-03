@@ -9,6 +9,7 @@ DEFAULT_KEY_BINDINGS = {
     "jump": "w",
     "dash": "left shift",
     "attack": "j",
+    "kick": "c",
     "guard": "k",
     "dodge": "l",
     "skill_1": "u",
@@ -23,6 +24,8 @@ DEFAULT_KEY_BINDINGS = {
     "select_dungeon": "2",
     "select_team": "3",
     "select_settings": "4",
+    "select_guide": "5",
+    "select_preview": "6",
 }
 
 KEY_BINDING_LABELS = {

@@ -76,6 +76,10 @@ def normalize_setting(key, value):
     default = DEFAULT_SETTINGS[key]
     if key == "key_bindings":
         return normalize_key_bindings(value)
+    if key == "target_fps":
+        return value if value in {60, 120, 144, 240} else default
+    if key == "animation_speed":
+        return value if value in {0.65, 0.8, 1.0, 1.15} else default
     if isinstance(default, bool):
         return value if isinstance(value, bool) else default
 

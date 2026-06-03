@@ -3,6 +3,7 @@
 import pygame
 
 from settings import HEIGHT, WHITE, WIDTH
+from ui.fonts import get_font
 
 
 PANEL = (18, 22, 34)
@@ -11,8 +12,8 @@ MUTED = (190, 198, 212)
 
 def draw_completion_overlay(surface, title, retry_label, input_manager=None):
     """Draw a readable terminal-state panel with retry and menu actions."""
-    title_font = pygame.font.Font(None, 72)
-    prompt_font = pygame.font.Font(None, 30)
+    title_font = get_font(72)
+    prompt_font = get_font(30)
     panel = pygame.Rect(WIDTH // 2 - 250, HEIGHT // 2 - 104, 500, 208)
 
     pygame.draw.rect(surface, PANEL, panel, border_radius=8)

@@ -6,8 +6,10 @@ main.py does not fill up with combat details as the game grows.
 
 import pygame
 
+from systems.super_saiyan import get_outgoing_damage_multiplier
 from settings import (
     ENEMY_COUNTER_STAGGER_DURATION,
+    KICK_ATTACK_COMBO,
     LIGHT_ATTACK_COMBO,
 )
 
@@ -38,9 +40,10 @@ def create_enemy_attack_hitbox(enemy):
     return pygame.Rect(x, y, enemy.attack_range, enemy.attack_height)
 
 
-def get_combo_attack_data(combo_step):
+def get_combo_attack_data(combo_step, attack_style="punch"):
     """Return damage, size, duration, and knockback values for one combo hit."""
-    return LIGHT_ATTACK_COMBO[combo_step - 1]
+    attack_combo = KICK_ATTACK_COMBO if attack_style == "kick" else LIGHT_ATTACK_COMBO
+    return attack_combo[combo_step - 1]
 
 
 def apply_damage(target, amount):
@@ -51,10 +54,12 @@ def apply_damage(target, amount):
     return False
 
 
-def apply_knockback(target, direction, strength):
-    """Push a target away from the attacker."""
+def apply_knockback(target, direction, strength, launch_y=0):
+    """Push a target away from the attacker and optionally launch it."""
     if hasattr(target, "knockback_velocity_x"):
         target.knockback_velocity_x = direction * strength
+    if launch_y and hasattr(target, "knockback_velocity_y"):
+        target.knockback_velocity_y = launch_y
 
 
 def process_player_attack(player, enemy):
@@ -68,13 +73,16 @@ def process_player_attack(player, enemy):
         return
 
     if attack_hitbox.colliderect(enemy.rect):
-        damage = round(player.attack_damage * getattr(player, "damage_multiplier", 1.0))
-        if not getattr(player, "is_counter_attacking", False) and player.combo_step >= len(LIGHT_ATTACK_COMBO):
+        damage = round(player.attack_damage * get_outgoing_damage_multiplier(player))
+        attack_combo = KICK_ATTACK_COMBO if getattr(player, "attack_style", "punch") == "kick" else LIGHT_ATTACK_COMBO
+        if not getattr(player, "is_counter_attacking", False) and player.combo_step >= len(attack_combo):
             damage = round(damage * getattr(player, "combo_finisher_damage_multiplier", 1.0))
         damage_applied = apply_damage(enemy, damage)
+        if damage_applied:
+            player.register_outgoing_damage(damage)
         if damage_applied and hasattr(enemy, "register_attack_reaction"):
             enemy.register_attack_reaction(player)
-        apply_knockback(enemy, player.facing, player.attack_knockback)
+        apply_knockback(enemy, player.facing, player.attack_knockback, player.attack_launch_y)
         if getattr(player, "is_counter_attacking", False):
             enemy.start_stagger(ENEMY_COUNTER_STAGGER_DURATION)
         player.has_hit_this_attack = True

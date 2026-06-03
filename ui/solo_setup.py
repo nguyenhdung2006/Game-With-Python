@@ -3,6 +3,7 @@
 import pygame
 
 from settings import HEIGHT, WHITE, WIDTH
+from ui.fonts import get_font
 
 
 BG = (12, 14, 24)
@@ -40,8 +41,8 @@ def draw_slider(surface, index, label, value, color, spec, selected):
     pygame.draw.rect(surface, PANEL, panel_rect, border_radius=6)
     pygame.draw.rect(surface, color if selected else MUTED, panel_rect, 2, border_radius=6)
 
-    font = pygame.font.Font(None, 32)
-    value_font = pygame.font.Font(None, 38)
+    font = get_font(32)
+    value_font = get_font(38)
     surface.blit(font.render(label, True, color), (SLIDER_LEFT, y - 42))
     value_surface = value_font.render(str(value), True, WHITE)
     surface.blit(value_surface, (SLIDER_LEFT + SLIDER_WIDTH - value_surface.get_width(), y - 44))
@@ -78,6 +79,6 @@ def value_from_slider_x(x, spec):
 
 def draw_center_text(surface, text, center_y, size, color):
     """Draw one centered setup label."""
-    font = pygame.font.Font(None, size)
+    font = get_font(size)
     text_surface = font.render(text, True, color)
     surface.blit(text_surface, text_surface.get_rect(center=(WIDTH // 2, center_y)))
